@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>GrowLog</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2A45">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GrowLog">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -130,6 +138,27 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 .pay-msg.err { background: var(--rust-light); color: var(--rust); }
 .pay-logout { text-align: center; font-size: 11.5px; color: var(--text3); padding-top: 18px; cursor: pointer; text-decoration: underline; }
 .portal-link { text-align: center; font-size: 11.5px; color: var(--text3); cursor: pointer; text-decoration: underline; }
+
+/* ── contact modal ── */
+.contact-link { text-align: center; font-size: 11.5px; color: var(--text3); cursor: pointer; text-decoration: underline; padding-top: 2px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(28,25,20,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+@media (min-width: 640px) { .modal-overlay { align-items: center; } }
+.modal-card { background: var(--surface); border-radius: 16px 16px 0 0; padding: 18px 18px 22px; width: 100%; max-width: 480px; max-height: 86vh; overflow-y: auto; }
+@media (min-width: 640px) { .modal-card { border-radius: var(--radius); } }
+.modal-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 16px; color: var(--navy); margin-bottom: 4px; }
+.modal-sub { font-size: 12px; color: var(--text2); margin-bottom: 14px; }
+.modal-field { margin-bottom: 12px; }
+.modal-label { font-size: 11.5px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.modal-select, .modal-textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: var(--text); background: var(--surface2); }
+.modal-textarea { min-height: 100px; resize: vertical; }
+.modal-select:focus, .modal-textarea:focus { outline: none; border-color: var(--navy); background: var(--surface); }
+.modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.modal-btn { flex: 1; border: none; border-radius: var(--radius-sm); padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.modal-btn-cancel { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+.modal-btn-send { background: var(--navy); color: #fff; }
+.modal-btn-send:disabled { opacity: 0.55; }
+.modal-status { font-size: 12.5px; color: var(--green); margin-top: 10px; text-align: center; }
+.modal-status.error { color: var(--rust); }
 </style>
 </head>
 <body>
@@ -172,6 +201,82 @@ const PRICE_IDS = {
   coach: 'price_1UAKcYBAZvKHyOEKu6JQAQMx'
 };
 const SITE_URL = location.href.split('?')[0];
+// ▼▼ Google Apps Scriptのウェブアプリをデプロイしたら、そのURLに差し替える ▼▼
+const CONTACT_ENDPOINT = 'https://script.google.com/macros/s/AKfycby4gOfFg08Fnsj4n7rHtFERqoUg0riW9vljlr7yi-7zNWDjiT8dlL-oLf9a8Bt1uF9kuA/exec';
+// ▲▲ ここまで ▲▲
+
+function openContactModal(profile, state) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'contact-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-title">お問い合わせ</div>
+      <div class="modal-sub">不具合の報告や使い方の質問など、お気軽にどうぞ。</div>
+      <div class="modal-field">
+        <div class="modal-label">種類</div>
+        <select class="modal-select" id="contact-category">
+          <option value="不具合報告">不具合の報告</option>
+          <option value="使い方の質問">使い方の質問</option>
+          <option value="ご要望">ご要望</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">内容</div>
+        <textarea class="modal-textarea" id="contact-message" placeholder="内容を書いてください"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="contact-cancel">キャンセル</button>
+        <button class="modal-btn modal-btn-send" id="contact-send">送信する</button>
+      </div>
+      <div class="modal-status" id="contact-status" style="display:none;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.getElementById('contact-cancel').onclick = () => overlay.remove();
+  document.getElementById('contact-send').onclick = async () => {
+    const category = document.getElementById('contact-category').value;
+    const message = document.getElementById('contact-message').value.trim();
+    const status = document.getElementById('contact-status');
+    const sendBtn = document.getElementById('contact-send');
+    if (!message) {
+      status.textContent = '内容を入力してください';
+      status.className = 'modal-status error';
+      status.style.display = 'block';
+      return;
+    }
+    sendBtn.disabled = true;
+    sendBtn.textContent = '送信中…';
+    try {
+      await fetch(CONTACT_ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          name: profile.displayName || '',
+          email: profile.email || '',
+          role: state.role === 'coach' ? 'コーチ' : '選手・生徒',
+          sport: profile.sport || '',
+          category,
+          message
+        })
+      });
+      status.textContent = '送信しました。ありがとうございます！';
+      status.className = 'modal-status';
+      status.style.display = 'block';
+      document.getElementById('contact-message').value = '';
+      setTimeout(() => overlay.remove(), 1600);
+    } catch (err) {
+      status.textContent = '送信に失敗しました。時間をおいて再度お試しください。';
+      status.className = 'modal-status error';
+      status.style.display = 'block';
+      sendBtn.disabled = false;
+      sendBtn.textContent = '送信する';
+    }
+  };
+}
 
 async function kvGet(key) {
   const snap = await getDoc(doc(db, 'kv', key));
@@ -490,10 +595,12 @@ async function boot(user, profile) {
         <div class="panel" id="panel"></div>
         <div class="switch-code" id="logout-link">ログアウト</div>
         <div class="portal-link" id="portal-link">プラン・支払い管理</div>
+        <div class="contact-link" id="contact-link">お問い合わせ</div>
       </div>
     `;
     document.getElementById('logout-link').onclick = () => signOut(auth);
     document.getElementById('portal-link').onclick = () => openPortal();
+    document.getElementById('contact-link').onclick = () => openContactModal(profile, state);
     document.getElementById('head-cal-btn').onclick = () => { state.calExpanded = !state.calExpanded; renderCalendar(); };
     if (isCoach) renderTabs();
     renderCalendar();
@@ -784,6 +891,13 @@ async function boot(user, profile) {
   }
   function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function escapeAttr(s) { return escapeHtml(s); }
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
 }
 </script>
 </body>
