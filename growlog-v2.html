@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>GrowLog</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B2A45">
@@ -24,13 +24,18 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; -webkit-font-smoothing: antialiased; padding-bottom: 40px; }
 .mono { font-family: 'DM Mono', monospace; } .disp { font-family: 'Zen Kaku Gothic New', sans-serif; }
-.head { background: var(--navy); color: #fff; padding: 12px 18px 13px; border-bottom: 3px solid var(--stitch); position: relative; }
-.head-cal-btn { position: absolute; top: 10px; right: 14px; width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); font-size: 16px; cursor: pointer; color: #fff; }
+.head { background: var(--navy); color: #fff; padding: calc(12px + env(safe-area-inset-top)) 18px 13px; border-bottom: 3px solid var(--stitch); position: relative; }
+.head-cal-btn { position: absolute; top: calc(env(safe-area-inset-top) + 6px); right: 14px; width: 64px; height: 64px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); font-size: 32px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
 .head-eyebrow { font-size: 10px; letter-spacing: 0.12em; color: #AEB9CC; font-weight: 500; margin-bottom: 2px; }
 .head-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 18px; letter-spacing: 0.02em; }
 .head-sub { font-size: 11px; color: #C7CEDB; margin-top: 2px; }
-.wrap { max-width: 640px; margin: 0 auto; padding: 10px 14px 0; }
+.wrap { max-width: 640px; margin: 0 auto; padding: 10px 26px 0; }
+.invite-bar { display: flex; align-items: center; gap: 8px; background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12.5px; color: var(--text2); margin-top: 8px; }
+.invite-code { font-family: 'DM Mono', monospace; font-weight: 700; font-size: 15px; letter-spacing: 0.08em; color: var(--navy); }
+.invite-bar button { margin-left: auto; border: 1px solid var(--border2); background: var(--surface); border-radius: 8px; padding: 5px 10px; font-size: 11.5px; color: var(--text2); cursor: pointer; }
 .ptabs { display: flex; gap: 7px; overflow-x: auto; padding: 8px 14px 0; scrollbar-width: none; }
+.ptab-search { width: 100%; padding: 9px 13px; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; font-family: inherit; background: var(--surface); color: var(--text); margin-top: 8px; }
+.ptab-search:focus { outline: none; border-color: var(--navy); }
 .ptabs::-webkit-scrollbar { display: none; }
 .ptab { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all .15s; }
 .ptab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
@@ -76,6 +81,22 @@ textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--r
 .goal-task-del { flex-shrink: 0; border: none; background: none; color: var(--text3); font-size: 15px; cursor: pointer; padding: 2px 4px; }
 .goal-add-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--text2); border-radius: 16px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; }
 textarea:focus { outline: none; border-color: var(--navy); background: var(--surface); }
+.tri-group { margin-bottom: 14px; } .tri-group:last-child { margin-bottom: 0; }
+.tri-group-label { font-size: 11.5px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.tri-row { display: flex; gap: 8px; }
+.tri-opt { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); cursor: pointer; }
+.tri-opt-icon { font-size: 17px; line-height: 1; }
+.tri-opt-text { font-size: 10px; color: var(--text2); font-weight: 500; }
+.tri-opt.active { border-color: var(--navy); background: var(--navy-light); }
+.tri-opt.active .tri-opt-text { color: var(--navy); font-weight: 700; }
+.coach-comment { margin-top: 8px; }
+.coach-comment-label { font-size: 10.5px; font-weight: 700; color: var(--text3); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+.coach-comment textarea { background: var(--navy-light); border-color: var(--border2); min-height: 36px; font-size: 13px; }
+.coach-comment textarea[readonly] { background: var(--surface2); color: var(--text2); cursor: default; }
+.coach-comment textarea[readonly]::placeholder { color: var(--text3); }
+.section-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+.section-toggle-arrow { font-size: 10px; color: var(--text3); transition: transform .15s; }
+.section-toggle.expanded .section-toggle-arrow { transform: rotate(90deg); }
 .video-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .video-item { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; }
 .video-item a { flex: 1; font-size: 13px; color: var(--navy); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -85,6 +106,25 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 .video-add input:focus { outline: none; border-color: var(--navy); background: var(--surface); }
 .video-add button { flex-shrink: 0; white-space: nowrap; border: 1px solid var(--border2); background: var(--surface2); border-radius: var(--radius-sm); padding: 0 14px; font-size: 13px; cursor: pointer; color: var(--text2); }
 .video-limit { font-size: 12px; color: var(--text3); background: var(--surface2); border-radius: var(--radius-sm); padding: 9px 10px; text-align: center; }
+
+/* ── video upload ── */
+.video-drop { border: 2px dashed var(--border2); border-radius: var(--radius-sm); padding: 18px 12px; text-align: center; cursor: pointer; background: var(--surface2); margin-top: 8px; transition: border-color .15s, background .15s; }
+.video-drop.drag { border-color: var(--navy); background: var(--navy-light); }
+.video-drop .v-drop-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+.video-drop .v-drop-main { font-weight: 700; font-size: 12.5px; color: var(--text); }
+.video-drop .v-drop-sub { font-size: 10.5px; color: var(--text3); margin-top: 2px; }
+.video-drop input[type=file] { display: none; }
+.video-filename { margin-top: 6px; font-size: 11.5px; color: var(--navy); word-break: break-all; }
+.video-upload-btn { width: 100%; margin-top: 8px; padding: 10px; border: none; border-radius: var(--radius-sm); background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+.video-upload-btn:disabled { opacity: .4; cursor: not-allowed; }
+.video-board { margin-top: 8px; display: none; }
+.video-board.show { display: block; }
+.video-track { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.video-fill { height: 100%; width: 0%; background: var(--rust); transition: width .15s linear; }
+.video-status { margin-top: 5px; font-size: 11px; color: var(--text2); text-align: center; }
+.video-err { margin-top: 8px; display: none; background: var(--rust-light); border: 1px solid #E7C4B6; border-radius: var(--radius-sm); padding: 8px 10px; font-size: 11.5px; color: var(--stitch); line-height: 1.6; }
+.video-err.show { display: block; }
+.video-divider { text-align: center; font-size: 11px; color: var(--text3); margin: 10px 0; }
 .save-status { font-size: 11px; font-weight: 500; color: var(--text3); margin-left: 6px; }
 .thread-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .thread-title { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 12px; }
@@ -100,7 +140,28 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 .thread-input textarea { min-height: 40px; flex: 1; min-width: 0; }
 .thread-input button { flex-shrink: 0; white-space: nowrap; align-self: flex-end; background: var(--stitch); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .new-badge { display: inline-block; background: var(--stitch); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
-.line-btn { display: block; text-align: center; margin-top: 10px; background: #06C755; color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; border-radius: 20px; padding: 10px; }
+.thread-notice { background: var(--rust-light); color: var(--stitch); font-size: 12.5px; font-weight: 700; border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 8px; }
+.send-target { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border2); }
+.send-target-label { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 6px; }
+.send-target-opts { display: flex; gap: 6px; }
+.send-target-opt { flex: 1; text-align: center; padding: 7px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; }
+.send-target-opt.active { border-color: var(--navy); background: var(--navy); color: #fff; }
+.send-target-picker { margin-top: 8px; }
+.send-target-search { width: 100%; padding: 7px 10px; border: 1px solid var(--border2); border-radius: var(--radius-sm); font-size: 12.5px; margin-bottom: 6px; background: var(--surface); font-family: inherit; }
+.send-target-list { display: flex; flex-direction: column; gap: 2px; max-height: 160px; overflow-y: auto; }
+.send-target-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.send-target-item:hover { background: var(--surface2); }
+.menu-send-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.menu-send-btn { flex-shrink: 0; border: none; background: var(--navy); color: #fff; border-radius: var(--radius-sm); padding: 9px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.menu-send-status { font-size: 11.5px; color: var(--green); }
+.remind-banner { background: var(--navy-light); color: var(--navy); font-size: 12.5px; font-weight: 700; border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 8px; }
+.seen-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; margin-top: 6px; }
+.seen-check { width: 17px; height: 17px; border-radius: 5px; border: 2px solid var(--border2); background: var(--surface2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 11px; font-weight: 900; color: #fff; }
+.seen-check.checked { background: var(--green); border-color: var(--green); }
+.seen-label { font-size: 11px; color: var(--text2); font-weight: 700; }
+.seen-other-notice { font-size: 10.5px; color: var(--navy); font-weight: 700; }
+.practice-end-btn { width: 100%; margin-bottom: 8px; padding: 7px; border: 1px dashed var(--border2); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text2); font-size: 11px; font-weight: 700; cursor: pointer; }
+.practice-end-btn.sent { border-style: solid; border-color: var(--green); background: var(--green-light); color: var(--green); }
 .empty-hint { text-align: center; color: var(--text3); font-size: 13px; padding: 30px 10px; }
 /* ── auth screen ── */
 .auth-wrap { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; background: var(--bg); }
@@ -113,10 +174,13 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 .auth-card label { display: block; font-size: 12px; color: var(--text2); font-weight: 700; margin: 12px 0 4px; }
 .auth-card label:first-child { margin-top: 0; }
 .auth-card input { width: 100%; padding: 10px 12px; border: 1px solid var(--border2); border-radius: 10px; font-size: 14px; font-family: inherit; background: #fff; color: var(--text); }
+.birthdate-row { display: flex; gap: 6px; }
+.birthdate-row select { flex: 1; min-width: 0; padding: 10px 6px; border: 1px solid var(--border2); border-radius: 10px; font-size: 13.5px; font-family: inherit; background: #fff; color: var(--text); }
 .role-row { display: flex; gap: 8px; margin-top: 4px; }
 .role-opt { flex: 1; text-align: center; padding: 10px; border-radius: 10px; border: 1px solid var(--border2); cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); }
 .role-opt.active { border-color: var(--navy); background: var(--navy); color: #fff; }
 .auth-btn { width: 100%; margin-top: 18px; padding: 12px; border: none; border-radius: 10px; background: var(--navy); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+.auth-forgot { text-align: center; margin-top: 12px; font-size: 12.5px; color: var(--text2); text-decoration: underline; cursor: pointer; }
 .auth-msg { font-size: 12.5px; margin-top: 10px; padding: 8px 10px; border-radius: 8px; }
 .auth-msg.err { background: var(--rust-light); color: var(--rust); }
 .auth-msg.ok { background: var(--green-light); color: var(--green); }
@@ -131,6 +195,13 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 .pay-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: left; }
 .pay-role { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
 .pay-amount { font-family: 'DM Mono', monospace; font-size: 30px; color: var(--navy); font-weight: 500; margin-bottom: 14px; }
+.plan-grid { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
+.plan-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer; text-align: left; }
+.plan-opt.active { border-color: var(--navy); background: var(--navy-light); }
+.plan-opt-label { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+.plan-opt-amount { font-family: 'DM Mono', monospace; font-size: 17px; color: var(--navy); font-weight: 700; white-space: nowrap; }
+.plan-opt-amount span { font-size: 10px; color: var(--text3); font-weight: 500; }
+.plan-opt-per { font-size: 10.5px; color: var(--text3); white-space: nowrap; margin-left: 10px; }
 .pay-amount span { font-size: 12px; color: var(--text3); margin-left: 4px; }
 .pay-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--navy); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
 .pay-btn:disabled { opacity: 0.5; cursor: default; }
@@ -167,8 +238,8 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendEmailVerification, onAuthStateChanged, signOut, reload
+  getAuth, initializeAuth, inMemoryPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendEmailVerification, onAuthStateChanged, signOut, reload, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot
@@ -189,17 +260,55 @@ const firebaseConfig = {
   appId: "1:522594099909:web:17fcfb6f96580d6c1486ac"
 };
 const fbApp = initializeApp(firebaseConfig);
-initializeAppCheck(fbApp, {
-  provider: new ReCaptchaEnterpriseProvider('6Lfq2aAtAAAAAAHUaHQvytodWp76RbOp-1_Fvph9'),
-  isTokenAutoRefreshEnabled: true
-});
-const auth = getAuth(fbApp);
+// Capacitorのネイティブアプリ内（capacitor://localhost）ではreCAPTCHAが動作しないため、
+// App Checkは通常のWeb版（https://）でのみ初期化する。
+const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+if (!isNativeApp) {
+  try {
+    initializeAppCheck(fbApp, {
+      provider: new ReCaptchaEnterpriseProvider('6Lfq2aAtAAAAAAHUaHQvytodWp76RbOp-1_Fvph9'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch (e) { console.warn('App Check init skipped:', e); }
+}
+const auth = isNativeApp
+  ? initializeAuth(fbApp, { persistence: inMemoryPersistence })
+  : getAuth(fbApp);
 const db = getFirestore(fbApp);
 const functions = getFunctions(fbApp, 'us-central1');
 const PRICE_IDS = {
   student: 'price_1UAKbrBAZvKHyOEKfPuJriMp',
   coach: 'price_1UAKcYBAZvKHyOEKu6JQAQMx'
 };
+// ▼▼ Stripeで人数帯ごとのPrice(月額)を作成したら、下のIDをそれぞれ差し替える ▼▼
+const COACH_PLANS = [
+  { id: 'p5',  max: 5,     label: '〜5名',        amount: 2980,  priceId: 'price_1UE7XWBAZvKHyOEKfQs2MOvR' },
+  { id: 'p10', max: 10,    label: '〜10名',       amount: 4980,  priceId: 'price_1UE7bEBAZvKHyOEKpPXmkE9C' },
+  { id: 'p20', max: 20,    label: '〜20名',       amount: 8800,  priceId: 'price_1UE7bYBAZvKHyOEKOIEQKj8e' },
+  { id: 'p30', max: 30,    label: '〜30名',       amount: 12000, priceId: 'price_1UE7c8BAZvKHyOEKHMVLj9ZL' },
+  { id: 'p50', max: 50,    label: '〜50名',       amount: 18000, priceId: 'price_1UE7cRBAZvKHyOEKWQAt2bqd' },
+  { id: 'p51', max: Infinity, label: '51名以上（上限なし）', amount: 25000, priceId: 'price_1UE7cqBAZvKHyOEKs9TfsRji' }
+];
+// ▲▲ ここまで ▲▲
+function planLabelByPriceId(priceId) {
+  const p = COACH_PLANS.find(p => p.priceId === priceId);
+  return p ? p.label : '';
+}
+function generateTeamCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字(0/O, 1/I等)を除外
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+async function generateUniqueTeamCode() {
+  for (let i = 0; i < 8; i++) {
+    const code = generateTeamCode();
+    const q = query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach'));
+    const snaps = await getDocs(q);
+    if (snaps.empty) return code;
+  }
+  return generateTeamCode() + Date.now().toString(36).slice(-2).toUpperCase();
+}
 const SITE_URL = location.href.split('?')[0];
 // ▼▼ Google Apps Scriptのウェブアプリをデプロイしたら、そのURLに差し替える ▼▼
 const CONTACT_ENDPOINT = 'https://script.google.com/macros/s/AKfycby4gOfFg08Fnsj4n7rHtFERqoUg0riW9vIjlr7yi-7zNWDjiT8dlL-oLf9a8Bt1uF9kuA/exec';
@@ -304,7 +413,7 @@ let authRole = 'student';
 function renderAuth() {
   app.innerHTML = `
     <div class="auth-wrap"><div class="auth-box">
-      <div class="auth-title">GrowLog</div>
+      <div class="auth-title">Grow<span style="color:var(--rust)">Log</span></div>
       <div class="auth-tabs">
         <div class="auth-tab ${authMode==='login'?'active':''}" data-tab="login">ログイン</div>
         <div class="auth-tab ${authMode==='signup'?'active':''}" data-tab="signup">新規登録</div>
@@ -320,22 +429,19 @@ function renderAuth() {
           </div>
           <label>競技名</label>
           <input id="a-sport" type="text" placeholder="例）野球、サッカー、バスケットボール">
-          <label>チームコード</label>
-          <input id="a-team" type="text" autocapitalize="off" autocomplete="off" placeholder="例）ehime-u18">
-          <div class="auth-hint">同じチームコードの人同士だけ、コーチが選手の記録を見られます。コーチ・選手とも同じコードを入力してください。</div>
+          ${authRole === 'coach' ? `
+            <div class="auth-hint">登録すると、選手を招待するための「招待コード」が自動で発行されます。</div>
+          ` : `
+            <label>招待コード</label>
+            <input id="a-team" type="text" autocapitalize="characters" autocomplete="off" placeholder="コーチから教えてもらったコード">
+            <div class="auth-hint">担当コーチから教えてもらった招待コードを入力してください。</div>
+          `}
           ${authRole === 'student' ? `
             <label>生年月日</label>
-            <input id="a-birthdate" type="date">
-            <div id="guardian-block" style="display:none; margin-top:14px; padding:12px; border:1px solid var(--border2); border-radius:10px; background:var(--surface2);">
-              <div class="auth-hint" style="margin:0 0 10px; color:var(--text2); font-weight:700;">18歳未満のため、保護者の情報登録が必須です</div>
-              <label style="margin-top:0;">保護者の氏名</label>
-              <input id="a-guardian-name" type="text" placeholder="保護者のお名前">
-              <label>保護者のメールアドレス</label>
-              <input id="a-guardian-email" type="email" placeholder="guardian@example.com">
-              <label style="display:flex; align-items:flex-start; gap:8px; font-weight:400; margin-top:12px; cursor:pointer;">
-                <input id="a-guardian-consent" type="checkbox" style="width:auto; margin-top:3px;">
-                <span>保護者の同意を得た上で登録します。生徒アカウントのログイン情報は保護者と共有します。</span>
-              </label>
+            <div class="birthdate-row">
+              <select id="a-birth-y">${birthYearOptions()}</select>
+              <select id="a-birth-m">${monthDayOptions(12, '月')}</select>
+              <select id="a-birth-d">${monthDayOptions(31, '日')}</select>
             </div>
           ` : ``}
         ` : ``}
@@ -347,6 +453,7 @@ function renderAuth() {
           <button type="button" id="a-pass-toggle" style="flex-shrink:0; border:1px solid var(--border2); background:var(--surface2); border-radius:10px; padding:0 14px; font-size:12.5px; cursor:pointer; color:var(--text2);">表示</button>
         </div>
         <button id="a-submit" class="auth-btn">${authMode==='signup' ? '仮登録する' : 'ログイン'}</button>
+        ${authMode === 'login' ? `<div class="auth-forgot" id="a-forgot">パスワードをお忘れですか？</div>` : ''}
         <div id="a-msg"></div>
       </div>
     </div></div>
@@ -354,6 +461,8 @@ function renderAuth() {
   app.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => { authMode = t.dataset.tab; renderAuth(); });
   app.querySelectorAll('.role-opt').forEach(r => r.onclick = () => { authRole = r.dataset.role; renderAuth(); });
   document.getElementById('a-submit').onclick = authMode === 'signup' ? handleSignup : handleLogin;
+  const forgotLink = document.getElementById('a-forgot');
+  if (forgotLink) forgotLink.onclick = handleForgotPassword;
   const toggleBtn = document.getElementById('a-pass-toggle');
   const passInput = document.getElementById('a-pass');
   toggleBtn.onclick = () => {
@@ -361,64 +470,101 @@ function renderAuth() {
     passInput.type = showing ? 'password' : 'text';
     toggleBtn.textContent = showing ? '表示' : '隠す';
   };
-  const birthdateInput = document.getElementById('a-birthdate');
-  if (birthdateInput) {
-    birthdateInput.addEventListener('change', () => {
-      const guardianBlock = document.getElementById('guardian-block');
-      const age = calcAge(birthdateInput.value);
-      guardianBlock.style.display = (age !== null && age < 18) ? 'block' : 'none';
-    });
-  }
 }
-function calcAge(birthdateStr) {
-  if (!birthdateStr) return null;
-  const b = new Date(birthdateStr);
-  if (isNaN(b.getTime())) return null;
-  const t = new Date();
-  let age = t.getFullYear() - b.getFullYear();
-  const m = t.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && t.getDate() < b.getDate())) age--;
-  return age;
+function birthYearOptions() {
+  const nowY = new Date().getFullYear();
+  let html = '<option value="">年</option>';
+  for (let y = nowY; y >= nowY - 100; y--) html += `<option value="${y}">${y}年</option>`;
+  return html;
+}
+function monthDayOptions(max, label) {
+  let html = `<option value="">${label}</option>`;
+  for (let i = 1; i <= max; i++) html += `<option value="${i}">${i}${label}</option>`;
+  return html;
 }
 function showAuthMsg(text, type) {
   const el = document.getElementById('a-msg');
   if (el) el.innerHTML = `<div class="auth-msg ${type}">${text}</div>`;
 }
+async function handleForgotPassword() {
+  const email = document.getElementById('a-email').value.trim();
+  if (!email) { showAuthMsg('パスワードを再設定するメールアドレスを入力してください', 'err'); return; }
+  const forgotLink = document.getElementById('a-forgot');
+  const original = forgotLink.textContent;
+  forgotLink.textContent = '送信中…';
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showAuthMsg('パスワード再設定用のメールを送りました。届いたメールのリンクから再設定してください。', 'ok');
+  } catch (e) {
+    showAuthMsg(translateError(e), 'err');
+  }
+  forgotLink.textContent = original;
+}
 async function handleSignup() {
   const name = document.getElementById('a-name').value.trim();
   const sport = document.getElementById('a-sport').value.trim();
-  const teamCode = document.getElementById('a-team').value.trim();
   const email = document.getElementById('a-email').value.trim();
   const password = document.getElementById('a-pass').value;
-  if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
+  let teamCode = '';
 
-  let birthdate = null, isMinor = false, guardianName = '', guardianEmail = '', guardianConsent = false;
   if (authRole === 'student') {
-    birthdate = document.getElementById('a-birthdate').value;
-    if (!birthdate) { showAuthMsg('生年月日を入力してください', 'err'); return; }
-    const age = calcAge(birthdate);
-    isMinor = age !== null && age < 18;
-    if (isMinor) {
-      guardianName = document.getElementById('a-guardian-name').value.trim();
-      guardianEmail = document.getElementById('a-guardian-email').value.trim();
-      guardianConsent = document.getElementById('a-guardian-consent').checked;
-      if (!guardianName || !guardianEmail || !guardianConsent) {
-        showAuthMsg('18歳未満のため、保護者の氏名・メールアドレスの入力と同意チェックが必須です', 'err');
-        return;
-      }
-    }
+    teamCode = document.getElementById('a-team').value.trim().toUpperCase();
+    if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
+  } else {
+    if (!name || !sport || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
   }
 
+  let birthdate = null;
+  if (authRole === 'student') {
+    const by = document.getElementById('a-birth-y').value;
+    const bm = document.getElementById('a-birth-m').value;
+    const bd = document.getElementById('a-birth-d').value;
+    if (!by || !bm || !bd) { showAuthMsg('生年月日を入力してください', 'err'); return; }
+    birthdate = `${by}-${String(bm).padStart(2, '0')}-${String(bd).padStart(2, '0')}`;
+  }
+
+  const submitBtn = document.getElementById('a-submit');
+  submitBtn.disabled = true;
+  let cred = null;
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    // Firestoreへの問い合わせ（招待コードの検証・発行）はセキュリティルール上
+    // 認証済みユーザーでないと permission-denied になるため、
+    // 先にFirebase Authenticationのアカウント作成を済ませる。
+    cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    if (authRole === 'student') {
+      const coachQ = query(collection(db, 'users'), where('teamCode', '==', teamCode), where('role', '==', 'coach'));
+      const coachSnaps = await getDocs(coachQ);
+      if (coachSnaps.empty) {
+        // 招待コードが無効だった場合、作成済みの認証アカウントをロールバック（削除）する
+        await cred.user.delete();
+        showAuthMsg('その招待コードに一致するコーチが見つかりませんでした。コードを確認してください。', 'err');
+        submitBtn.disabled = false;
+        return;
+      }
+    } else {
+      teamCode = await generateUniqueTeamCode();
+    }
+
     const profileData = { email, displayName: name, role: authRole, sport, teamCode, createdAt: Date.now() };
     if (authRole === 'student') {
-      Object.assign(profileData, { birthdate, isMinor, guardianName, guardianEmail, guardianConsent });
+      Object.assign(profileData, { birthdate });
     }
     await setDoc(doc(db, 'users', cred.user.uid), profileData);
     await sendEmailVerification(cred.user);
-    showAuthMsg('仮登録できました。届いた確認メールのリンクを開いてから、ログインしてください。', 'ok');
-  } catch (e) { showAuthMsg(translateError(e), 'err'); }
+    if (authRole === 'coach') {
+      showAuthMsg(`仮登録できました。あなたの招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。`, 'ok');
+    } else {
+      showAuthMsg('仮登録できました。届いた確認メールのリンクを開いてから、ログインしてください。', 'ok');
+    }
+  } catch (e) {
+    // setDoc等の後半処理で失敗した場合も、認証アカウントだけ残ってしまわないようロールバックを試みる
+    if (cred && cred.user) {
+      try { await cred.user.delete(); } catch (_) { /* 削除に失敗しても元のエラーを優先して表示 */ }
+    }
+    showAuthMsg(translateError(e), 'err');
+  }
+  submitBtn.disabled = false;
 }
 async function handleLogin() {
   const email = document.getElementById('a-email').value.trim();
@@ -457,11 +603,24 @@ onAuthStateChanged(auth, async (user) => {
         boot(user, profile);
         return;
       }
-      const hasSub = await checkActiveSubscription(user.uid);
-      if (hasSub) {
-        boot(user, profile);
+      if (profile.role === 'coach') {
+        const hasSub = await checkActiveSubscription(user.uid);
+        if (hasSub) { boot(user, profile); } else { renderPaywall(user, profile); }
       } else {
-        renderPaywall(user, profile);
+        // 生徒本人は課金せず、担当コーチの契約状況で判定する
+        const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
+        const coachSnaps = await getDocs(coachQ);
+        if (coachSnaps.empty) {
+          app.innerHTML = `<div class="err-screen">担当コーチが見つかりませんでした。招待コードをコーチに確認してください。</div>`;
+          return;
+        }
+        const coachDoc = coachSnaps.docs[0];
+        const coachActive = coachDoc.data().freeAccess === true || await checkActiveSubscription(coachDoc.id);
+        if (coachActive) {
+          boot(user, profile);
+        } else {
+          renderWaitingForCoach(profile);
+        }
       }
     } catch (e) {
       app.innerHTML = `<div class="err-screen">読み込みに失敗しました：${e.message}</div>`;
@@ -485,26 +644,48 @@ async function checkActiveSubscription(uid) {
   }
 }
 
-function renderPaywall(user, profile) {
-  const isCoach = profile.role === 'coach';
-  const priceId = isCoach ? PRICE_IDS.coach : PRICE_IDS.student;
-  const amount = isCoach ? '1,980' : '700';
-  const roleLabel = isCoach ? 'コーチプラン' : '生徒プラン';
+function renderWaitingForCoach(profile) {
   app.innerHTML = `
     <div class="pay-wrap"><div class="pay-box">
-      <div class="pay-title">GrowLogをはじめる</div>
-      <div class="pay-sub">${profile.displayName}さん、ご利用には月額プランへの加入が必要です</div>
-      <div class="pay-card">
-        <div class="pay-role">${roleLabel}</div>
-        <div class="pay-amount">¥${amount}<span>/ 月</span></div>
-        <button class="pay-btn" id="pay-btn">加入手続きに進む</button>
-        <div id="pay-msg"></div>
-      </div>
+      <div class="pay-title">Grow<span style="color:var(--rust)">Log</span>をはじめる</div>
+      <div class="pay-sub">${profile.displayName}さん、担当コーチがまだプランに加入していません。コーチが加入すると、そのまま使えるようになります。</div>
       <div class="pay-logout" id="pay-logout">ログアウト</div>
     </div></div>
   `;
   document.getElementById('pay-logout').onclick = () => signOut(auth);
-  document.getElementById('pay-btn').onclick = () => startCheckout(user.uid, priceId);
+}
+
+function renderPaywall(user, profile) {
+  const cards = COACH_PLANS.map(p => `
+    <div class="plan-opt" data-price="${p.priceId}">
+      <div class="plan-opt-label">${p.label}</div>
+      <div class="plan-opt-amount">¥${p.amount.toLocaleString()}<span>/ 月</span></div>
+      <div class="plan-opt-per">${p.max === Infinity ? '' : `生徒1人あたり 約¥${Math.round(p.amount / p.max)}`}</div>
+    </div>
+  `).join('');
+  app.innerHTML = `
+    <div class="pay-wrap"><div class="pay-box">
+      <div class="pay-title">Grow<span style="color:var(--rust)">Log</span>をはじめる</div>
+      <div class="pay-sub">${profile.displayName}さん、チームの人数に合わせてプランを選んでください</div>
+      <div class="plan-grid">${cards}</div>
+      <button class="pay-btn" id="pay-btn" disabled>プランを選んでください</button>
+      <div id="pay-msg"></div>
+      <div class="pay-logout" id="pay-logout">ログアウト</div>
+    </div></div>
+  `;
+  let selectedPrice = null;
+  document.querySelectorAll('.plan-opt').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('.plan-opt').forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      selectedPrice = el.dataset.price;
+      const btn = document.getElementById('pay-btn');
+      btn.disabled = false;
+      btn.textContent = '加入手続きに進む';
+    };
+  });
+  document.getElementById('pay-logout').onclick = () => signOut(auth);
+  document.getElementById('pay-btn').onclick = () => { if (selectedPrice) startCheckout(user.uid, selectedPrice); };
 }
 
 async function startCheckout(uid, priceId) {
@@ -574,7 +755,8 @@ async function boot(user, profile) {
     myName: profile.displayName,
     year: today.y, month: today.m,
     selected: dateKey(today.y, today.m, today.d),
-    entry: null, calExpanded: false,
+    entry: null, calExpanded: false, gameExpanded: false, remindActive: false,
+    videoTarget: { mode: 'self', uids: [] }, menuTarget: { mode: 'self', uids: [] },
   };
 
   render();
@@ -589,9 +771,12 @@ async function boot(user, profile) {
         <div class="head-sub">${isCoach ? '選手を選んでカレンダーから記録を確認・記入できます' : '練習の記録をつけよう'}</div>
       </div>
       <div class="wrap">
+        ${isCoach ? `<div class="invite-bar" id="invite-bar">招待コード：<span class="invite-code">${profile.teamCode}</span><button id="invite-copy">コピー</button></div>` : ''}
+        ${isCoach ? `<input class="ptab-search" id="ptab-search" placeholder="選手を検索">` : ''}
         ${isCoach ? `<div class="ptabs" id="ptabs"></div>` : ''}
         <div class="goal-card" id="goal-card"><div class="goal-loading">読み込み中…</div></div>
         <div class="cal" id="cal"></div>
+        <div class="seen-row" id="seen-row"></div>
         <div class="panel" id="panel"></div>
         <div class="switch-code" id="logout-link">ログアウト</div>
         <div class="portal-link" id="portal-link">プラン・支払い管理</div>
@@ -602,7 +787,25 @@ async function boot(user, profile) {
     document.getElementById('portal-link').onclick = () => openPortal();
     document.getElementById('contact-link').onclick = () => openContactModal(profile, state);
     document.getElementById('head-cal-btn').onclick = () => { state.calExpanded = !state.calExpanded; renderCalendar(); };
+    const inviteCopyBtn = document.getElementById('invite-copy');
+    if (inviteCopyBtn) {
+      inviteCopyBtn.onclick = () => {
+        navigator.clipboard.writeText(profile.teamCode).then(() => {
+          inviteCopyBtn.textContent = 'コピーしました';
+          setTimeout(() => { inviteCopyBtn.textContent = 'コピー'; }, 1500);
+        }).catch(() => {});
+      };
+    }
     if (isCoach) renderTabs();
+    const ptabSearch = document.getElementById('ptab-search');
+    if (ptabSearch) {
+      ptabSearch.oninput = () => {
+        const q = ptabSearch.value.trim();
+        document.querySelectorAll('#ptabs .ptab').forEach(btn => {
+          btn.style.display = btn.textContent.includes(q) ? '' : 'none';
+        });
+      };
+    }
     renderCalendar();
     await loadGoal();
     await loadEntry();
@@ -689,21 +892,23 @@ async function boot(user, profile) {
   }
 
   async function markUnreadDots(dateStrs) {
-    for (const dateStr of dateStrs) {
+    await Promise.all(dateStrs.map(async (dateStr) => {
       try {
-        const entryRes = await kvGet(`entry:${state.playerId}:${dateStr}`);
-        if (!entryRes || !entryRes.value) continue;
+        const [entryRes, lastReadEpoch] = await Promise.all([
+          kvGet(`entry:${state.playerId}:${dateStr}`),
+          getLastRead(state.playerId, dateStr, state.role),
+        ]);
+        if (!entryRes || !entryRes.value) return;
         const data = JSON.parse(entryRes.value);
-        if (!data.thread || !data.thread.length) continue;
+        if (!data.thread || !data.thread.length) return;
         const last = data.thread[data.thread.length - 1];
-        if (last.author === state.role) continue;
-        const lastReadEpoch = await getLastRead(state.playerId, dateStr, state.role);
+        if (last.author === state.role) return;
         if (last.tsRaw && last.tsRaw > lastReadEpoch) {
           const dotEl = document.querySelector(`[data-dot="${dateStr}"]`);
           if (dotEl) { dotEl.style.visibility = 'visible'; dotEl.classList.add('dot-unread'); }
         }
       } catch (e) { /* skip */ }
-    }
+    }));
   }
   async function getLastRead(playerId, date, role) {
     try {
@@ -778,60 +983,294 @@ async function boot(user, profile) {
     const panel = document.getElementById('panel');
     panel.innerHTML = `<div class="empty-hint">読み込み中…</div>`;
     const key = `entry:${state.playerId}:${state.selected}`;
+    const otherRole = state.role === 'coach' ? 'player' : 'coach';
+    const [entryRes, lastReadEpoch, remindRes, mySeenRes, otherSeenRes] = await Promise.all([
+      kvGet(key).catch(() => null),
+      getLastRead(state.playerId, state.selected, state.role),
+      !isCoach ? kvGet(`remind:${state.playerId}:${state.selected}`).catch(() => null) : Promise.resolve(null),
+      isCoach ? kvGet(`seen:${state.playerId}:${state.selected}:${state.role}`).catch(() => null) : Promise.resolve(null),
+      kvGet(`seen:${state.playerId}:${state.selected}:${otherRole}`).catch(() => null),
+    ]);
+    let data = null;
+    try { if (entryRes && entryRes.value) data = JSON.parse(entryRes.value); } catch (e) { data = null; }
+    if (!data) data = emptyEntry();
+    if (data.gameGood === undefined) data.gameGood = '';
+    if (data.gameIssue === undefined) data.gameIssue = '';
+    if (data.condition === undefined) data.condition = null;
+    if (data.weather === undefined) data.weather = null;
+    if (data.mind === undefined) data.mind = null;
+    if (data.skill === undefined) data.skill = null;
+    if (data.body === undefined) data.body = null;
+    if (data.goodComment === undefined) data.goodComment = '';
+    if (data.issueComment === undefined) data.issueComment = '';
+    if (data.gameGoodComment === undefined) data.gameGoodComment = '';
+    if (data.gameIssueComment === undefined) data.gameIssueComment = '';
+    state.entry = data;
+    state.lastReadEpoch = lastReadEpoch;
+    state.videoTarget = { mode: 'self', uids: [] };
+    state.menuTarget = { mode: 'self', uids: [] };
+    state.remindActive = !isCoach && !!(remindRes && remindRes.value);
+    state.mySeen = isCoach && !!(mySeenRes && mySeenRes.value);
+    state.otherSeenNotice = '';
+    if (otherSeenRes && otherSeenRes.value) {
+      const ts = parseInt(otherSeenRes.value, 10);
+      if (ts && ts > (lastReadEpoch || 0)) {
+        const who = state.role === 'coach' ? (TEAM.find(r => r.uid === state.playerId)?.name || '選手') : 'コーチ';
+        state.otherSeenNotice = `✓ ${who}が見たよと伝えました`;
+      }
+    }
+    renderPanel();
+    renderSeenRow();
+    setLastRead(state.playerId, state.selected, state.role);
+  }
+
+  function renderSeenRow() {
+    const row = document.getElementById('seen-row');
+    if (!row) return;
+    if (!isCoach) {
+      if (!state.otherSeenNotice) { row.style.display = 'none'; row.innerHTML = ''; return; }
+      row.style.display = '';
+      row.innerHTML = `<div><div class="seen-other-notice">${state.otherSeenNotice}</div></div>`;
+      return;
+    }
+    row.style.display = '';
+    row.innerHTML = `
+      <div class="seen-check ${state.mySeen ? 'checked' : ''}" id="seen-check">${state.mySeen ? '✓' : ''}</div>
+      <div><div class="seen-label">この記録を見たよ</div>${state.otherSeenNotice ? `<div class="seen-other-notice">${state.otherSeenNotice}</div>` : ''}</div>
+    `;
+    document.getElementById('seen-check').onclick = async () => {
+      state.mySeen = !state.mySeen;
+      const box = document.getElementById('seen-check');
+      box.classList.toggle('checked', state.mySeen);
+      box.textContent = state.mySeen ? '✓' : '';
+      try {
+        await kvSet(`seen:${state.playerId}:${state.selected}:${state.role}`, state.mySeen ? String(Date.now()) : '');
+      } catch (e) {}
+    };
+  }
+
+  function emptyEntry() {
+    return { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [], condition: null, weather: null, mind: null, skill: null, body: null, goodComment: '', issueComment: '', gameGoodComment: '', gameIssueComment: '' };
+  }
+  async function mergeIntoOtherEntry(uid, mutateFn) {
+    const key = `entry:${uid}:${state.selected}`;
     let data = null;
     try {
       const res = await kvGet(key);
       if (res && res.value) data = JSON.parse(res.value);
     } catch (e) { data = null; }
-    if (!data) data = { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [] };
-    if (data.gameGood === undefined) data.gameGood = '';
-    if (data.gameIssue === undefined) data.gameIssue = '';
-    state.entry = data;
-    state.lastReadEpoch = await getLastRead(state.playerId, state.selected, state.role);
-    renderPanel();
-    setLastRead(state.playerId, state.selected, state.role);
+    if (!data) data = emptyEntry();
+    if (!data.videos) data.videos = [];
+    mutateFn(data);
+    await kvSet(key, JSON.stringify(data));
+  }
+  function resolveTargetUids(target) {
+    if (target.mode === 'all') return TEAM.map(r => r.uid);
+    if (target.mode === 'pick') return [state.playerId, ...target.uids];
+    return [state.playerId];
+  }
+  async function distributeVideo(video) {
+    state.entry.videos.push(video);
+    await saveEntry();
+    if (isCoach) {
+      const others = resolveTargetUids(state.videoTarget).filter(uid => uid !== state.playerId);
+      for (const uid of others) {
+        await mergeIntoOtherEntry(uid, (data) => { data.videos.push({ ...video }); });
+      }
+    }
+  }
+  async function broadcastPracticeEnd() {
+    const now = String(Date.now());
+    for (const r of TEAM) {
+      await kvSet(`remind:${r.uid}:${state.selected}`, now);
+    }
+  }
+
+  const CONDITION_OPTS = [ { v: 3, icon: '😊', label: '絶好調' }, { v: 2, icon: '😐', label: '普通' }, { v: 1, icon: '😨', label: '不調' } ];
+  const WEATHER_OPTS = [ { v: 1, icon: '☀️', label: '晴れ' }, { v: 2, icon: '☁️', label: '曇り' }, { v: 3, icon: '☂️', label: '雨' } ];
+  function triSelectHtml(group, value, options) {
+    return `<div class="tri-row">${options.map(o => `
+      <div class="tri-opt ${value === o.v ? 'active' : ''}" data-group="${group}" data-value="${o.v}">
+        <span class="tri-opt-icon">${o.icon}</span><span class="tri-opt-text">${o.label}</span>
+      </div>`).join('')}</div>`;
+  }
+  function coachCommentHtml(id, value) {
+    const isCoach = state.role === 'coach';
+    return `<div class="coach-comment"><div class="coach-comment-label">💬 コーチコメント</div>
+      <textarea id="${id}" placeholder="${isCoach ? 'コメントを書こう' : 'コーチからのコメントがここに表示されます'}" ${isCoach ? '' : 'readonly'}>${escapeHtml(value)}</textarea>
+    </div>`;
+  }
+  function targetPickerHtml(prefix, target) {
+    const others = TEAM.filter(r => r.uid !== state.playerId);
+    return `<div class="send-target">
+      <div class="send-target-label">送信先</div>
+      <div class="send-target-opts">
+        <button type="button" class="send-target-opt ${target.mode === 'self' ? 'active' : ''}" data-prefix="${prefix}" data-mode="self">この子だけ</button>
+        <button type="button" class="send-target-opt ${target.mode === 'all' ? 'active' : ''}" data-prefix="${prefix}" data-mode="all">全員</button>
+        <button type="button" class="send-target-opt ${target.mode === 'pick' ? 'active' : ''}" data-prefix="${prefix}" data-mode="pick">人を指定</button>
+      </div>
+      ${target.mode === 'pick' ? `
+        <div class="send-target-picker">
+          <input class="send-target-search" data-prefix="${prefix}" placeholder="選手を検索">
+          <div class="send-target-list" data-prefix="${prefix}">
+            ${others.map(r => `
+              <label class="send-target-item"><input type="checkbox" data-prefix="${prefix}" data-uid="${r.uid}" ${target.uids.includes(r.uid) ? 'checked' : ''}> ${escapeHtml(r.name)}</label>
+            `).join('') || '<div class="thread-empty">他の選手がいません</div>'}
+          </div>
+        </div>
+      ` : ''}
+    </div>`;
   }
 
   function renderPanel() {
     const panel = document.getElementById('panel');
     const e = state.entry;
     panel.innerHTML = `
+      ${isCoach ? `<button class="practice-end-btn" id="practice-end-btn">📣 練習終了 → 選手全員に「書いてね」を送る</button>` : ''}
+      ${!isCoach && state.remindActive ? `<div class="remind-banner">📣 コーチが「書いてね」と伝えています</div>` : ''}
+      <div class="section-title">コンディション</div>
+      <div class="card">
+        <div class="tri-group"><div class="tri-group-label">体調</div>${triSelectHtml('condition', e.condition, CONDITION_OPTS)}</div>
+        <div class="tri-group"><div class="tri-group-label">天気</div>${triSelectHtml('weather', e.weather, WEATHER_OPTS)}</div>
+      </div>
       <div class="section-title">練習</div>
       <div class="card"><div class="card-label">練習メニュー <span class="save-status" id="save-status"></span></div>
-        <textarea id="f-menu" placeholder="今日やった練習内容を書こう">${escapeHtml(e.menu)}</textarea></div>
+        <textarea id="f-menu" placeholder="今日やった練習内容を書こう">${escapeHtml(e.menu)}</textarea>
+        ${isCoach ? `<div class="menu-send-row"><button class="menu-send-btn" id="menu-send-btn">この内容を送信</button><span class="menu-send-status" id="menu-send-status"></span></div>${targetPickerHtml('menu', state.menuTarget)}` : ''}</div>
       <div class="card good"><div class="card-label">◎ 良かった点</div>
-        <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea></div>
+        <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea>
+        ${coachCommentHtml('f-good-comment', e.goodComment)}</div>
       <div class="card issue"><div class="card-label">△ 改善点</div>
-        <textarea id="f-issue" placeholder="難しかったこと、次に直したいこと">${escapeHtml(e.issue)}</textarea></div>
-      <div class="section-title">試合・実戦形式</div>
+        <textarea id="f-issue" placeholder="難しかったこと、次に直したいこと">${escapeHtml(e.issue)}</textarea>
+        ${coachCommentHtml('f-issue-comment', e.issueComment)}</div>
+      <div class="section-title section-toggle ${state.gameExpanded ? 'expanded' : ''}" id="game-toggle">
+        <span>試合・実戦形式</span><span class="section-toggle-arrow">▶</span>
+      </div>
+      ${state.gameExpanded ? `
       <div class="card good"><div class="card-label">◎ 良かった点</div>
-        <textarea id="f-game-good" placeholder="試合や実戦形式で良かったこと">${escapeHtml(e.gameGood)}</textarea></div>
+        <textarea id="f-game-good" placeholder="試合や実戦形式で良かったこと">${escapeHtml(e.gameGood)}</textarea>
+        ${coachCommentHtml('f-game-good-comment', e.gameGoodComment)}</div>
       <div class="card issue"><div class="card-label">△ 改善点</div>
-        <textarea id="f-game-issue" placeholder="試合や実戦形式での課題">${escapeHtml(e.gameIssue)}</textarea></div>
+        <textarea id="f-game-issue" placeholder="試合や実戦形式での課題">${escapeHtml(e.gameIssue)}</textarea>
+        ${coachCommentHtml('f-game-issue-comment', e.gameIssueComment)}</div>
+      ` : ''}
+      <div class="section-title">心技体評価</div>
+      <div class="card">
+        <div class="tri-group"><div class="tri-group-label">心</div>${triSelectHtml('mind', e.mind, CONDITION_OPTS)}</div>
+        <div class="tri-group"><div class="tri-group-label">技</div>${triSelectHtml('skill', e.skill, CONDITION_OPTS)}</div>
+        <div class="tri-group"><div class="tri-group-label">体</div>${triSelectHtml('body', e.body, CONDITION_OPTS)}</div>
+      </div>
       <div class="card"><div class="card-label">おすすめ動画</div>
         <div class="video-list" id="video-list">
           ${e.videos.map((v, i) => `<div class="video-item"><a href="${escapeAttr(v.url)}" target="_blank" rel="noopener">${escapeHtml(v.title || v.url)}</a><button data-i="${i}" class="video-del">✕</button></div>`).join('') || '<div class="thread-empty">まだ動画はありません</div>'}
         </div>
         <div class="video-add"><input id="v-title" placeholder="タイトル（任意）"><input id="v-url" placeholder="URLを貼り付け"><button id="v-add">追加</button></div>
+        <div class="video-divider">または</div>
+        <div class="video-drop" id="v-drop">
+          <span class="v-drop-icon">🎥</span>
+          <div class="v-drop-main">タップして動画を選ぶ</div>
+          <div class="v-drop-sub">またはドラッグ＆ドロップ（最大300MB）</div>
+        </div>
+        <input type="file" id="v-file" accept="video/*">
+        <div class="video-filename" id="v-filename"></div>
+        <button class="video-upload-btn" id="v-upload-btn" disabled>この動画を追加</button>
+        <div class="video-board" id="v-board">
+          <div class="video-track"><div class="video-fill" id="v-fill"></div></div>
+          <div class="video-status" id="v-status">準備中…</div>
+        </div>
+        <div class="video-err" id="v-err"></div>
+        ${isCoach ? targetPickerHtml('video', state.videoTarget) : ''}
       </div>
       <div class="thread-card">
         <div class="thread-title">やり取り</div>
+        ${threadNoticeHtml(e)}
         <div class="thread" id="thread">${e.thread.length ? e.thread.map(m => threadMsgHtml(m)).join('') : '<div class="thread-empty">まだやり取りはありません</div>'}</div>
         <div class="thread-input"><textarea id="t-input" placeholder="わからないことがあったら書いてみよう"></textarea><button id="t-send">送信</button></div>
-        <div id="line-notify"></div>
       </div>
     `;
-    document.getElementById('v-add').onclick = () => {
+    document.getElementById('v-add').onclick = async () => {
       const title = document.getElementById('v-title').value.trim();
       const url = document.getElementById('v-url').value.trim();
       if (!url) return;
-      state.entry.videos.push({ title, url });
+      await distributeVideo({ title, url });
       renderPanel();
     };
-    panel.querySelectorAll('.video-del').forEach(btn => { btn.onclick = () => { state.entry.videos.splice(parseInt(btn.dataset.i), 1); renderPanel(); }; });
-    ['f-menu', 'f-good', 'f-issue', 'f-game-good', 'f-game-issue'].forEach(id => {
+    setupVideoUpload();
+    document.getElementById('game-toggle').onclick = () => { state.gameExpanded = !state.gameExpanded; renderPanel(); };
+    panel.querySelectorAll('.video-del').forEach(btn => { btn.onclick = () => { state.entry.videos.splice(parseInt(btn.dataset.i), 1); renderPanel(); scheduleAutoSave(); }; });
+    panel.querySelectorAll('.tri-opt').forEach(opt => {
+      opt.onclick = () => {
+        state.entry[opt.dataset.group] = parseInt(opt.dataset.value, 10);
+        renderPanel();
+        scheduleAutoSave();
+      };
+    });
+    const practiceEndBtn = document.getElementById('practice-end-btn');
+    if (practiceEndBtn) {
+      practiceEndBtn.onclick = async () => {
+        practiceEndBtn.disabled = true;
+        practiceEndBtn.textContent = '送信中…';
+        try {
+          await broadcastPracticeEnd();
+          practiceEndBtn.textContent = '✓ 全員に送りました';
+          practiceEndBtn.classList.add('sent');
+        } catch (e) {
+          practiceEndBtn.textContent = '送信に失敗しました。もう一度お試しください。';
+          practiceEndBtn.disabled = false;
+        }
+      };
+    }
+    const menuSendBtn = document.getElementById('menu-send-btn');
+    if (menuSendBtn) {
+      menuSendBtn.onclick = async () => {
+        const text = document.getElementById('f-menu').value;
+        state.entry.menu = text;
+        const status = document.getElementById('menu-send-status');
+        menuSendBtn.disabled = true;
+        if (status) status.textContent = '送信中…';
+        try {
+          await saveEntry();
+          const others = resolveTargetUids(state.menuTarget).filter(uid => uid !== state.playerId);
+          for (const uid of others) {
+            await mergeIntoOtherEntry(uid, (data) => { data.menu = text; });
+          }
+          if (status) status.textContent = '送信しました';
+        } catch (e) {
+          if (status) status.textContent = '送信に失敗しました';
+        }
+        menuSendBtn.disabled = false;
+        setTimeout(() => { if (status) status.textContent = ''; }, 2500);
+      };
+    }
+    panel.querySelectorAll('.send-target-opt').forEach(btn => {
+      btn.onclick = () => {
+        const target = btn.dataset.prefix === 'video' ? state.videoTarget : state.menuTarget;
+        target.mode = btn.dataset.mode;
+        renderPanel();
+      };
+    });
+    panel.querySelectorAll('.send-target-list input[type="checkbox"]').forEach(cb => {
+      cb.onchange = () => {
+        const target = cb.dataset.prefix === 'video' ? state.videoTarget : state.menuTarget;
+        if (cb.checked) { if (!target.uids.includes(cb.dataset.uid)) target.uids.push(cb.dataset.uid); }
+        else { target.uids = target.uids.filter(u => u !== cb.dataset.uid); }
+      };
+    });
+    panel.querySelectorAll('.send-target-search').forEach(inp => {
+      inp.oninput = () => {
+        const list = panel.querySelector(`.send-target-list[data-prefix="${inp.dataset.prefix}"]`);
+        if (!list) return;
+        const q = inp.value.trim();
+        list.querySelectorAll('.send-target-item').forEach(item => {
+          item.style.display = item.textContent.includes(q) ? '' : 'none';
+        });
+      };
+    });
+    ['f-menu', 'f-good', 'f-good-comment', 'f-issue', 'f-issue-comment', 'f-game-good', 'f-game-good-comment', 'f-game-issue', 'f-game-issue-comment'].forEach(id => {
       const el = document.getElementById(id);
+      if (!el) return;
       autosizeTextarea(el);
+      if (el.readOnly) return;
       el.addEventListener('input', () => { autosizeTextarea(el); scheduleAutoSave(); });
     });
     document.getElementById('t-send').onclick = () => sendThread();
@@ -845,6 +1284,106 @@ async function boot(user, profile) {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => { saveEntry(); }, 700);
   }
+  function setupVideoUpload() {
+    const drop = document.getElementById('v-drop');
+    const fileInput = document.getElementById('v-file');
+    const filenameEl = document.getElementById('v-filename');
+    const uploadBtn = document.getElementById('v-upload-btn');
+    const board = document.getElementById('v-board');
+    const fill = document.getElementById('v-fill');
+    const statusTxt = document.getElementById('v-status');
+    const errorBox = document.getElementById('v-err');
+    const titleInput = document.getElementById('v-title');
+    if (!drop) return;
+    let selectedFile = null;
+
+    drop.addEventListener('click', () => fileInput.click());
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('drag');
+      if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files.length) selectFile(fileInput.files[0]); });
+
+    function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('show'); }
+    function hideError() { errorBox.classList.remove('show'); }
+
+    function selectFile(file) {
+      hideError();
+      if (!file.type.startsWith('video/')) { showError('動画ファイルを選んでください。'); return; }
+      if (file.size > 300 * 1024 * 1024) { showError('ファイルサイズが300MBを超えています。'); return; }
+      selectedFile = file;
+      filenameEl.textContent = `${file.name}（${(file.size / 1024 / 1024).toFixed(1)}MB）`;
+      uploadBtn.disabled = false;
+    }
+
+    uploadBtn.addEventListener('click', () => { if (selectedFile) handleUpload(selectedFile); });
+
+    async function handleUpload(file) {
+      hideError();
+      uploadBtn.disabled = true;
+      board.classList.add('show');
+      fill.style.width = '0%';
+      statusTxt.textContent = 'アップロード準備中…';
+      try {
+        const url = await uploadToCloudinary(file, (pct) => {
+          fill.style.width = pct + '%';
+          statusTxt.textContent = `アップロード中… ${pct}%`;
+        });
+        statusTxt.textContent = '追加中…';
+        await distributeVideo({ title: titleInput.value.trim(), url });
+        statusTxt.textContent = '追加しました！';
+        fill.style.width = '100%';
+        selectedFile = null;
+        setTimeout(() => { board.classList.remove('show'); renderPanel(); }, 900);
+      } catch (err) {
+        console.error(err);
+        board.classList.remove('show');
+        uploadBtn.disabled = false;
+        showError('失敗しました。もう一度お試しください。（' + (err.message || err) + '）');
+      }
+    }
+
+    function uploadToCloudinary(file, onProgress) {
+      return new Promise((resolve, reject) => {
+        const CLOUD_NAME = 'wv2tbbjw';
+        const UPLOAD_PRESET = 'jjthlcy0';
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_PRESET);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, true);
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              if (data.secure_url) resolve(data.secure_url);
+              else reject(new Error(data.error?.message || '不明なエラー'));
+            } catch (e) { reject(new Error('レスポンスの解析に失敗しました')); }
+          } else {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              reject(new Error(data.error?.message || ('HTTP ' + xhr.status)));
+            } catch (e) { reject(new Error('HTTP ' + xhr.status)); }
+          }
+        };
+        xhr.onerror = () => reject(new Error('ネットワークエラー'));
+        xhr.send(formData);
+      });
+    }
+  }
+
+  function threadNoticeHtml(e) {
+    if (!e.thread || !e.thread.length) return '';
+    const last = e.thread[e.thread.length - 1];
+    if (last.author === state.role) return '';
+    if (!last.tsRaw || last.tsRaw <= (state.lastReadEpoch || 0)) return '';
+    const who = state.role === 'coach' ? (last.authorName || '選手') : 'コーチ';
+    return `<div class="thread-notice">🔔 ${escapeHtml(who)}が新しくやりとりに記入しました</div>`;
+  }
   function threadMsgHtml(m) {
     const mine = m.author === state.role;
     const label = m.authorName || (m.author === 'coach' ? 'コーチ' : '本人');
@@ -855,8 +1394,18 @@ async function boot(user, profile) {
     state.entry.menu = document.getElementById('f-menu').value;
     state.entry.good = document.getElementById('f-good').value;
     state.entry.issue = document.getElementById('f-issue').value;
-    state.entry.gameGood = document.getElementById('f-game-good').value;
-    state.entry.gameIssue = document.getElementById('f-game-issue').value;
+    const gameGoodEl = document.getElementById('f-game-good');
+    const gameIssueEl = document.getElementById('f-game-issue');
+    if (gameGoodEl) state.entry.gameGood = gameGoodEl.value;
+    if (gameIssueEl) state.entry.gameIssue = gameIssueEl.value;
+    if (state.role === 'coach') {
+      state.entry.goodComment = document.getElementById('f-good-comment').value;
+      state.entry.issueComment = document.getElementById('f-issue-comment').value;
+      const gameGoodCommentEl = document.getElementById('f-game-good-comment');
+      const gameIssueCommentEl = document.getElementById('f-game-issue-comment');
+      if (gameGoodCommentEl) state.entry.gameGoodComment = gameGoodCommentEl.value;
+      if (gameIssueCommentEl) state.entry.gameIssueComment = gameIssueCommentEl.value;
+    }
     const key = `entry:${state.playerId}:${state.selected}`;
     const status = document.getElementById('save-status');
     if (status) status.textContent = '保存中…';
@@ -865,6 +1414,12 @@ async function boot(user, profile) {
       if (status) status.textContent = '保存しました';
       const dotEl = document.querySelector(`[data-dot="${state.selected}"]`);
       if (dotEl) dotEl.style.visibility = 'visible';
+      if (!isCoach && state.remindActive) {
+        state.remindActive = false;
+        kvSet(`remind:${state.playerId}:${state.selected}`, '').catch(() => {});
+        const banner = document.querySelector('.remind-banner');
+        if (banner) banner.remove();
+      }
     } catch (e) { if (status) status.textContent = '保存に失敗しました'; }
   }
   async function sendThread() {
@@ -878,16 +1433,6 @@ async function boot(user, profile) {
     await saveEntry();
     await setLastRead(state.playerId, state.selected, state.role);
     renderPanel();
-    showLineNotify();
-  }
-  function showLineNotify() {
-    const box = document.getElementById('line-notify');
-    if (!box) return;
-    const player = TEAM.find(r => r.uid === state.playerId);
-    const who = state.role === 'coach' ? (player ? player.name + 'さん' : '選手') : 'コーチ';
-    const msg = `GrowLog（${player ? player.name + 'さん・' : ''}${state.selected}）に書き込みしたよ。見てね！\n${SITE_URL}`;
-    const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(msg)}`;
-    box.innerHTML = `<a class="line-btn" href="${lineUrl}" target="_blank" rel="noopener">${who}にLINEで知らせる</a>`;
   }
   function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function escapeAttr(s) { return escapeHtml(s); }
