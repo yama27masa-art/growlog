@@ -2,8 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>GrowLog | 競技を問わない練習日記</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2A45">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GrowLog">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -16,19 +24,19 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', s
 .disp { font-family: 'Zen Kaku Gothic New', sans-serif; }
 .mono { font-family: 'DM Mono', monospace; }
 a { color: inherit; text-decoration: none; }
-.wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 40px; }
 
 /* header */
-.topbar { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: calc(22px + env(safe-area-inset-top)) 0 22px; }
 .logo { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 18px; color: var(--navy); }
 .logo span { color: var(--rust); }
 .topbar nav { display: flex; gap: 22px; font-size: 13px; color: var(--text2); }
 
 /* hero */
-.hero { padding: 60px 0 50px; border-bottom: 3px solid var(--rust); }
-.hero-eyebrow { font-size: 12.5px; color: var(--rust); font-weight: 700; margin-bottom: 14px; }
+.hero { padding-top: 60px; padding-bottom: 50px; border-bottom: 3px solid var(--rust); }
+.hero-eyebrow { font-size: 14px; color: var(--rust); font-weight: 700; margin-bottom: 14px; }
 .hero h1 { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 40px; line-height: 1.4; color: var(--navy); letter-spacing: 0.01em; max-width: 11em; }
-.hero p { margin-top: 20px; font-size: 15px; color: var(--text2); max-width: 32em; }
+.hero p { margin-top: 20px; font-size: 16px; color: var(--text2); max-width: 32em; }
 .hero-cta { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; }
 .btn { display: inline-block; padding: 13px 22px; border-radius: 8px; font-size: 14px; font-weight: 700; }
 .btn-primary { background: var(--navy); color: #fff; }
@@ -38,16 +46,16 @@ a { color: inherit; text-decoration: none; }
 .stitch { height: 1px; background-image: repeating-linear-gradient(90deg, var(--border2) 0 8px, transparent 8px 14px); margin: 0 0 60px; }
 
 /* who */
-.who { padding: 10px 0 50px; }
+.who { padding-top: 10px; padding-bottom: 50px; }
 .section-label { font-size: 12px; color: var(--text3); font-weight: 700; margin-bottom: 10px; }
-.who h2 { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 700; font-size: 22px; color: var(--navy); margin-bottom: 22px; max-width: 14em; }
+.who h2 { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 700; font-size: 24px; color: var(--navy); margin-bottom: 22px; max-width: 14em; }
 .who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .who-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
 .who-card .role { font-size: 13px; font-weight: 700; color: var(--rust); margin-bottom: 8px; }
-.who-card p { font-size: 13.5px; color: var(--text2); }
+.who-card p { font-size: 15px; color: var(--text2); }
 
 /* features */
-.features { padding: 10px 0 60px; }
+.features { padding-top: 10px; padding-bottom: 60px; }
 .feature-row { display: flex; gap: 22px; padding: 26px 0; border-top: 1px solid var(--border); align-items: baseline; }
 .feature-row:last-child { border-bottom: 1px solid var(--border); }
 .feature-num { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text3); flex-shrink: 0; width: 2em; }
@@ -55,7 +63,7 @@ a { color: inherit; text-decoration: none; }
 .feature-body p { font-size: 13.5px; color: var(--text2); max-width: 34em; }
 
 /* pricing */
-.pricing { padding: 10px 0 60px; }
+.pricing { padding-top: 10px; padding-bottom: 60px; }
 .pricing h2 { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 700; font-size: 22px; color: var(--navy); margin-bottom: 22px; }
 .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .price-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
@@ -64,6 +72,12 @@ a { color: inherit; text-decoration: none; }
 .price-card .amount span { font-size: 13px; color: var(--text3); margin-left: 4px; }
 .price-card ul { margin-top: 16px; padding-left: 1.1em; }
 .price-card li { font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+.price-table { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.price-row { display: grid; grid-template-columns: 1.6fr 1fr 1fr; padding: 12px 16px; font-size: 13.5px; color: var(--text); border-top: 1px solid var(--border); align-items: center; }
+.price-row:first-child { border-top: none; }
+.price-row-head { background: var(--surface2); font-size: 11.5px; font-weight: 700; color: var(--text3); }
+.price-row div:nth-child(2) { font-family: 'DM Mono', monospace; font-weight: 700; color: var(--navy); }
+.price-row div:nth-child(3) { font-size: 12px; color: var(--text3); }
 .price-note { margin-top: 14px; font-size: 12px; color: var(--text3); }
 
 /* footer */
@@ -73,12 +87,14 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 50px; }
 
 @media (max-width: 640px) {
   .hero h1 { font-size: 30px; }
+  .hero p { font-size: 14.5px; }
   .who-grid, .price-grid { grid-template-columns: 1fr; }
   .feature-row { gap: 14px; }
 }
+body.auth-checking { visibility: hidden; }
 </style>
 </head>
-<body>
+<body class="auth-checking">
 
 <div class="wrap">
   <div class="topbar">
@@ -93,7 +109,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 50px; }
 <div class="wrap hero">
   <div class="hero-eyebrow">競技を問わない練習日記</div>
   <h1>今日の練習を、<br>次の一歩に変える。</h1>
-  <p>野球でもサッカーでもバスケでも。選手が書いた今日の練習・目標・振り返りに、コーチがその場でコメントできる。それだけのシンプルな日記アプリです。</p>
+  <p>野球でもサッカーでもバスケでも。<br>選手が書いた今日の練習・目標・振り返りに、<br>コーチがその場でコメントできる。<br>それだけのシンプルな日記アプリです。</p>
   <div class="hero-cta">
     <a class="btn btn-primary" href="growlog-v2.html">はじめる</a>
     <a class="btn btn-outline" href="#pricing">料金を見る</a>
@@ -106,15 +122,15 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 50px; }
 
 <div class="wrap who">
   <div class="section-label">FOR</div>
-  <h2>選手とコーチ、両方のためのツール</h2>
+  <h2>選手とコーチ、<br>両方のためのツール</h2>
   <div class="who-grid">
     <div class="who-card">
       <div class="role">選手・生徒</div>
-      <p>その日の練習内容と、良かった点・改善点を書くだけ。目標も同じ画面でいつでも見返せます。</p>
+      <p>その日の練習内容と、<br>良かった点・改善点を書くだけ。<br>目標も同じ画面でいつでも見返せます。</p>
     </div>
     <div class="who-card">
       <div class="role">コーチ・指導者</div>
-      <p>担当する選手を一覧で切り替えながら、日記にコメントを返せます。指導のためのやり取りを一箇所に。</p>
+      <p>担当する選手を一覧で切り替えながら、<br>日記にコメントを返せます。<br>指導のためのやり取りを一箇所に。</p>
     </div>
   </div>
 </div>
@@ -125,21 +141,21 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 50px; }
     <div class="feature-num">01</div>
     <div class="feature-body">
       <h3>目標とやることリスト</h3>
-      <p>今の目標と、そのためにやることをいつでも編集できます。カレンダーの上に固定表示されるので、練習を書くたびに見返せます。</p>
+      <p>今の目標と、そのためにやることをいつでも<br>編集できます。カレンダーの上に固定表示<br>されるので、練習を書くたびに見返せます。</p>
     </div>
   </div>
   <div class="feature-row">
     <div class="feature-num">02</div>
     <div class="feature-body">
       <h3>練習・試合の記録</h3>
-      <p>練習メニューと良かった点・改善点、試合や実戦形式での振り返りを日付ごとに記録。カレンダーから過去の記録もすぐに開けます。</p>
+      <p>練習メニューと良かった点・改善点、<br>試合や実戦形式の振り返りを<br>日付ごとに記録できます。<br>カレンダーからいつでも見返せます。</p>
     </div>
   </div>
   <div class="feature-row">
     <div class="feature-num">03</div>
     <div class="feature-body">
       <h3>コーチとのやり取り</h3>
-      <p>それぞれの日の記録に対して、コーチと選手がコメントをやり取りできます。書き込みがあったらLINEで知らせることもできます。</p>
+      <p>それぞれの日の記録に対して、コーチと選手がコメントをやり取りできます。新しい書き込みがあると、アプリ内の通知でお互いにすぐ気づけます。</p>
     </div>
   </div>
 </div>
@@ -147,27 +163,18 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 50px; }
 <div class="wrap pricing" id="pricing">
   <div class="section-label">PRICING</div>
   <h2>料金</h2>
-  <div class="price-grid">
-    <div class="price-card">
-      <div class="role">生徒プラン</div>
-      <div class="amount">¥700<span>/ 月</span></div>
-      <ul>
-        <li>練習・試合の記録</li>
-        <li>目標管理</li>
-        <li>コーチとのやり取り</li>
-      </ul>
+  <p style="font-size:13.5px; color:var(--text2); margin-bottom:20px;">お支払いはコーチのみ。人数に応じたプランを選ぶだけで、選手・生徒は無料で使えます。</p>
+  <div class="price-table">
+    <div class="price-row price-row-head">
+      <div>人数</div><div>月額</div><div>生徒1人あたり</div>
     </div>
-    <div class="price-card">
-      <div class="role">コーチプラン</div>
-      <div class="amount">¥1,980<span>/ 月</span></div>
-      <ul>
-        <li>担当選手の記録の閲覧・コメント</li>
-        <li>選手ごとの切り替え表示</li>
-        <li>同じチームの他コーチとの共有</li>
-      </ul>
-    </div>
+    <div class="price-row"><div>〜5名</div><div>¥2,980</div><div>約¥596</div></div>
+    <div class="price-row"><div>〜10名</div><div>¥4,980</div><div>約¥498</div></div>
+    <div class="price-row"><div>〜20名</div><div>¥8,800</div><div>約¥440</div></div>
+    <div class="price-row"><div>〜30名</div><div>¥12,000</div><div>約¥400</div></div>
+    <div class="price-row"><div>〜50名</div><div>¥18,000</div><div>約¥360</div></div>
+    <div class="price-row"><div>51名以上（上限なし）</div><div>¥25,000</div><div>−</div></div>
   </div>
-  <div class="price-note">18歳未満の生徒会員は、保護者の登録が必須です。詳しくは利用規約をご覧ください。</div>
 </div>
 
 <div class="wrap">
@@ -175,11 +182,50 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 50px; }
     <div class="footer-links">
       <a href="terms.html">利用規約</a>
       <a href="privacy.html">プライバシーポリシー</a>
-      <a href="#" id="contact-link-lp">お問い合わせ（準備中）</a>
+      <a href="contact.html">お問い合わせ</a>
     </div>
     <div class="footer-name">運営：GrowLog</div>
   </footer>
 </div>
 
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, initializeAuth, inMemoryPersistence, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDkhejPJk0Nu90dgbsbbhnUWgCHc0mTawM",
+    authDomain: "yakyu-nikki.firebaseapp.com",
+    projectId: "yakyu-nikki",
+    storageBucket: "yakyu-nikki.firebasestorage.app",
+    messagingSenderId: "522594099909",
+    appId: "1:522594099909:web:17fcfb6f96580d6c1486ac"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  // growlog-v2.html と同じ理由（CapacitorのWebViewでIndexedDB永続化がハングする問題）で、
+  // ネイティブアプリ内では inMemoryPersistence を使う。
+  const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const auth = isNativeApp
+    ? initializeAuth(fbApp, { persistence: inMemoryPersistence })
+    : getAuth(fbApp);
+
+  // 万一Firebaseの応答が遅い・失敗した場合でも、真っ白なまま止まらないようにする保険
+  const revealTimer = setTimeout(() => document.body.classList.remove('auth-checking'), 1800);
+
+  onAuthStateChanged(auth, (user) => {
+    clearTimeout(revealTimer);
+    if (user && user.emailVerified) {
+      location.replace('growlog-v2.html');
+    } else {
+      document.body.classList.remove('auth-checking');
+    }
+  });
+</script>
 </body>
 </html>
