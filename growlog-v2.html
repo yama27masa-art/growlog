@@ -430,6 +430,11 @@ const TERMS_URL = LEGAL_BASE_URL + 'terms.html';
 const PRIVACY_URL = LEGAL_BASE_URL + 'privacy.html';
 const TOKUSHO_URL = LEGAL_BASE_URL + 'tokushoho.html';
 
+// ── アプリ版（iOS/Android）の課金方針 ──
+// ストア審査対策として、アプリ版では料金表示・購入ボタン・支払い管理への導線を一切出さない。
+// 有料プランの契約・解約はWeb版でのみ行う（アプリはWebで契約したアカウントでログインして使う）。
+const RECHECK_LABEL = isNativeApp ? '契約状況を更新する' : '決済が終わったら：契約状況を更新する';
+
 function openExternal(url) {
   // アプリ版：自分以外のドメインへ移動すると、Capacitorが自動で外部ブラウザ（Safari/Chrome）で開く
   // Web版：新しいタブで開く
@@ -1080,18 +1085,24 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       ` : `
       <div class="removed-banner">
         <div class="removed-banner-title">現在、チームに所属していません</div>
+        ${isNativeApp ? `
+        <div class="removed-banner-text">今までの記録はいつでも閲覧できます。新しいチームに参加すると、また記録を書けるようになります。</div>
+        ` : `
         <div class="removed-banner-text">今までの記録はいつでも閲覧できます。新しく記録を書くには、月300円のプランが必要です。</div>
         <button class="removed-reactivate-btn" id="removed-reactivate-btn">月300円で記入を再開する</button>
         <div class="pay-terms-note">月額300円（税込）・毎月自動更新です。「プラン・支払い管理」からいつでも解約でき、解約後も契約期間の終わりまでは使えます。</div>
         <div id="removed-reactivate-msg"></div>
+        `}
         <div class="removed-refresh-row">
-          <button class="removed-refresh-btn" id="removed-refresh-btn">決済が終わったら：契約状況を更新する</button>
+          <button class="removed-refresh-btn" id="removed-refresh-btn">${RECHECK_LABEL}</button>
           <div class="removed-refresh-hint" id="removed-refresh-hint"></div>
         </div>
       </div>
       <div class="removed-banner">
         <div class="removed-banner-title">新しいチームに参加する</div>
-        <div class="removed-banner-text">新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると月300円のプランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。</div>
+        <div class="removed-banner-text">${isNativeApp
+          ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
+          : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると月300円のプランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
         <div class="removed-join-row">
           <input class="modal-select" id="removed-join-code" placeholder="招待コード">
           <button class="menu-send-btn" id="removed-join-btn">参加する</button>
@@ -1202,10 +1213,10 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
           refreshBtn.textContent = 'まだ反映されていません（もう一度お試しください）';
           if (hint) hint.textContent = '反映まで少し時間がかかることがあります。それでも変わらない場合は、一度ログアウトしてログインし直してみてください。';
         }
-        setTimeout(() => { refreshBtn.textContent = '決済が終わったら：契約状況を更新する'; }, 4000);
+        setTimeout(() => { refreshBtn.textContent = RECHECK_LABEL; }, 4000);
       } catch (e) {
         refreshBtn.disabled = false;
-        refreshBtn.textContent = '決済が終わったら：契約状況を更新する';
+        refreshBtn.textContent = RECHECK_LABEL;
       }
     };
   }
@@ -1332,7 +1343,57 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   await renderDetail();
 }
 
+// アプリ版：料金・購入ボタン・外部サイトへの案内を出さない「プランが有効になっていません」画面
+function renderNativeNoPlanScreen(user, profile) {
+  app.innerHTML = `
+    <div class="pay-wrap"><div class="pay-box">
+      <div class="pay-title">Self<span class="plus-mark"></span></div>
+      <div class="pay-sub">${escapeHtml(profile.displayName)}さん、このアカウントでは現在、ご利用いただけるプランが有効になっていません。</div>
+      <div class="pay-terms-note">プランが有効になっている場合は、下のボタンで状況を更新してください。</div>
+      <button class="pay-btn" id="native-recheck-btn">${RECHECK_LABEL}</button>
+      <div id="pay-msg"></div>
+      <div class="pay-logout" id="pay-logout">ログアウト</div>
+      <div class="pay-logout" id="pay-contact">お問い合わせ</div>
+      ${legalLinksHtml()}
+      <div class="delete-account-link" id="delete-account-link">アカウントを削除</div>
+    </div></div>
+  `;
+  wireLegalLinks(app);
+  document.getElementById('pay-logout').onclick = () => signOut(auth);
+  document.getElementById('pay-contact').onclick = () => openContactModal(profile, {});
+  document.getElementById('delete-account-link').onclick = () => openDeleteAccountModal(profile);
+  const btn = document.getElementById('native-recheck-btn');
+  btn.onclick = async () => {
+    const msg = document.getElementById('pay-msg');
+    msg.innerHTML = '';
+    btn.disabled = true;
+    btn.textContent = '確認中…';
+    try {
+      // チーム単位の契約：同じチームのコーチの誰か1人でも有効ならOK（通常のログイン時と同じ判定）
+      const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
+      const coachSnaps = await getDocs(coachQ);
+      let teamActive = false;
+      let checkFailed = false;
+      for (const d of coachSnaps.docs) {
+        if (d.data().freeAccess === true) { teamActive = true; break; }
+        const result = await checkActiveSubscription(d.id);
+        if (result === true) { teamActive = true; break; }
+        if (result === null) checkFailed = true;
+      }
+      if (teamActive) { boot(user, profile); return; }
+      msg.innerHTML = checkFailed
+        ? `<div class="pay-msg err">通信環境の問題で確認できませんでした。電波の良い場所でもう一度お試しください。</div>`
+        : `<div class="pay-msg err">まだ有効なプランが確認できません。反映まで少し時間がかかることがあります。</div>`;
+    } catch (e) {
+      msg.innerHTML = `<div class="pay-msg err">確認できませんでした。もう一度お試しください。</div>`;
+    }
+    btn.disabled = false;
+    btn.textContent = RECHECK_LABEL;
+  };
+}
+
 function renderPaywall(user, profile) {
+  if (isNativeApp) { renderNativeNoPlanScreen(user, profile); return; }
   const cards = COACH_PLANS.map(p => `
     <div class="plan-opt" data-price="${p.priceId}">
       <div class="plan-opt-label">${p.label}</div>
@@ -1530,7 +1591,7 @@ async function boot(user, profile) {
         <div class="footer-links">
           <div class="switch-code" id="settings-link">設定</div>
           <div class="switch-code" id="logout-link">ログアウト</div>
-          <div class="portal-link" id="portal-link">プラン・支払い管理</div>
+          ${isNativeApp ? '' : '<div class="portal-link" id="portal-link">プラン・支払い管理</div>'}
           <div class="contact-link" id="contact-link">お問い合わせ</div>
         </div>
         ${legalLinksHtml()}
@@ -1538,7 +1599,8 @@ async function boot(user, profile) {
     `;
     document.getElementById('settings-link').onclick = () => openSettingsModal();
     document.getElementById('logout-link').onclick = () => signOut(auth);
-    document.getElementById('portal-link').onclick = () => openPortal();
+    const portalLinkEl = document.getElementById('portal-link');
+    if (portalLinkEl) portalLinkEl.onclick = () => openPortal();
     document.getElementById('contact-link').onclick = () => openContactModal(profile, state);
     wireLegalLinks(app);
     const calBtn = document.getElementById('head-cal-btn');
@@ -2303,7 +2365,9 @@ async function boot(user, profile) {
         ${!isCoach && !profile.teamCode ? `
           <div class="modal-field">
             <div class="modal-label">チームに参加する</div>
-            <div class="auth-hint" style="margin-bottom:8px;">新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると月300円のプランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。</div>
+            <div class="auth-hint" style="margin-bottom:8px;">${isNativeApp
+              ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
+              : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると月300円のプランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。'}</div>
             <div class="removed-join-row">
               <input class="modal-select" id="settings-join-code" placeholder="招待コード">
               <button class="menu-send-btn" id="settings-join-btn">参加する</button>
