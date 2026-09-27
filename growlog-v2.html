@@ -77,7 +77,16 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .cal-cell { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .tri-sub { font-weight: 400; font-size: 10.5px; color: var(--text3); margin-left: 2px; }
 .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text2); vertical-align: middle; overflow: hidden; }
-.head-title .avatar { width: 32px; height: 32px; margin-right: 8px; font-size: 13px; }
+.head-title { display: flex; align-items: center; min-width: 0; }
+.head-title .avatar { width: 30px; height: 30px; margin-right: 8px; font-size: 12px; }
+.head-title .head-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head { padding-bottom: 10px; }
+.head-eyebrow { margin-bottom: 4px; }
+.match-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.match-row-date { flex-shrink: 0; width: 7.2em; font-size: 12px; font-weight: 700; color: var(--rust); }
+.match-row input { flex: 1; min-width: 0; }
+.match-row .save-status { flex-shrink: 0; min-width: 3.5em; }
+.match-empty { font-size: 11.5px; color: var(--text3); padding: 2px 0 0; }
 .msg-meta .avatar { width: 20px; height: 20px; font-size: 10px; margin-right: 5px; }
 .avatar-edit-row { display: flex; align-items: center; gap: 12px; }
 .avatar-edit-row .avatar { width: 56px; height: 56px; font-size: 20px; }
@@ -1765,8 +1774,8 @@ async function boot(user, profile) {
       <div class="head">
         <div class="head-text">
           <div class="head-eyebrow">Self+・${profile.sport}</div>
-          <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + escapeHtml(player.name) + 'さん' : ''}</div>
-          <div class="${!isCoach && state.view === 'detail' ? 'head-date' : 'head-sub'}" id="head-date-label">${!isCoach && state.view === 'detail' ? formatSelectedLabel(state.selected) : (isCoach ? '選手を選んでカレンダーから記録を確認・記入できます' : 'カレンダーから日付を選んで記録をつけよう')}</div>
+          <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + `<span class="head-name">${escapeHtml(player.name)}さん</span>` : ''}</div>
+          ${!isCoach && state.view === 'detail' ? `<div class="head-date" id="head-date-label">${formatSelectedLabel(state.selected)}</div>` : ''}
         </div>
         ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く">📅</button>` : ''}
       </div>
@@ -1865,7 +1874,7 @@ async function boot(user, profile) {
     if (!box) return;
     box.innerHTML = `
       <div class="goal-label">🌟 叶える目標</div>
-      <input class="goal-input" id="dream-text" placeholder="叶えたい目標を書こう" value="${escapeAttr(state.dream.text)}">
+      <input class="goal-input" id="dream-text" value="${escapeAttr(state.dream.text)}">
       <span class="save-status" id="dream-save-status"></span>
     `;
     document.getElementById('dream-text').addEventListener('input', scheduleDreamSave);
@@ -1895,7 +1904,7 @@ async function boot(user, profile) {
       btn.onclick = async () => {
         state.playerId = btn.dataset.id;
         const titleEl = document.getElementById('head-title');
-        if (titleEl) { const pl = TEAM.find(r => r.uid === state.playerId); titleEl.innerHTML = avatarHtml(pl.photo, pl.name) + escapeHtml(pl.name) + 'さん'; }
+        if (titleEl) { const pl = TEAM.find(r => r.uid === state.playerId); titleEl.innerHTML = avatarHtml(pl.photo, pl.name) + `<span class="head-name">${escapeHtml(pl.name)}さん</span>`; }
         renderTabs();
         state.calExpanded = false;
         await renderCalendar();
@@ -1940,16 +1949,11 @@ async function boot(user, profile) {
       <div class="cal-hint">日付を長押しすると、試合の日に⭐マーク</div>
     `;
     if (homeMode) {
-      const matchDate = state.matchTarget || state.selected;
       cal.innerHTML = gridHtml + `
         <div class="match-box">
-          <div class="match-box-label">🏆 <span id="match-date-label">${formatSelectedLabel(matchDate)}</span> の試合名</div>
-          <div class="match-box-row">
-            <input class="goal-input" id="cal-match-name" placeholder="例）秋季大会1回戦">
-            <span class="save-status" id="cal-match-status"></span>
-          </div>
+          <div class="match-box-label">🏆 ${m + 1}月の試合</div>
+          <div id="match-list"><div class="match-empty">読み込み中…</div></div>
         </div>`;
-      setupCalendarMatchBox();
     } else {
       cal.innerHTML = `
         <div class="cal-compact" id="cal-compact">
@@ -1978,7 +1982,6 @@ async function boot(user, profile) {
           if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
           const starEl = c.querySelector('.cal-star');
           toggleCalendarImportant(c.dataset.date, starEl);
-          if (homeMode) { state.matchTarget = c.dataset.date; setupCalendarMatchBox(); }
         }, 500);
       };
       const cancelPress = () => { clearTimeout(pressTimer); };
@@ -2000,7 +2003,11 @@ async function boot(user, profile) {
         const dotEl = cal.querySelector(`[data-dot="${dateStr}"]`);
         if (dotEl) dotEl.style.visibility = 'visible';
       });
+      state.monthEntries = cached.entryCache;
+      state.monthKey = cacheKey;
       await markUnreadDots(cached.dateStrs, cached.entryCache);
+      markImportantStars(cached.entryCache);
+      if (homeMode) renderMatchList();
       return;
     }
     if (loadingEl) loadingEl.style.visibility = 'visible';
@@ -2011,9 +2018,9 @@ async function boot(user, profile) {
       // 今回のルール（get()を使った間接判定を含む複雑なOR条件）だと、たとえ自分自身のデータでも
       // 証明が不安定でpermission-deniedになることがあるため使わない。
       // 個別取得(get)は都度そのドキュメント単体で権限判定されるため確実に動く。
-      // 未来の日付は絶対に記録が存在しないので、問い合わせの対象から外して通信回数を減らす。
-      const maxDay = (t.y === y && t.m === m) ? t.d : (t.y > y || (t.y === y && t.m > m)) ? daysInMonth : 0;
-      const days = Array.from({ length: maxDay }, (_, i) => i + 1);
+      // 未来の日付にも「試合の日（⭐）」と試合名が保存されていることがあるため、月の全日付を読み込む。
+      // （以前は未来の日付を読み込み対象から外していたため、未来の⭐が月の切り替えで消えて見えていた）
+      const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
       const results = await Promise.all(days.map(async (d) => {
         const dateStr = dateKey(y, m, d);
         try {
@@ -2036,7 +2043,11 @@ async function boot(user, profile) {
       if (!(t.y === y && t.m === m)) {
         state.calCache[cacheKey] = { dateStrs, entryCache };
       }
+      state.monthEntries = entryCache;
+      state.monthKey = cacheKey;
       await markUnreadDots(dateStrs, entryCache);
+      markImportantStars(entryCache);
+      if (homeMode) renderMatchList();
     } catch (e) {
       console.error('[calendar] renderCalendar failed:', e);
       console.error('[calendar] debug: state.playerId =', state.playerId, ' user.uid =', user.uid, ' match =', state.playerId === user.uid, ' isCoach =', isCoach, ' role =', state.role);
@@ -2045,46 +2056,69 @@ async function boot(user, profile) {
     }
   }
 
-  // カレンダー下の「試合名」欄（選手のホーム画面）。長押しした日付、なければ今日が対象
-  let calMatchSaveTimer = null;
-  async function setupCalendarMatchBox() {
-    const input = document.getElementById('cal-match-name');
-    const label = document.getElementById('match-date-label');
-    if (!input) return;
-    const dateStr = state.matchTarget || state.selected;
-    if (label) label.textContent = formatSelectedLabel(dateStr);
-    input.value = '';
-    input.dataset.date = dateStr;
-    try {
-      const res = await kvGet(`entry:${state.playerId}:${dateStr}`);
-      const data = (res && res.value) ? JSON.parse(res.value) : null;
-      if (input.dataset.date === dateStr) input.value = (data && data.matchName) || '';
-    } catch (e) {}
-    input.oninput = () => {
-      const status = document.getElementById('cal-match-status');
-      if (status) status.textContent = '…';
-      clearTimeout(calMatchSaveTimer);
-      calMatchSaveTimer = setTimeout(() => saveCalendarMatchName(input.dataset.date, input.value.trim()), 800);
-    };
+  // 読み込んだ月のデータから、⭐（試合の日）をすべて表示する（記録の中身がない日も含む）
+  function markImportantStars(entryCache) {
+    Object.keys(entryCache || {}).forEach(dateStr => {
+      const data = entryCache[dateStr];
+      if (!data || !data.important) return;
+      const cellEl = document.querySelector(`.cal-cell[data-date="${dateStr}"]`);
+      if (cellEl) cellEl.classList.add('important');
+      const starEl = document.querySelector(`.cal-star[data-star-date="${dateStr}"]`);
+      if (starEl) { starEl.textContent = '★'; starEl.classList.add('active'); }
+    });
+  }
+  // 1日分の変更を、表示中の月のデータとキャッシュの両方に反映する
+  function updateMonthEntry(dateStr, data) {
+    const monthKey = `${state.playerId}:${dateStr.slice(0, 7)}`;
+    if (state.monthKey === monthKey && state.monthEntries) state.monthEntries[dateStr] = data;
+    const cached = state.calCache[monthKey];
+    if (cached) cached.entryCache[dateStr] = data;
+  }
+
+  // カレンダー下の「〇月の試合」一覧（選手のホーム画面）。⭐の日を日付順に並べ、試合名をその場で編集できる
+  const matchSaveTimers = {};
+  function renderMatchList() {
+    const list = document.getElementById('match-list');
+    if (!list) return;
+    const entries = state.monthEntries || {};
+    const dates = Object.keys(entries).filter(d => entries[d] && entries[d].important).sort();
+    if (!dates.length) {
+      list.innerHTML = `<div class="match-empty">日付を長押しすると、ここに試合の日が追加されます</div>`;
+      return;
+    }
+    list.innerHTML = dates.map(d => `
+      <div class="match-row">
+        <div class="match-row-date">${formatSelectedLabel(d)}</div>
+        <input class="goal-input" data-match-date="${d}" placeholder="試合名（例：秋季大会1回戦）" value="${escapeAttr(entries[d].matchName || '')}">
+        <span class="save-status" data-match-status="${d}"></span>
+      </div>`).join('');
+    list.querySelectorAll('input[data-match-date]').forEach(input => {
+      input.oninput = () => {
+        const d = input.dataset.matchDate;
+        const status = list.querySelector(`[data-match-status="${d}"]`);
+        if (status) status.textContent = '…';
+        clearTimeout(matchSaveTimers[d]);
+        matchSaveTimers[d] = setTimeout(() => saveCalendarMatchName(d, input.value.trim()), 800);
+      };
+    });
   }
   async function saveCalendarMatchName(dateStr, name) {
-    const status = document.getElementById('cal-match-status');
+    const status = document.querySelector(`[data-match-status="${dateStr}"]`);
     if (status) status.textContent = '保存中…';
     try {
       const key = `entry:${state.playerId}:${dateStr}`;
       const res = await kvGet(key);
       const data = (res && res.value) ? JSON.parse(res.value) : emptyEntry();
       data.matchName = name;
-      if (name && !data.important) data.important = true; // 試合名を入れた日は自動で⭐
+      data.important = true;
       await kvSet(key, JSON.stringify(data));
-      const starEl = document.querySelector(`.cal-star[data-star-date="${dateStr}"]`);
-      if (starEl && data.important) { starEl.textContent = '★'; starEl.classList.add('active'); }
-      const cellEl = document.querySelector(`.cal-cell[data-date="${dateStr}"]`);
-      if (cellEl) cellEl.classList.toggle('important', !!data.important);
-      if (state.selected === dateStr && state.entry) { state.entry.matchName = name; state.entry.important = data.important; }
-      if (status) status.textContent = '保存しました';
+      updateMonthEntry(dateStr, data);
+      if (state.selected === dateStr && state.entry) { state.entry.matchName = name; state.entry.important = true; }
+      const st = document.querySelector(`[data-match-status="${dateStr}"]`);
+      if (st) st.textContent = '保存しました';
     } catch (e) {
-      if (status) status.textContent = '保存に失敗しました';
+      const st = document.querySelector(`[data-match-status="${dateStr}"]`);
+      if (st) st.textContent = '保存に失敗';
     }
   }
 
@@ -2096,6 +2130,8 @@ async function boot(user, profile) {
       if (!data) data = emptyEntry();
       data.important = !data.important;
       await kvSet(`entry:${state.playerId}:${dateStr}`, JSON.stringify(data));
+      updateMonthEntry(dateStr, data);
+      renderMatchList();
       if (starEl) {
         starEl.textContent = data.important ? '★' : '☆';
         starEl.classList.toggle('active', data.important);
