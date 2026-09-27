@@ -75,6 +75,21 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .cal-star { position: absolute; top: 2px; right: 3px; color: var(--border2); font-size: 10px; line-height: 1; pointer-events: none; z-index: 2; }
 .cal-star.active { color: var(--rust); }
 .cal-cell { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.tri-sub { font-weight: 400; font-size: 10.5px; color: var(--text3); margin-left: 2px; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text2); vertical-align: middle; overflow: hidden; }
+.head-title .avatar { width: 32px; height: 32px; margin-right: 8px; font-size: 13px; }
+.msg-meta .avatar { width: 20px; height: 20px; font-size: 10px; margin-right: 5px; }
+.avatar-edit-row { display: flex; align-items: center; gap: 12px; }
+.avatar-edit-row .avatar { width: 56px; height: 56px; font-size: 20px; }
+.avatar-edit-btns { display: flex; flex-direction: column; gap: 6px; }
+.match-box { border-top: 1px dashed var(--border2); margin: 4px 10px 0; padding: 10px 2px 12px; }
+.match-box-label { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.match-box-row { display: flex; align-items: center; gap: 8px; }
+.match-box-row input { flex: 1; min-width: 0; }
+.match-name-input { width: 100%; margin-top: 8px; }
+.match-name-text { font-size: 13px; font-weight: 700; color: var(--rust); margin-top: 6px; }
+.proq-note { font-size: 11.5px; color: var(--text3); margin-top: 4px; }
+.plan-opt-tax { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .cal-hint { text-align: center; font-size: 10.5px; color: var(--text3); padding: 8px 10px 10px; }
 .cal-loading { text-align: center; font-size: 11px; color: var(--text3); padding: 0 10px 6px; opacity: 0.85; }
 .cal-star.active { color: var(--rust); }
@@ -384,18 +399,28 @@ const PRICE_IDS = {
   coach: 'price_1UAKcYBAZvKHyOEKu6JQAQMx'
 };
 // ▼▼ Stripeで人数帯ごとのPrice(月額)を作成したら、下のIDをそれぞれ差し替える ▼▼
-const INDIVIDUAL_PLAN_PRICE_ID = 'price_1UGt4ZBAZvKHyOEKcjm0qVhB'; // チームを外れた選手向け・月300円プラン（本番モード）
+// 金額はすべて「税込」でStripeに登録する（amount＝税込、amountExTax＝税抜の表示用）。
+// Stripeで新しいPrice（月額・JPY）を作成したら、'price_TODO_…' の部分を実際のIDに差し替える。
+const INDIVIDUAL_PLAN = { amount: 880, amountExTax: 800 };
+const INDIVIDUAL_PLAN_PRICE_ID = 'price_1UK78bBAZvKHyOEKqMkxmazw'; // 個人アカウント（選手個人）・月額880円（税込）
 const COACH_PLANS = [
-  { id: 'p5',  max: 5,     label: '〜5名',        amount: 2980,  priceId: 'price_1UE7XWBAZvKHyOEKfQs2MOvR' },
-  { id: 'p10', max: 10,    label: '〜10名',       amount: 4980,  priceId: 'price_1UE7bEBAZvKHyOEKpPXmkE9C' },
-  { id: 'p20', max: 20,    label: '〜20名',       amount: 8800,  priceId: 'price_1UE7bYBAZvKHyOEKOIEQKj8e' },
-  { id: 'p30', max: 30,    label: '〜30名',       amount: 12000, priceId: 'price_1UE7c8BAZvKHyOEKHMVLj9ZL' },
-  { id: 'p50', max: 50,    label: '〜50名',       amount: 18000, priceId: 'price_1UE7cRBAZvKHyOEKWQAt2bqd' },
-  { id: 'p51', max: Infinity, label: '51名以上（上限なし）', amount: 25000, priceId: 'price_1UE7cqBAZvKHyOEKs9TfsRji' }
+  { id: 't10', max: 10,       label: '10人以下',            amount: 3300,  amountExTax: 3000,  priceId: 'price_1UK790BAZvKHyOEK3XVvGjLN' },
+  { id: 't50', max: 50,       label: '11人〜50人',          amount: 5500,  amountExTax: 5000,  priceId: 'price_1UK79LBAZvKHyOEKyDYtEhN3' },
+  { id: 't51', max: Infinity, label: '51人以上（上限なし）', amount: 11000, amountExTax: 10000, priceId: 'price_1UK79eBAZvKHyOEKp6xpcg6Y' }
+];
+// 旧料金プラン（既存の契約者の表示用に残しておく。新規の申し込みには使わない）
+const LEGACY_COACH_PLANS = [
+  { label: '〜5名', priceId: 'price_1UE7XWBAZvKHyOEKfQs2MOvR' },
+  { label: '〜10名', priceId: 'price_1UE7bEBAZvKHyOEKpPXmkE9C' },
+  { label: '〜20名', priceId: 'price_1UE7bYBAZvKHyOEKOIEQKj8e' },
+  { label: '〜30名', priceId: 'price_1UE7c8BAZvKHyOEKHMVLj9ZL' },
+  { label: '〜50名', priceId: 'price_1UE7cRBAZvKHyOEKWQAt2bqd' },
+  { label: '51名以上（上限なし）', priceId: 'price_1UE7cqBAZvKHyOEKs9TfsRji' }
 ];
 // ▲▲ ここまで ▲▲
+function isPriceReady(priceId) { return !!priceId && !priceId.includes('TODO'); }
 function planLabelByPriceId(priceId) {
-  const p = COACH_PLANS.find(p => p.priceId === priceId);
+  const p = COACH_PLANS.find(p => p.priceId === priceId) || LEGACY_COACH_PLANS.find(p => p.priceId === priceId);
   return p ? p.label : '';
 }
 function generateTeamCode() {
@@ -449,6 +474,115 @@ function wireLegalLinks(root) {
     const urls = { terms: TERMS_URL, privacy: PRIVACY_URL, tokusho: TOKUSHO_URL };
     el.onclick = (ev) => { ev.preventDefault(); openExternal(urls[el.dataset.legal] || TERMS_URL); };
   });
+}
+
+// ── プロフィール写真（アバター） ──
+// 写真は160px四方のJPEG（数KB）に縮小して users/{uid}.photo に保存する。
+function avatarHtml(photo, name) {
+  if (photo && typeof photo === 'string' && photo.startsWith('data:image/')) {
+    return `<img class="avatar" src="${photo}" alt="">`;
+  }
+  const initial = (name || '？').trim().charAt(0) || '？';
+  return `<span class="avatar">${escapeHtml(initial)}</span>`;
+}
+function resizeImageToDataUrl(file, size = 160) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read failed'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image load failed'));
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2;
+        const sy = (img.height - side) / 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── プロアスリートへの質問 ──
+function openProQuestionModal(profile) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-title">プロアスリートへの質問</div>
+      <div class="modal-field">
+        <div class="modal-label">お名前</div>
+        <input class="modal-select" id="proq-name" value="${escapeHtml(profile.displayName || '')}">
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">競技名</div>
+        <input class="modal-select" id="proq-sport" value="${escapeHtml(profile.sport || '')}">
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">年齢</div>
+        <input class="modal-select" id="proq-age" type="number" inputmode="numeric" min="1" max="120" placeholder="例）15">
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">質問事項</div>
+        <textarea class="modal-textarea" id="proq-message" placeholder="プロアスリートに聞いてみたいことを書いてください"></textarea>
+        <div class="proq-note">※質問内容は非公開です。他の利用者に公開されることはありません。</div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="proq-cancel">キャンセル</button>
+        <button class="modal-btn modal-btn-send" id="proq-send">送信する</button>
+      </div>
+      <div class="modal-status" id="proq-status" style="display:none;"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.getElementById('proq-cancel').onclick = () => overlay.remove();
+  document.getElementById('proq-send').onclick = async () => {
+    const name = document.getElementById('proq-name').value.trim();
+    const sport = document.getElementById('proq-sport').value.trim();
+    const age = document.getElementById('proq-age').value.trim();
+    const question = document.getElementById('proq-message').value.trim();
+    const status = document.getElementById('proq-status');
+    const sendBtn = document.getElementById('proq-send');
+    if (!name || !sport || !age || !question) {
+      status.textContent = 'すべての項目を入力してください';
+      status.className = 'modal-status error';
+      status.style.display = 'block';
+      return;
+    }
+    sendBtn.disabled = true;
+    sendBtn.textContent = '送信中…';
+    try {
+      await fetch(CONTACT_ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          name,
+          email: profile.email || '',
+          role: profile.role === 'coach' ? 'コーチ' : '選手・生徒',
+          sport,
+          category: 'プロアスリートへの質問',
+          message: `【年齢】${age}\n【質問事項】\n${question}`
+        })
+      });
+      status.textContent = '送信しました。ありがとうございます！';
+      status.className = 'modal-status';
+      status.style.display = 'block';
+      setTimeout(() => overlay.remove(), 1600);
+    } catch (err) {
+      status.textContent = '送信に失敗しました。時間をおいて再度お試しください。';
+      status.className = 'modal-status error';
+      status.style.display = 'block';
+      sendBtn.disabled = false;
+      sendBtn.textContent = '送信する';
+    }
+  };
 }
 
 // アカウント削除後、ログイン画面に表示するメッセージ（onAuthStateChanged経由でrenderAuthが呼ばれるため）
@@ -657,6 +791,7 @@ bgResetObserver.observe(app, { childList: true });
 let authMode = 'login';
 let authRole = 'student';
 let authCoachMode = 'new';
+let authStudentMode = 'team'; // 'team'（招待コードでチームに参加）| 'individual'（個人アカウント。Web版のみ）
 
 function renderAuth() {
   app.innerHTML = `
@@ -691,9 +826,20 @@ function renderAuth() {
               <div class="auth-hint">同じチームの他のコーチから教えてもらった招待コードを入力してください。</div>
             `}
           ` : `
+            ${isNativeApp ? '' : `
+            <label>使い方</label>
+            <div class="role-row">
+              <div class="role-opt ${authStudentMode==='team'?'active':''}" data-studentmode="team">チームに参加する</div>
+              <div class="role-opt ${authStudentMode==='individual'?'active':''}" data-studentmode="individual">個人で使う</div>
+            </div>
+            `}
+            ${(isNativeApp || authStudentMode === 'team') ? `
             <label>招待コード</label>
             <input id="a-team" type="text" autocapitalize="characters" autocomplete="off" placeholder="コーチから教えてもらったコード">
             <div class="auth-hint">担当コーチから教えてもらった招待コードを入力してください。</div>
+            ` : `
+            <div class="auth-hint">個人アカウントは、チームに入らずに自分の記録をつけられるプランです（月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円・税込）。登録してログインした後に、プランの手続きがあります。</div>
+            `}
           `}
           ${authRole === 'student' ? `
             <label>生年月日</label>
@@ -728,6 +874,7 @@ function renderAuth() {
   app.querySelectorAll('.role-opt').forEach(r => r.onclick = () => {
     if (r.dataset.role) authRole = r.dataset.role;
     if (r.dataset.coachmode) authCoachMode = r.dataset.coachmode;
+    if (r.dataset.studentmode) authStudentMode = r.dataset.studentmode;
     renderAuth();
   });
   document.getElementById('a-submit').onclick = authMode === 'signup' ? handleSignup : handleLogin;
@@ -793,8 +940,12 @@ async function handleSignup() {
   const email = document.getElementById('a-email').value.trim();
   const password = document.getElementById('a-pass').value;
   let teamCode = '';
+  // 個人アカウントはWeb版でのみ登録できる（アプリ版はストア審査の都合で購入導線を持たないため）
+  const isIndividualSignup = authRole === 'student' && authStudentMode === 'individual' && !isNativeApp;
 
-  if (authRole === 'student') {
+  if (isIndividualSignup) {
+    if (!name || !sport || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
+  } else if (authRole === 'student') {
     teamCode = document.getElementById('a-team').value.trim().toUpperCase();
     if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
   } else if (authRole === 'coach' && authCoachMode === 'join') {
@@ -822,7 +973,9 @@ async function handleSignup() {
     // 先にFirebase Authenticationのアカウント作成を済ませる。
     cred = await createUserWithEmailAndPassword(auth, email, password);
 
-    if (authRole === 'student') {
+    if (isIndividualSignup) {
+      teamCode = null;
+    } else if (authRole === 'student') {
       const coachQ = query(collection(db, 'users'), where('teamCode', '==', teamCode), where('role', '==', 'coach'));
       const coachSnaps = await getDocs(coachQ);
       if (coachSnaps.empty) {
@@ -859,12 +1012,17 @@ async function handleSignup() {
     if (authRole === 'student') {
       Object.assign(profileData, { birthdate });
     }
+    if (isIndividualSignup) {
+      Object.assign(profileData, { accountType: 'individual' });
+    }
     await setDoc(doc(db, 'users', cred.user.uid), profileData);
     await sendEmailVerification(cred.user);
     if (authRole === 'coach' && authCoachMode === 'new') {
       showAuthMsg(`仮登録できました。あなたの招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。`, 'ok');
     } else if (authRole === 'coach') {
       showAuthMsg('仮登録できました。チームに参加しました。届いた確認メールのリンクを開いてから、ログインしてください。', 'ok');
+    } else if (isIndividualSignup) {
+      showAuthMsg('仮登録できました。届いた確認メールのリンクを開いてからログインし、個人プランの手続きに進んでください。', 'ok');
     } else {
       showAuthMsg('仮登録できました。届いた確認メールのリンクを開いてから、ログインしてください。', 'ok');
     }
@@ -961,13 +1119,14 @@ onAuthStateChanged(auth, async (user) => {
 async function routeStudent(user, profile) {
   // チームから外れた（コーチに削除された）選手は、担当コーチ検索より前にここで検知する
   if (!profile.teamCode) {
+    if (profile.freeAccess === true) { boot(user, profile); return; }
     const result = await checkActiveSubscription(user.uid);
     if (result === true) {
       boot(user, profile);
     } else if (result === null) {
       renderCheckFailedScreen(profile, () => routeStudent(user, profile));
     } else {
-      renderRemovedStudentScreen(user, profile);
+      renderRemovedStudentScreen(user, profile, profile.accountType === 'individual' ? 'individual' : 'removed');
     }
     return;
   }
@@ -1058,10 +1217,14 @@ function renderWaitingForCoach(profile) {
   document.getElementById('delete-account-link').onclick = () => openDeleteAccountModal(profile);
 }
 
-// mode: 'removed' … チームから外れた選手（月300円プランで記入を再開できる）
+// mode: 'removed' … チームから外れた選手（個人プランで記入を再開できる）
+//       'individual' … 個人アカウントで登録した選手（個人プランで記録を始める）
 //       'coachInactive' … チームには所属しているが、コーチの契約が止まっている選手（閲覧のみ）
 async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   const isCoachInactive = mode === 'coachInactive';
+  const isIndividual = mode === 'individual';
+  const planPriceText = `月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円（税込）`;
+  const REACTIVATE_LABEL = isIndividual ? `${planPriceText}で記録を始める` : `${planPriceText}で記入を再開する`;
   const t0 = todayParts();
   const rState = { year: t0.y, month: t0.m, selected: dateKey(t0.y, t0.m, t0.d) };
   app.innerHTML = `
@@ -1069,7 +1232,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       <div class="head-text">
         <div class="head-eyebrow">Self+・${profile.sport}</div>
         <div class="head-title">${profile.displayName}さん</div>
-        <div class="head-sub">${isCoachInactive ? '今までの記録はそのまま見られます' : 'チームの記録はそのまま見られます'}</div>
+        <div class="head-sub">${isCoachInactive ? '今までの記録はそのまま見られます' : (isIndividual ? '個人アカウント' : 'チームの記録はそのまま見られます')}</div>
       </div>
     </div>
     <div class="wrap">
@@ -1084,13 +1247,17 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       </div>
       ` : `
       <div class="removed-banner">
-        <div class="removed-banner-title">現在、チームに所属していません</div>
+        <div class="removed-banner-title">${isIndividual ? '個人アカウント' : '現在、チームに所属していません'}</div>
         ${isNativeApp ? `
-        <div class="removed-banner-text">今までの記録はいつでも閲覧できます。新しいチームに参加すると、また記録を書けるようになります。</div>
+        <div class="removed-banner-text">${isIndividual
+          ? 'このアカウントでは現在、ご利用いただけるプランが有効になっていません。プランが有効になっている場合は、下のボタンで状況を更新してください。'
+          : '今までの記録はいつでも閲覧できます。新しいチームに参加すると、また記録を書けるようになります。'}</div>
         ` : `
-        <div class="removed-banner-text">今までの記録はいつでも閲覧できます。新しく記録を書くには、月300円のプランが必要です。</div>
-        <button class="removed-reactivate-btn" id="removed-reactivate-btn">月300円で記入を再開する</button>
-        <div class="pay-terms-note">月額300円（税込）・毎月自動更新です。「プラン・支払い管理」からいつでも解約でき、解約後も契約期間の終わりまでは使えます。</div>
+        <div class="removed-banner-text">${isIndividual
+          ? `個人プラン（${planPriceText}・税抜${INDIVIDUAL_PLAN.amountExTax.toLocaleString()}円）に加入すると、記録を書けるようになります。`
+          : `今までの記録はいつでも閲覧できます。新しく記録を書くには、個人プラン（${planPriceText}）が必要です。`}</div>
+        <button class="removed-reactivate-btn" id="removed-reactivate-btn">${REACTIVATE_LABEL}</button>
+        <div class="pay-terms-note">${planPriceText}・毎月自動更新です。「プラン・支払い管理」からいつでも解約でき、解約後も契約期間の終わりまでは使えます。</div>
         <div id="removed-reactivate-msg"></div>
         `}
         <div class="removed-refresh-row">
@@ -1102,7 +1269,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
         <div class="removed-banner-title">新しいチームに参加する</div>
         <div class="removed-banner-text">${isNativeApp
           ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
-          : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると月300円のプランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
+          : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
         <div class="removed-join-row">
           <input class="modal-select" id="removed-join-code" placeholder="招待コード">
           <button class="menu-send-btn" id="removed-join-btn">参加する</button>
@@ -1129,6 +1296,10 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   if (reactivateBtn) {
     reactivateBtn.onclick = async () => {
       const msg = document.getElementById('removed-reactivate-msg');
+      if (!isPriceReady(INDIVIDUAL_PLAN_PRICE_ID)) {
+        msg.innerHTML = `<div class="pay-msg err">このプランは現在準備中です。しばらくしてからお試しください。</div>`;
+        return;
+      }
       reactivateBtn.disabled = true;
       reactivateBtn.textContent = '処理中…';
       try {
@@ -1148,7 +1319,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
             clearTimeout(timeoutId);
             if (msg) msg.innerHTML = `<div class="pay-msg err">エラーが発生しました：${data.error.message}</div>`;
             reactivateBtn.disabled = false;
-            reactivateBtn.textContent = '月300円で記入を再開する';
+            reactivateBtn.textContent = REACTIVATE_LABEL;
             unsub();
           }
           if (data.url) {
@@ -1164,12 +1335,12 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
           unsub();
           if (msg) msg.innerHTML = `<div class="pay-msg err">時間がかかりすぎています。通信環境を確認して、もう一度お試しください。</div>`;
           reactivateBtn.disabled = false;
-          reactivateBtn.textContent = '月300円で記入を再開する';
+          reactivateBtn.textContent = REACTIVATE_LABEL;
         }, 15000);
       } catch (e) {
         if (msg) msg.innerHTML = `<div class="pay-msg err">エラーが発生しました：${e.message}</div>`;
         reactivateBtn.disabled = false;
-        reactivateBtn.textContent = '月300円で記入を再開する';
+        reactivateBtn.textContent = REACTIVATE_LABEL;
       }
     };
   }
@@ -1317,7 +1488,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       const c3 = CONDITION_OPTS.find(o => o.v === data.skill);
       const c4 = CONDITION_OPTS.find(o => o.v === data.body);
       box.innerHTML = `
-        <div class="removed-date-label">${formatSelectedLabel(rState.selected)}${data.important ? ' ★重要' : ''}</div>
+        <div class="removed-date-label">${formatSelectedLabel(rState.selected)}${data.important ? ' ★試合' : ''}${data.matchName ? ` ${escapeHtml(data.matchName)}` : ''}</div>
         <div class="card">
           <div class="removed-cond-row">
             ${w ? `<span>${w.icon} ${w.label}</span>` : ''}
@@ -1397,8 +1568,9 @@ function renderPaywall(user, profile) {
   const cards = COACH_PLANS.map(p => `
     <div class="plan-opt" data-price="${p.priceId}">
       <div class="plan-opt-label">${p.label}</div>
-      <div class="plan-opt-amount">¥${p.amount.toLocaleString()}<span>/ 月</span></div>
-      <div class="plan-opt-per">${p.max === Infinity ? '' : `生徒1人あたり 約¥${Math.round(p.amount / p.max)}`}</div>
+      <div class="plan-opt-amount">¥${p.amount.toLocaleString()}<span>/ 月（税込）</span></div>
+      <div class="plan-opt-tax">税抜 ¥${p.amountExTax.toLocaleString()}</div>
+      <div class="plan-opt-per">${p.max === Infinity ? '' : `生徒1人あたり 約¥${Math.round(p.amount / p.max)}〜`}</div>
     </div>
   `).join('');
   app.innerHTML = `
@@ -1434,6 +1606,10 @@ function renderPaywall(user, profile) {
 async function startCheckout(uid, priceId) {
   const btn = document.getElementById('pay-btn');
   const msg = document.getElementById('pay-msg');
+  if (!isPriceReady(priceId)) {
+    if (msg) msg.innerHTML = `<div class="pay-msg err">このプランは現在準備中です。しばらくしてからお試しください。</div>`;
+    return;
+  }
   btn.disabled = true;
   btn.textContent = '処理中…';
   try {
@@ -1522,20 +1698,21 @@ function hasEntryContent(data) {
 
 async function boot(user, profile) {
   const isCoach = profile.role === 'coach';
-  let TEAM = [{ uid: user.uid, name: profile.displayName }];
-  let COACHES = [{ uid: user.uid, name: profile.displayName }];
+  let TEAM = [{ uid: user.uid, name: profile.displayName, photo: profile.photo || null }];
+  let COACHES = [{ uid: user.uid, name: profile.displayName, photo: profile.photo || null }];
+  const PHOTO_BY_UID = { [user.uid]: profile.photo || null };
   let CATEGORIES = { groups: [] };
   if (isCoach) {
     const q = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'student'));
     const snaps = await getDocs(q);
     const members = [];
-    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName }));
+    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null }));
     if (members.length) TEAM = members;
 
     const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
     const coachSnaps = await getDocs(coachQ);
     const coachMembers = [];
-    coachSnaps.forEach(d => coachMembers.push({ uid: d.id, name: d.data().displayName }));
+    coachSnaps.forEach(d => coachMembers.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null }));
     if (coachMembers.length) COACHES = coachMembers;
 
     try {
@@ -1544,6 +1721,22 @@ async function boot(user, profile) {
         const parsed = JSON.parse(catRes.value);
         if (parsed.groups) CATEGORIES = parsed;
       }
+    } catch (e) {}
+  }
+
+  // コメント欄などに表示する写真（選手・コーチ）
+  TEAM.forEach(m => { PHOTO_BY_UID[m.uid] = m.photo || null; });
+  COACHES.forEach(c => { PHOTO_BY_UID[c.uid] = c.photo || null; });
+  const COACH_PHOTO_BY_NAME = {};
+  COACHES.forEach(c => { if (c.name) COACH_PHOTO_BY_NAME[c.name] = c.photo || null; });
+  if (!isCoach && profile.teamCode) {
+    try {
+      const cq = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
+      const cs = await getDocs(cq);
+      cs.forEach(d => {
+        PHOTO_BY_UID[d.id] = d.data().photo || null;
+        if (d.data().displayName) COACH_PHOTO_BY_NAME[d.data().displayName] = d.data().photo || null;
+      });
     } catch (e) {}
   }
 
@@ -1572,7 +1765,7 @@ async function boot(user, profile) {
       <div class="head">
         <div class="head-text">
           <div class="head-eyebrow">Self+・${profile.sport}</div>
-          <div class="head-title" id="head-title">${isCoach ? (player ? player.name + 'さん' : '') : player.name + 'さん'}</div>
+          <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + escapeHtml(player.name) + 'さん' : ''}</div>
           <div class="${!isCoach && state.view === 'detail' ? 'head-date' : 'head-sub'}" id="head-date-label">${!isCoach && state.view === 'detail' ? formatSelectedLabel(state.selected) : (isCoach ? '選手を選んでカレンダーから記録を確認・記入できます' : 'カレンダーから日付を選んで記録をつけよう')}</div>
         </div>
         ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く">📅</button>` : ''}
@@ -1583,7 +1776,6 @@ async function boot(user, profile) {
         ${showHome ? `<div class="dream-card" id="dream-card"><div class="goal-loading">読み込み中…</div></div>` : ''}
         <div class="cal" id="cal"></div>
         ${!showHome ? `
-          ${isCoach ? `<div class="dream-card" id="dream-card"><div class="goal-loading">読み込み中…</div></div>` : ''}
           <div class="goal-card" id="goal-card"><div class="goal-loading">読み込み中…</div></div>
           <div class="seen-row" id="seen-row"></div>
           <div class="panel" id="panel"></div>
@@ -1592,6 +1784,7 @@ async function boot(user, profile) {
           <div class="switch-code" id="settings-link">設定</div>
           <div class="switch-code" id="logout-link">ログアウト</div>
           ${isNativeApp ? '' : '<div class="portal-link" id="portal-link">プラン・支払い管理</div>'}
+          <div class="contact-link" id="proq-link">プロアスリートへの質問</div>
           <div class="contact-link" id="contact-link">お問い合わせ</div>
         </div>
         ${legalLinksHtml()}
@@ -1602,6 +1795,7 @@ async function boot(user, profile) {
     const portalLinkEl = document.getElementById('portal-link');
     if (portalLinkEl) portalLinkEl.onclick = () => openPortal();
     document.getElementById('contact-link').onclick = () => openContactModal(profile, state);
+    document.getElementById('proq-link').onclick = () => openProQuestionModal(profile);
     wireLegalLinks(app);
     const calBtn = document.getElementById('head-cal-btn');
     if (calBtn) calBtn.onclick = () => { state.calExpanded = !state.calExpanded; renderCalendar(); };
@@ -1627,8 +1821,7 @@ async function boot(user, profile) {
     } else {
       state.calExpanded = false;
       await renderCalendar();
-      if (isCoach) await loadDream();
-      await loadGoal();
+        await loadGoal();
       await loadEntry();
     }
   }
@@ -1654,7 +1847,6 @@ async function boot(user, profile) {
     const headDateEl = document.getElementById('head-date-label');
     if (headDateEl && !isCoach && state.view === 'detail') headDateEl.textContent = formatSelectedLabel(state.selected);
     await renderCalendar();
-    if (isCoach) await loadDream();
     await loadGoal();
     await loadEntry();
   }
@@ -1672,8 +1864,8 @@ async function boot(user, profile) {
     const box = document.getElementById('dream-card');
     if (!box) return;
     box.innerHTML = `
-      <div class="goal-label">🌟 将来の夢</div>
-      <input class="goal-input" id="dream-text" placeholder="将来の夢を書こう" value="${escapeAttr(state.dream.text)}">
+      <div class="goal-label">🌟 叶える目標</div>
+      <input class="goal-input" id="dream-text" placeholder="叶えたい目標を書こう" value="${escapeAttr(state.dream.text)}">
       <span class="save-status" id="dream-save-status"></span>
     `;
     document.getElementById('dream-text').addEventListener('input', scheduleDreamSave);
@@ -1703,11 +1895,10 @@ async function boot(user, profile) {
       btn.onclick = async () => {
         state.playerId = btn.dataset.id;
         const titleEl = document.getElementById('head-title');
-        if (titleEl) titleEl.textContent = TEAM.find(r => r.uid === state.playerId).name + 'さん';
+        if (titleEl) { const pl = TEAM.find(r => r.uid === state.playerId); titleEl.innerHTML = avatarHtml(pl.photo, pl.name) + escapeHtml(pl.name) + 'さん'; }
         renderTabs();
         state.calExpanded = false;
         await renderCalendar();
-        await loadDream();
         await loadGoal();
         await loadEntry();
       };
@@ -1746,10 +1937,19 @@ async function boot(user, profile) {
       </div>
       <div class="cal-grid">${dows.map(d => `<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
       <div class="cal-loading" id="cal-loading" style="visibility:hidden;">読み込み中…</div>
-      <div class="cal-hint">日付を長押しすると、大事な試合に★印を付けられます</div>
+      <div class="cal-hint">日付を長押しすると、試合の日に⭐マーク</div>
     `;
     if (homeMode) {
-      cal.innerHTML = gridHtml;
+      const matchDate = state.matchTarget || state.selected;
+      cal.innerHTML = gridHtml + `
+        <div class="match-box">
+          <div class="match-box-label">🏆 <span id="match-date-label">${formatSelectedLabel(matchDate)}</span> の試合名</div>
+          <div class="match-box-row">
+            <input class="goal-input" id="cal-match-name" placeholder="例）秋季大会1回戦">
+            <span class="save-status" id="cal-match-status"></span>
+          </div>
+        </div>`;
+      setupCalendarMatchBox();
     } else {
       cal.innerHTML = `
         <div class="cal-compact" id="cal-compact">
@@ -1778,6 +1978,7 @@ async function boot(user, profile) {
           if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
           const starEl = c.querySelector('.cal-star');
           toggleCalendarImportant(c.dataset.date, starEl);
+          if (homeMode) { state.matchTarget = c.dataset.date; setupCalendarMatchBox(); }
         }, 500);
       };
       const cancelPress = () => { clearTimeout(pressTimer); };
@@ -1844,6 +2045,49 @@ async function boot(user, profile) {
     }
   }
 
+  // カレンダー下の「試合名」欄（選手のホーム画面）。長押しした日付、なければ今日が対象
+  let calMatchSaveTimer = null;
+  async function setupCalendarMatchBox() {
+    const input = document.getElementById('cal-match-name');
+    const label = document.getElementById('match-date-label');
+    if (!input) return;
+    const dateStr = state.matchTarget || state.selected;
+    if (label) label.textContent = formatSelectedLabel(dateStr);
+    input.value = '';
+    input.dataset.date = dateStr;
+    try {
+      const res = await kvGet(`entry:${state.playerId}:${dateStr}`);
+      const data = (res && res.value) ? JSON.parse(res.value) : null;
+      if (input.dataset.date === dateStr) input.value = (data && data.matchName) || '';
+    } catch (e) {}
+    input.oninput = () => {
+      const status = document.getElementById('cal-match-status');
+      if (status) status.textContent = '…';
+      clearTimeout(calMatchSaveTimer);
+      calMatchSaveTimer = setTimeout(() => saveCalendarMatchName(input.dataset.date, input.value.trim()), 800);
+    };
+  }
+  async function saveCalendarMatchName(dateStr, name) {
+    const status = document.getElementById('cal-match-status');
+    if (status) status.textContent = '保存中…';
+    try {
+      const key = `entry:${state.playerId}:${dateStr}`;
+      const res = await kvGet(key);
+      const data = (res && res.value) ? JSON.parse(res.value) : emptyEntry();
+      data.matchName = name;
+      if (name && !data.important) data.important = true; // 試合名を入れた日は自動で⭐
+      await kvSet(key, JSON.stringify(data));
+      const starEl = document.querySelector(`.cal-star[data-star-date="${dateStr}"]`);
+      if (starEl && data.important) { starEl.textContent = '★'; starEl.classList.add('active'); }
+      const cellEl = document.querySelector(`.cal-cell[data-date="${dateStr}"]`);
+      if (cellEl) cellEl.classList.toggle('important', !!data.important);
+      if (state.selected === dateStr && state.entry) { state.entry.matchName = name; state.entry.important = data.important; }
+      if (status) status.textContent = '保存しました';
+    } catch (e) {
+      if (status) status.textContent = '保存に失敗しました';
+    }
+  }
+
   async function toggleCalendarImportant(dateStr, starEl) {
     try {
       let data = null;
@@ -1863,7 +2107,7 @@ async function boot(user, profile) {
         state.entry.important = data.important;
         const panelBtn = document.getElementById('important-toggle');
         if (panelBtn) {
-          panelBtn.textContent = data.important ? '★ 重要' : '☆ 重要な試合にする';
+          panelBtn.textContent = data.important ? '★ 試合の日' : '☆ 試合の日にする';
           panelBtn.classList.toggle('active', data.important);
         }
       }
@@ -2355,6 +2599,17 @@ async function boot(user, profile) {
       if (!body) return;
       body.innerHTML = `
         <div class="modal-field">
+          <div class="modal-label">プロフィール写真</div>
+          <div class="avatar-edit-row">
+            <span id="set-avatar-preview">${avatarHtml(PHOTO_BY_UID[auth.currentUser.uid], state.myName)}</span>
+            <div class="avatar-edit-btns">
+              <label class="menu-send-btn" style="cursor:pointer; text-align:center;">写真を選ぶ<input type="file" id="set-avatar-file" accept="image/*" style="display:none;"></label>
+              <button class="modal-btn modal-btn-cancel" id="set-avatar-remove" type="button">写真を外す</button>
+            </div>
+          </div>
+          <span class="menu-send-status" id="set-avatar-status"></span>
+        </div>
+        <div class="modal-field">
           <div class="modal-label">名前</div>
           <input class="modal-select" id="set-name" value="${escapeAttr(state.myName)}">
           <div class="menu-send-row" style="margin-top:8px;">
@@ -2367,7 +2622,7 @@ async function boot(user, profile) {
             <div class="modal-label">チームに参加する</div>
             <div class="auth-hint" style="margin-bottom:8px;">${isNativeApp
               ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
-              : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると月300円のプランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。'}</div>
+              : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。'}</div>
             <div class="removed-join-row">
               <input class="modal-select" id="settings-join-code" placeholder="招待コード">
               <button class="menu-send-btn" id="settings-join-btn">参加する</button>
@@ -2419,6 +2674,42 @@ async function boot(user, profile) {
     }
 
     function wireBody() {
+      const saveAvatar = async (photo) => {
+        const status = document.getElementById('set-avatar-status');
+        if (status) status.textContent = '保存中…';
+        try {
+          await setDoc(doc(db, 'users', auth.currentUser.uid), { photo: photo || null }, { merge: true });
+          profile.photo = photo || null;
+          PHOTO_BY_UID[auth.currentUser.uid] = photo || null;
+          TEAM.forEach(m => { if (m.uid === auth.currentUser.uid) m.photo = photo || null; });
+          COACHES.forEach(c => { if (c.uid === auth.currentUser.uid) c.photo = photo || null; });
+          if (state.myName) COACH_PHOTO_BY_NAME[state.myName] = isCoach ? (photo || null) : COACH_PHOTO_BY_NAME[state.myName];
+          const preview = document.getElementById('set-avatar-preview');
+          if (preview) preview.innerHTML = avatarHtml(photo, state.myName);
+          if (status) status.textContent = '保存しました';
+          render();
+        } catch (e) {
+          console.error('avatar save failed', e);
+          if (status) status.textContent = '保存に失敗しました';
+        }
+      };
+      const avatarFile = document.getElementById('set-avatar-file');
+      if (avatarFile) {
+        avatarFile.onchange = async () => {
+          const file = avatarFile.files && avatarFile.files[0];
+          if (!file) return;
+          try {
+            const dataUrl = await resizeImageToDataUrl(file, 160);
+            await saveAvatar(dataUrl);
+          } catch (e) {
+            const status = document.getElementById('set-avatar-status');
+            if (status) status.textContent = 'この写真は読み込めませんでした';
+          }
+          avatarFile.value = '';
+        };
+      }
+      const avatarRemove = document.getElementById('set-avatar-remove');
+      if (avatarRemove) avatarRemove.onclick = () => saveAvatar(null);
       const deleteAccountBtn = document.getElementById('set-delete-account');
       if (deleteAccountBtn) {
         deleteAccountBtn.onclick = () => {
@@ -2576,9 +2867,9 @@ async function boot(user, profile) {
       <div class="card">
         <div class="tri-group"><div class="tri-group-label">天気</div>${triSelectHtml('weather', e.weather, WEATHER_OPTS)}</div>
         <div class="tri-group"><div class="tri-group-label">体調</div>${triSelectHtml('condition', e.condition, CONDITION_OPTS)}</div>
-        <div class="tri-group"><div class="tri-group-label">心</div>${triSelectHtml('mind', e.mind, CONDITION_OPTS)}</div>
-        <div class="tri-group"><div class="tri-group-label">技</div>${triSelectHtml('skill', e.skill, CONDITION_OPTS)}</div>
-        <div class="tri-group"><div class="tri-group-label">体</div>${triSelectHtml('body', e.body, CONDITION_OPTS)}</div>
+        <div class="tri-group"><div class="tri-group-label">心<span class="tri-sub">（メンタル面）</span></div>${triSelectHtml('mind', e.mind, CONDITION_OPTS)}</div>
+        <div class="tri-group"><div class="tri-group-label">技<span class="tri-sub">（技術面）</span></div>${triSelectHtml('skill', e.skill, CONDITION_OPTS)}</div>
+        <div class="tri-group"><div class="tri-group-label">体<span class="tri-sub">（ボディ面）</span></div>${triSelectHtml('body', e.body, CONDITION_OPTS)}</div>
       </div>
       <div class="section-title">練習</div>
       <div class="card"><div class="card-label">練習メニュー <span class="save-status" id="save-status"></span></div>
@@ -2594,8 +2885,11 @@ async function boot(user, profile) {
         <div class="section-toggle ${state.gameExpanded ? 'expanded' : ''}" id="game-toggle">
           <span>試合・実戦形式</span><span class="section-toggle-arrow">▶</span>
         </div>
-        <button type="button" class="important-toggle-btn ${e.important ? 'active' : ''}" id="important-toggle">${e.important ? '★ 重要' : '☆ 重要な試合にする'}</button>
+        <button type="button" class="important-toggle-btn ${e.important ? 'active' : ''}" id="important-toggle">${e.important ? '★ 試合の日' : '☆ 試合の日にする'}</button>
       </div>
+      ${e.important ? (state.role === 'coach'
+        ? (e.matchName ? `<div class="match-name-text">🏆 ${escapeHtml(e.matchName)}</div>` : '')
+        : `<input class="goal-input match-name-input" id="f-match-name" placeholder="試合名（例：秋季大会1回戦）" value="${escapeAttr(e.matchName || '')}">`) : ''}
       ${state.gameExpanded ? `
       <div class="card good"><div class="card-label">◎ 良かった点</div>
         <textarea id="f-game-good" placeholder="試合や実戦形式で良かったこと">${escapeHtml(e.gameGood)}</textarea>
@@ -2642,6 +2936,13 @@ async function boot(user, profile) {
       renderPanel();
     };
     setupVideoUpload();
+    const matchNameEl = document.getElementById('f-match-name');
+    if (matchNameEl) {
+      matchNameEl.addEventListener('input', () => {
+        state.entry.matchName = matchNameEl.value.trim();
+        scheduleAutoSave();
+      });
+    }
     document.getElementById('game-toggle').onclick = () => { state.gameExpanded = !state.gameExpanded; renderPanel(); };
     const importantBtn = document.getElementById('important-toggle');
     if (importantBtn) {
@@ -2900,7 +3201,10 @@ async function boot(user, profile) {
     const mine = m.author === state.role;
     const label = m.authorName || (m.author === 'coach' ? 'コーチ' : '本人');
     const isNew = !mine && m.tsRaw && m.tsRaw > (state.lastReadEpoch || 0);
-    return `<div class="msg ${mine ? 'mine' : ''}"><div class="msg-meta">${label} ・ ${m.ts} ${isNew ? '<span class="new-badge">NEW</span>' : ''}</div><div class="msg-bubble">${escapeHtml(m.text)}</div></div>`;
+    const photo = m.author === 'coach'
+      ? ((m.authorUid && PHOTO_BY_UID[m.authorUid]) || COACH_PHOTO_BY_NAME[m.authorName] || null)
+      : (PHOTO_BY_UID[state.playerId] || null);
+    return `<div class="msg ${mine ? 'mine' : ''}"><div class="msg-meta">${avatarHtml(photo, label)}${escapeHtml(label)} ・ ${m.ts} ${isNew ? '<span class="new-badge">NEW</span>' : ''}</div><div class="msg-bubble">${escapeHtml(m.text)}</div></div>`;
   }
   async function saveEntry() {
     state.entry.menu = document.getElementById('f-menu').value;
@@ -2950,7 +3254,7 @@ async function boot(user, profile) {
     if (!text) return;
     const now = new Date();
     const ts = `${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    state.entry.thread.push({ author: state.role, authorName: state.myName, text, ts, tsRaw: now.getTime() });
+    state.entry.thread.push({ author: state.role, authorName: state.myName, authorUid: auth.currentUser.uid, text, ts, tsRaw: now.getTime() });
     input.value = '';
     await saveEntry();
     await setLastRead(state.playerId, state.selected, state.role);
