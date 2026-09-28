@@ -216,6 +216,7 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 .msg.mine { margin-left: auto; }
 .msg-meta { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
 .msg.mine .msg-meta { text-align: right; }
+.msg-del { background: none; border: none; padding: 0 0 0 6px; font-size: 11px; color: var(--text3); text-decoration: underline; cursor: pointer; font-family: inherit; }
 .msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; }
 .msg.mine .msg-bubble { background: var(--navy-light); border-color: #D8DEE9; }
 .thread-empty { color: var(--text3); font-size: 13px; padding: 4px 0 10px; }
@@ -432,20 +433,35 @@ function planLabelByPriceId(priceId) {
   const p = COACH_PLANS.find(p => p.priceId === priceId) || LEGACY_COACH_PLANS.find(p => p.priceId === priceId);
   return p ? p.label : '';
 }
-function generateTeamCode() {
+function generateTeamCode(length = 6) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字(0/O, 1/I等)を除外
+  // 予測されにくいよう、暗号用の乱数を使う（使えない環境では従来の乱数）
+  const rand = new Uint32Array(length);
+  if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(rand);
+  else for (let i = 0; i < length; i++) rand[i] = Math.floor(Math.random() * 4294967296);
   let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < length; i++) code += chars[rand[i] % chars.length];
   return code;
 }
+// そのコードを使っているコーチが（自分以外に）いるか
+async function isTeamCodeTaken(code, exceptUid) {
+  const q = query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach'));
+  const snaps = await getDocs(q);
+  return snaps.docs.some(d => d.id !== exceptUid);
+}
+// 新しいチームの招待コードを発行する。使われていないことを確認できたコードだけを返す。
+// 6文字（約10億通り）で8回、それでも見つからなければ8文字でさらに確認し、確認できなければエラーにする
+// （以前は8回失敗すると、重複確認をしないままコードを返していた）
 async function generateUniqueTeamCode() {
   for (let i = 0; i < 8; i++) {
-    const code = generateTeamCode();
-    const q = query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach'));
-    const snaps = await getDocs(q);
-    if (snaps.empty) return code;
+    const code = generateTeamCode(6);
+    if (!(await isTeamCodeTaken(code))) return code;
   }
-  return generateTeamCode() + Date.now().toString(36).slice(-2).toUpperCase();
+  for (let i = 0; i < 4; i++) {
+    const code = generateTeamCode(8);
+    if (!(await isTeamCodeTaken(code))) return code;
+  }
+  throw new Error('team code generation failed');
 }
 const SITE_URL = location.href.split('?')[0];
 // ▼▼ Google Apps Scriptのウェブアプリをデプロイしたら、そのURLに差し替える ▼▼
@@ -1025,6 +1041,14 @@ async function handleSignup() {
       Object.assign(profileData, { accountType: 'individual' });
     }
     await setDoc(doc(db, 'users', cred.user.uid), profileData);
+    // 新しいチームを作った場合：保存した直後にもう一度、同じコードの別チームがないか確認する。
+    // ごくまれに他のコーチと同時に同じコードが発行された場合は、自分のコードを発行し直す
+    if (authRole === 'coach' && authCoachMode === 'new') {
+      for (let i = 0; i < 3 && await isTeamCodeTaken(teamCode, cred.user.uid); i++) {
+        teamCode = await generateUniqueTeamCode();
+        await setDoc(doc(db, 'users', cred.user.uid), { teamCode }, { merge: true });
+      }
+    }
     await sendEmailVerification(cred.user);
     if (authRole === 'coach' && authCoachMode === 'new') {
       showAuthMsg(`仮登録できました。あなたの招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。`, 'ok');
@@ -2969,7 +2993,7 @@ async function boot(user, profile) {
       <div class="thread-card">
         <div class="thread-title">やり取り</div>
         ${threadNoticeHtml(e)}
-        <div class="thread" id="thread">${e.thread.length ? e.thread.map(m => threadMsgHtml(m)).join('') : '<div class="thread-empty">まだやり取りはありません</div>'}</div>
+        <div class="thread" id="thread">${e.thread.length ? e.thread.map((m, i) => threadMsgHtml(m, i)).join('') : '<div class="thread-empty">まだやり取りはありません</div>'}</div>
         <div class="thread-input"><textarea id="t-input" placeholder="わからないことがあったら書いてみよう"></textarea><button id="t-send">送信</button></div>
       </div>
     `;
@@ -3109,6 +3133,12 @@ async function boot(user, profile) {
       el.addEventListener('input', () => { autosizeTextarea(el); scheduleAutoSave(); });
     });
     document.getElementById('t-send').onclick = () => sendThread();
+    document.querySelectorAll('[data-msg-del]').forEach(btn => {
+      btn.onclick = () => {
+        const m = state.entry.thread[Number(btn.dataset.msgDel)];
+        if (m) confirmDeleteMessage(m);
+      };
+    });
   }
 
   function autosizeTextarea(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
@@ -3242,14 +3272,24 @@ async function boot(user, profile) {
     const who = state.role === 'coach' ? (last.authorName || '選手') : 'コーチ';
     return `<div class="thread-notice">🔔 ${escapeHtml(who)}が新しくやりとりに記入しました</div>`;
   }
-  function threadMsgHtml(m) {
+  // 自分が送ったメッセージか（複数コーチがいても本人だけ取り消せるよう、送信者のuidで判定する。
+  //  uidが記録されていない古いメッセージは、役割と名前が一致する場合のみ本人とみなす）
+  function isOwnMessage(m) {
+    if (m.authorUid) return m.authorUid === auth.currentUser.uid;
+    return m.author === state.role && m.authorName === state.myName;
+  }
+  function sameMessage(a, b) {
+    return a.tsRaw === b.tsRaw && a.author === b.author && a.text === b.text && (a.authorUid || '') === (b.authorUid || '');
+  }
+  function threadMsgHtml(m, idx) {
     const mine = m.author === state.role;
+    const canDelete = isOwnMessage(m) && typeof idx === 'number';
     const label = m.authorName || (m.author === 'coach' ? 'コーチ' : '本人');
     const isNew = !mine && m.tsRaw && m.tsRaw > (state.lastReadEpoch || 0);
     const photo = m.author === 'coach'
       ? ((m.authorUid && PHOTO_BY_UID[m.authorUid]) || COACH_PHOTO_BY_NAME[m.authorName] || null)
       : (PHOTO_BY_UID[state.playerId] || null);
-    return `<div class="msg ${mine ? 'mine' : ''}"><div class="msg-meta">${avatarHtml(photo, label)}${escapeHtml(label)} ・ ${m.ts} ${isNew ? '<span class="new-badge">NEW</span>' : ''}</div><div class="msg-bubble">${escapeHtml(m.text)}</div></div>`;
+    return `<div class="msg ${mine ? 'mine' : ''}"><div class="msg-meta">${avatarHtml(photo, label)}${escapeHtml(label)} ・ ${m.ts} ${isNew ? '<span class="new-badge">NEW</span>' : ''}${canDelete ? `<button type="button" class="msg-del" data-msg-del="${idx}">取り消す</button>` : ''}</div><div class="msg-bubble">${escapeHtml(m.text)}</div></div>`;
   }
   async function saveEntry() {
     state.entry.menu = document.getElementById('f-menu').value;
@@ -3292,6 +3332,57 @@ async function boot(user, profile) {
         if (banner) banner.remove();
       }
     } catch (e) { if (status) status.textContent = '保存に失敗しました'; }
+  }
+  // メッセージの取り消し：確認 → 最新のデータを読み直して該当メッセージだけを除いて保存
+  // （相手が直前に書いたメッセージを消してしまわないよう、画面上の古いデータではなく最新データから削除する）
+  function confirmDeleteMessage(m) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-title">このメッセージを取り消しますか？</div>
+        <div class="delete-warn" style="white-space:pre-wrap;">${escapeHtml(m.text.length > 120 ? m.text.slice(0, 120) + '…' : m.text)}</div>
+        <div class="auth-hint" style="margin-bottom:12px;">取り消したメッセージは、相手の画面からも消えます。元に戻すことはできません。</div>
+        <div id="msg-del-status"></div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" id="msg-del-cancel">やめる</button>
+          <button class="modal-btn modal-btn-danger" id="msg-del-ok">取り消す</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) close(); });
+    document.getElementById('msg-del-cancel').onclick = close;
+    const okBtn = document.getElementById('msg-del-ok');
+    okBtn.onclick = async () => {
+      okBtn.disabled = true;
+      okBtn.textContent = '取り消し中…';
+      try {
+        await deleteThreadMessage(m);
+        close();
+      } catch (e) {
+        console.error('message delete failed', e);
+        document.getElementById('msg-del-status').innerHTML = `<div class="pay-msg err">取り消せませんでした。電波の良い場所でもう一度お試しください。</div>`;
+        okBtn.disabled = false;
+        okBtn.textContent = '取り消す';
+      }
+    };
+  }
+  async function deleteThreadMessage(m) {
+    if (!isOwnMessage(m)) return; // 念のため：他人のメッセージは消さない
+    const key = `entry:${state.playerId}:${state.selected}`;
+    const res = await kvGet(key);
+    const latest = (res && res.value) ? JSON.parse(res.value) : null;
+    if (!latest) return;
+    const latestThread = Array.isArray(latest.thread) ? latest.thread : [];
+    const filtered = latestThread.filter(x => !sameMessage(x, m));
+    latest.thread = filtered;
+    await kvSet(key, JSON.stringify(latest));
+    // 画面側のデータも最新のやり取りに合わせる（この後の自動保存で消したメッセージが復活しないように）
+    state.entry.thread = filtered;
+    const dt = state.selected.split('-');
+    delete state.calCache[`${state.playerId}:${dt[0]}-${dt[1]}`];
+    renderPanel();
   }
   async function sendThread() {
     const input = document.getElementById('t-input');
