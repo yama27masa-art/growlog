@@ -2763,10 +2763,19 @@ async function boot(user, profile) {
           nameSaveBtn.disabled = true;
           try {
             await setDoc(doc(db, 'users', auth.currentUser.uid), { displayName: newName }, { merge: true });
+            // 画面の表示に使っている名前も、すべて新しい名前に置き換える
+            // （以前は state.myName だけを更新していたため、画面を描き直すと古い名前に戻っていた）
+            const oldName = state.myName;
+            const myUid = auth.currentUser.uid;
             state.myName = newName;
-            const titleEl = document.getElementById('head-title');
-            if (titleEl && !isCoach) titleEl.textContent = newName + 'さん';
+            profile.displayName = newName;
+            TEAM.forEach(m => { if (m.uid === myUid) m.name = newName; });
+            COACHES.forEach(c => { if (c.uid === myUid) c.name = newName; });
+            if (isCoach && oldName && oldName in COACH_PHOTO_BY_NAME) {
+              COACH_PHOTO_BY_NAME[newName] = COACH_PHOTO_BY_NAME[oldName];
+            }
             if (statusEl) statusEl.textContent = '保存しました';
+            render();
           } catch (e) { if (statusEl) statusEl.textContent = '保存に失敗しました'; }
           nameSaveBtn.disabled = false;
         };
