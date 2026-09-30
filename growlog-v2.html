@@ -18,7 +18,8 @@
 :root {
   --bg: #F5F3EE; --surface: #FFFFFF; --surface2: #FAF8F4; --border: #E4DFD5; --border2: #D3CCBE;
   --navy: #1B2A45; --navy2: #121E33; --navy-light: #EDF0F5;
-  --text: #1C1914; --text2: #6E6A62; --text3: #A69F92;
+  --text: #1A1A1A; --text2: #3F3F3F; --text3: #555555; --text-faint: #A8A399;
+  --blue: #2F6FD6; --blue-light: #EEF4FD; --red: #D64545; --red-light: #FDEFEF; --line-green: #8DE36A;
   --green: #3A6B4C; --green-light: #EEF4EF; --rust: #B5562C; --rust-light: #FBF0EA; --stitch: #B0402C;
   --radius: 14px; --radius-sm: 9px;
 }
@@ -44,9 +45,9 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .head { background: var(--navy); color: #fff; padding: calc(12px + env(safe-area-inset-top)) 18px 13px; border-bottom: 3px solid var(--stitch); position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
 .head-cal-btn { flex-shrink: 0; width: 64px; height: 64px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); font-size: 32px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
 .head-text { flex: 1; min-width: 0; }
-.head-eyebrow { font-size: 10px; letter-spacing: 0.12em; color: #AEB9CC; font-weight: 500; margin-bottom: 2px; }
-.head-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 18px; letter-spacing: 0.02em; }
-.head-sub { font-size: 11px; color: #C7CEDB; margin-top: 2px; }
+.head-eyebrow { font-size: 12px; letter-spacing: 0.12em; color: #D5DCE8; font-weight: 500; margin-bottom: 2px; }
+.head-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 22px; letter-spacing: 0.02em; }
+.head-sub { font-size: 11px; color: #E1E6EF; margin-top: 2px; }
 .head-date { font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px; font-family: 'Zen Kaku Gothic New', sans-serif; letter-spacing: 0.02em; }
 .wrap { max-width: 640px; margin: 0 auto; padding: 10px 26px 0; }
 .invite-bar { display: flex; align-items: center; gap: 8px; background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12.5px; color: var(--text2); margin-top: 8px; }
@@ -78,10 +79,10 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .tri-sub { font-weight: 400; font-size: 10.5px; color: var(--text3); margin-left: 2px; }
 .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text2); vertical-align: middle; overflow: hidden; }
 .head-title { display: flex; align-items: center; min-width: 0; }
-.head-title .avatar { width: 30px; height: 30px; margin-right: 8px; font-size: 12px; }
+.head-title .avatar { width: 44px; height: 44px; margin-right: 10px; font-size: 16px; border: 2px solid rgba(255,255,255,0.35); }
 .head-title .head-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .head { padding-bottom: 10px; }
-.head-eyebrow { margin-bottom: 4px; }
+.head-eyebrow { margin-bottom: 6px; }
 .match-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .match-row-date { flex-shrink: 0; width: 7.2em; font-size: 12px; font-weight: 700; color: var(--rust); }
 .match-row input { flex: 1; min-width: 0; }
@@ -103,7 +104,7 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .cal-loading { text-align: center; font-size: 11px; color: var(--text3); padding: 0 10px 6px; opacity: 0.85; }
 .cal-star.active { color: var(--rust); }
 .cal-cell.important { background: var(--rust-light); }
-.cal-cell.out { color: var(--text3); cursor: default; }
+.cal-cell.out { color: var(--text-faint); cursor: default; }
 .cal-cell.today { border-color: var(--navy); }
 .cal-cell.selected { background: var(--navy); color: #fff; }
 .cal-cell.selected .cal-star { color: rgba(255,255,255,0.5); }
@@ -116,13 +117,26 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .cal-cell .dot.dot-face.dot-unread::after { content: ''; position: absolute; top: -3px; right: -4px; width: 5px; height: 5px; border-radius: 50%; background: var(--rust); }
 .cal-cell:not(.out):hover { background: var(--navy-light); }
 .cal-cell.selected:hover { background: var(--navy); }
-.section-title { font-size: 12px; font-weight: 700; color: var(--text3); margin: 14px 2px 6px; letter-spacing: 0.04em; }
+.section-title { font-size: 12px; font-weight: 700; color: var(--text); margin: 14px 2px 6px; letter-spacing: 0.04em; }
 .section-title:first-child { margin-top: 0; }
 .panel { margin-top: 10px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; }
-.card-label { font-size: 11.5px; font-weight: 700; color: var(--text2); margin-bottom: 6px; display: flex; align-items: center; gap: 7px; }
-.card.good { border-left: 4px solid var(--green); } .card.issue { border-left: 4px solid var(--rust); }
-.card.good .card-label { color: var(--green); } .card.issue .card-label { color: var(--rust); }
+.card-label { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 7px; }
+.card.good { border-left: 4px solid var(--blue); } .card.issue { border-left: 4px solid var(--red); }
+.card.good .card-label { color: var(--blue); } .card.issue .card-label { color: var(--red); }
+/* メニュー・よかった点・改善点を1枚のカードにまとめる */
+.rec-block + .rec-block { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border2); }
+.rec-block.good .card-label { color: var(--blue); } .rec-block.issue .card-label { color: var(--red); }
+.rec-block.good > textarea { border-color: var(--blue); background: var(--blue-light); }
+.rec-block.issue > textarea { border-color: var(--red); background: var(--red-light); }
+.rec-block.good > textarea:focus { border-color: var(--blue); background: var(--surface); }
+.rec-block.issue > textarea:focus { border-color: var(--red); background: var(--surface); }
+/* ノート全体の登録ボタン */
+.submit-row { margin: 4px 0 12px; }
+.submit-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--navy); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.submit-btn:disabled { opacity: 0.5; cursor: default; }
+.submit-btn.done { background: var(--green); }
+.submit-note { text-align: center; font-size: 11.5px; color: var(--text3); margin-top: 6px; }
 .removed-banner { background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-top: 10px; margin-bottom: 4px; }
 .removed-banner-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 14px; color: var(--navy); margin-bottom: 6px; }
 .removed-banner-text { font-size: 12.5px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
@@ -139,10 +153,13 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .removed-coach-comment { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border2); font-size: 12.5px; color: var(--navy); white-space: pre-wrap; }
 textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: var(--text); resize: none; min-height: 44px; background: var(--surface2); overflow-y: hidden; }
 .goal-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 14px; margin-top: 10px; }
-.goal-label { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.goal-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
 .goal-input { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-size: 14px; font-weight: 700; color: var(--text); background: var(--surface2); margin-bottom: 10px; }
 .goal-input:focus { outline: none; border-color: var(--navy); background: var(--surface); }
-.goal-tasks-label { font-size: 11.5px; font-weight: 700; color: var(--text2); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.goal-tasks-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.goal-ai-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--text); border-radius: 14px; padding: 4px 10px; font-size: 11px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.goal-ai-btn:disabled { opacity: 0.5; cursor: default; }
+.goal-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .goal-progress { font-size: 11px; font-weight: 700; color: var(--green); }
 .goal-tasks { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .goal-task-row { display: flex; align-items: center; gap: 6px; }
@@ -155,21 +172,22 @@ textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--r
 .goal-task-star.active { color: #E0A429; }
 .goal-task-del { flex-shrink: 0; border: none; background: none; color: var(--text3); font-size: 15px; cursor: pointer; padding: 2px 4px; }
 .goal-expand-btn { display: block; border: none; background: none; color: var(--navy); font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 0 8px; }
-.goal-add-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--text2); border-radius: 16px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; }
+.goal-add-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--text); border-radius: 16px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; }
 textarea:focus { outline: none; border-color: var(--navy); background: var(--surface); }
 .tri-group { margin-bottom: 14px; } .tri-group:last-child { margin-bottom: 0; }
-.tri-group-label { font-size: 11.5px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.tri-group-label { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 .tri-row { display: flex; gap: 8px; }
 .tri-opt { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); cursor: pointer; }
 .tri-opt-icon { font-size: 17px; line-height: 1; }
-.tri-opt-text { font-size: 10px; color: var(--text2); font-weight: 500; }
+.tri-opt-text { font-size: 10px; color: var(--text); font-weight: 500; }
 .tri-opt.active { border-color: var(--navy); background: var(--navy-light); }
 .tri-opt.active .tri-opt-text { color: var(--navy); font-weight: 700; }
 .coach-comment { margin-top: 8px; }
-.coach-comment-label { font-size: 10.5px; font-weight: 700; color: var(--text3); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+.coach-comment-label { font-size: 10.5px; font-weight: 700; color: var(--text2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
 .coach-comment textarea { background: var(--navy-light); border-color: var(--border2); min-height: 36px; font-size: 13px; }
 .coach-comment textarea[readonly] { background: var(--surface2); color: var(--text2); cursor: default; }
-.coach-comment textarea[readonly]::placeholder { color: var(--text3); }
+.coach-comment textarea[readonly]::placeholder { color: var(--text-faint); }
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .section-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
 .section-toggle-arrow { font-size: 10px; color: var(--text3); transition: transform .15s; }
 .section-toggle.expanded .section-toggle-arrow { transform: rotate(90deg); }
@@ -209,16 +227,18 @@ textarea:focus { outline: none; border-color: var(--navy); background: var(--sur
 .video-err.show { display: block; }
 .video-divider { text-align: center; font-size: 11px; color: var(--text3); margin: 10px 0; }
 .save-status { font-size: 11px; font-weight: 500; color: var(--text3); margin-left: 6px; }
+.save-status { white-space: nowrap; }
+.card-label .save-status { margin-left: auto; flex-shrink: 0; }
 .thread-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-.thread-title { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 12px; }
+.thread-title { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
 .thread { position: relative; min-height: 20px; }
 .msg { margin-bottom: 14px; max-width: 88%; }
 .msg.mine { margin-left: auto; }
 .msg-meta { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
 .msg.mine .msg-meta { text-align: right; }
 .msg-del { background: none; border: none; padding: 0 0 0 6px; font-size: 11px; color: var(--text3); text-decoration: underline; cursor: pointer; font-family: inherit; }
-.msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; }
-.msg.mine .msg-bubble { background: var(--navy-light); border-color: #D8DEE9; }
+.msg-bubble { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; }
+.msg.mine .msg-bubble { background: var(--line-green); border-color: var(--line-green); }
 .thread-empty { color: var(--text3); font-size: 13px; padding: 4px 0 10px; }
 .thread-input { display: flex; gap: 8px; margin-top: 10px; }
 .thread-input textarea { min-height: 40px; flex: 1; min-width: 0; }
@@ -1531,12 +1551,12 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
             ${c4 ? `<span>${c4.icon} 体:${c4.label}</span>` : ''}
           </div>
         </div>
-        ${data.menu ? `<div class="card"><div class="card-label">練習メニュー</div><div class="removed-readonly-text">${escapeHtml(data.menu)}</div></div>` : ''}
-        ${data.good ? `<div class="card good"><div class="card-label">◎ 良かった点</div><div class="removed-readonly-text">${escapeHtml(data.good)}</div>${data.goodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.goodComment)}</div>` : ''}</div>` : ''}
+        ${data.menu ? `<div class="card"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span></div><div class="removed-readonly-text">${escapeHtml(data.menu)}</div></div>` : ''}
+        ${data.good ? `<div class="card good"><div class="card-label">◎ よかった点</div><div class="removed-readonly-text">${escapeHtml(data.good)}</div>${data.goodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.goodComment)}</div>` : ''}</div>` : ''}
         ${data.issue ? `<div class="card issue"><div class="card-label">△ 改善点</div><div class="removed-readonly-text">${escapeHtml(data.issue)}</div>${data.issueComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.issueComment)}</div>` : ''}</div>` : ''}
-        ${data.gameGood ? `<div class="card good"><div class="card-label">◎ 試合で良かった点</div><div class="removed-readonly-text">${escapeHtml(data.gameGood)}</div>${data.gameGoodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameGoodComment)}</div>` : ''}</div>` : ''}
+        ${data.gameGood ? `<div class="card good"><div class="card-label">◎ 試合でよかった点</div><div class="removed-readonly-text">${escapeHtml(data.gameGood)}</div>${data.gameGoodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameGoodComment)}</div>` : ''}</div>` : ''}
         ${data.gameIssue ? `<div class="card issue"><div class="card-label">△ 試合の改善点</div><div class="removed-readonly-text">${escapeHtml(data.gameIssue)}</div>${data.gameIssueComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameIssueComment)}</div>` : ''}</div>` : ''}
-        ${data.thread && data.thread.length ? `<div class="card"><div class="card-label">やり取り</div>${data.thread.map(m => `<div class="removed-readonly-text"><strong>${escapeHtml(m.authorName || (m.author === 'coach' ? 'コーチ' : '本人'))}：</strong>${escapeHtml(m.text)}</div>`).join('')}</div>` : ''}
+        ${data.thread && data.thread.length ? `<div class="card"><div class="card-label">メッセージ</div>${data.thread.map(m => `<div class="removed-readonly-text"><strong>${escapeHtml(m.authorName || (m.author === 'coach' ? 'コーチ' : '本人'))}：</strong>${escapeHtml(m.text)}</div>`).join('')}</div>` : ''}
       `;
     } catch (e) {
       box.innerHTML = `<div class="removed-date-label">${formatSelectedLabel(rState.selected)}</div><div class="card"><div class="empty-hint">表示に失敗しました</div></div>`;
@@ -1799,7 +1819,6 @@ async function boot(user, profile) {
         <div class="head-text">
           <div class="head-eyebrow">Self+・${profile.sport}</div>
           <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + `<span class="head-name">${escapeHtml(player.name)}さん</span>` : ''}</div>
-          ${!isCoach && state.view === 'detail' ? `<div class="head-date" id="head-date-label">${formatSelectedLabel(state.selected)}</div>` : ''}
         </div>
         ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く">📅</button>` : ''}
       </div>
@@ -2280,7 +2299,7 @@ async function boot(user, profile) {
     const importantIdx = [];
     const normalIdx = [];
     tasks.forEach((t, i) => (t.important ? importantIdx : normalIdx).push(i));
-    const shownIdx = state.goalTasksExpanded ? tasks.map((_, i) => i) : importantIdx;
+    const shownIdx = tasks.map((_, i) => i); // ⭐（重要）での絞り込みは廃止し、常に全件表示
     const hiddenCount = tasks.length - shownIdx.length;
     function taskRowHtml(i) {
       const t = tasks[i];
@@ -2289,22 +2308,20 @@ async function boot(user, profile) {
         <div class="goal-task-row ${done ? 'done' : ''}">
           <div class="goal-task-check" data-check="${i}">${done ? '✓' : ''}</div>
           <input class="goal-task-input" data-i="${i}" placeholder="やること ${i + 1}" value="${escapeAttr(t.text)}">
-          <button type="button" class="goal-task-star ${t.important ? 'active' : ''}" data-star="${i}" aria-label="重要度">${t.important ? '★' : '☆'}</button>
           ${i >= 3 ? `<button class="goal-task-del" data-i="${i}">✕</button>` : ''}
         </div>`;
     }
     box.innerHTML = `
       <div class="goal-label">🎯 月間目標</div>
       <input class="goal-input" id="goal-text" placeholder="目標を書こう" value="${escapeAttr(state.goal.goal)}">
-      <div class="goal-tasks-label">そのためにやること${totalCount ? `<span class="goal-progress">${doneCount}/${totalCount} 達成</span>` : ''}</div>
+      <div class="goal-tasks-label">そのためにやること<button type="button" class="goal-ai-btn" id="ai-goal-tasks-btn">🤖 AIでタスクを自動作成</button></div>
       <div class="goal-tasks" id="goal-tasks">
         ${shownIdx.map(i => taskRowHtml(i)).join('')}
       </div>
-      ${hiddenCount > 0 ? `<button class="goal-expand-btn" id="goal-expand-btn">▶ 他${hiddenCount}件を表示</button>` : ''}
-      ${state.goalTasksExpanded && normalIdx.length ? `<button class="goal-expand-btn" id="goal-collapse-btn">▲ 閉じる</button>` : ''}
-      <button class="goal-add-btn" id="goal-add-task">＋ やることを追加</button>
-      <button class="goal-add-btn" id="ai-goal-tasks-btn">🤖 AIでタスクを自動作成</button>
-      <span class="save-status" id="goal-save-status"></span>
+      <div class="goal-foot">
+        <button class="goal-add-btn" id="goal-add-task">＋ やることを追加</button>
+        <span>${totalCount ? `<span class="goal-progress">${doneCount}/${totalCount} 達成</span>` : ''}<span class="save-status" id="goal-save-status"></span></span>
+      </div>
     `;
     document.getElementById('goal-text').addEventListener('input', scheduleGoalSave);
     box.querySelectorAll('.goal-task-input').forEach(inp => inp.addEventListener('input', scheduleGoalSave));
@@ -2599,6 +2616,10 @@ async function boot(user, profile) {
   function formatTimeHM(ts) {
     const d = new Date(ts);
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function formatDateTime(ts) {
+    const d = new Date(ts);
+    return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   async function openSettingsModal() {
@@ -2930,8 +2951,7 @@ async function boot(user, profile) {
           <button class="practice-end-btn" id="practice-end-btn">📣 「書いてね」を送る</button>
         </div>
       ` : ''}
-      ${isCoach && e.playerUpdatedAt ? `<div class="record-time-badge">🕐 選手の入力：${formatTimeHM(e.playerUpdatedAt)}</div>` : ''}
-      ${!isCoach && state.remindActive ? `<div class="remind-banner">📣 コーチが「書いてね」と伝えています</div>` : ''}
+      ${isCoach && (e.playerUpdatedAt || e.submittedAt) ? `<div class="record-time-badge">${e.playerUpdatedAt ? `🕐 選手の入力：${formatDateTime(e.playerUpdatedAt)}` : ''}${e.playerUpdatedAt && e.submittedAt ? '　' : ''}${e.submittedAt ? `✓ 登録：${formatDateTime(e.submittedAt)}` : ''}</div>` : ''}
       <div class="section-title">コンディション</div>
       <div class="card">
         <div class="tri-group"><div class="tri-group-label">天気</div>${triSelectHtml('weather', e.weather, WEATHER_OPTS)}</div>
@@ -2940,46 +2960,30 @@ async function boot(user, profile) {
         <div class="tri-group"><div class="tri-group-label">技<span class="tri-sub">（技術面）</span></div>${triSelectHtml('skill', e.skill, CONDITION_OPTS)}</div>
         <div class="tri-group"><div class="tri-group-label">体<span class="tri-sub">（ボディ面）</span></div>${triSelectHtml('body', e.body, CONDITION_OPTS)}</div>
       </div>
-      <div class="section-title">練習</div>
-      <div class="card"><div class="card-label">練習メニュー <span class="save-status" id="save-status"></span></div>
-        <textarea id="f-menu" placeholder="今日やった練習内容を書こう">${escapeHtml(e.menu)}</textarea>
-        ${isCoach ? `<div class="menu-send-row"><button class="menu-send-btn" id="menu-send-btn">この内容を送信</button><span class="menu-send-status" id="menu-send-status"></span></div>${targetPickerHtml('menu', state.menuTarget)}` : ''}</div>
-      <div class="card good"><div class="card-label">◎ 良かった点</div>
-        <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea>
-        ${coachCommentHtml('f-good-comment', e.goodComment)}</div>
-      <div class="card issue"><div class="card-label">△ 改善点</div>
-        <textarea id="f-issue" placeholder="難しかったこと、次に直したいこと">${escapeHtml(e.issue)}</textarea>
-        ${coachCommentHtml('f-issue-comment', e.issueComment)}</div>
-      <div class="section-title section-toggle-row">
-        <div class="section-toggle ${state.gameExpanded ? 'expanded' : ''}" id="game-toggle">
-          <span>試合・実戦形式</span><span class="section-toggle-arrow">▶</span>
-        </div>
-        <button type="button" class="important-toggle-btn ${e.important ? 'active' : ''}" id="important-toggle">${e.important ? '★ 試合の日' : '☆ 試合の日にする'}</button>
+      <div class="card record-card">
+        <div class="rec-block"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span> <span class="save-status" id="save-status"></span></div>
+          <textarea id="f-menu" placeholder="今日やった練習内容を書こう">${escapeHtml(e.menu)}</textarea>
+          ${isCoach ? `<div class="menu-send-row"><button class="menu-send-btn" id="menu-send-btn">この内容を送信</button><span class="menu-send-status" id="menu-send-status"></span></div>${targetPickerHtml('menu', state.menuTarget)}` : ''}</div>
+        <div class="rec-block good"><div class="card-label">◎ よかった点</div>
+          <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea>
+          ${coachCommentHtml('f-good-comment', e.goodComment)}</div>
+        <div class="rec-block issue"><div class="card-label">△ 改善点</div>
+          <textarea id="f-issue" placeholder="難しかったこと、次に直したいこと">${escapeHtml(e.issue)}</textarea>
+          ${coachCommentHtml('f-issue-comment', e.issueComment)}</div>
       </div>
-      ${e.important ? (state.role === 'coach'
-        ? (e.matchName ? `<div class="match-name-text">🏆 ${escapeHtml(e.matchName)}</div>` : '')
-        : `<input class="goal-input match-name-input" id="f-match-name" placeholder="試合名（例：秋季大会1回戦）" value="${escapeAttr(e.matchName || '')}">`) : ''}
-      ${state.gameExpanded ? `
-      <div class="card good"><div class="card-label">◎ 良かった点</div>
-        <textarea id="f-game-good" placeholder="試合や実戦形式で良かったこと">${escapeHtml(e.gameGood)}</textarea>
-        ${coachCommentHtml('f-game-good-comment', e.gameGoodComment)}</div>
-      <div class="card issue"><div class="card-label">△ 改善点</div>
-        <textarea id="f-game-issue" placeholder="試合や実戦形式での課題">${escapeHtml(e.gameIssue)}</textarea>
-        ${coachCommentHtml('f-game-issue-comment', e.gameIssueComment)}</div>
-      ` : ''}
-      <div class="card"><div class="card-label">おすすめ動画</div>
+      <div class="card"><div class="card-label">動画</div>
         <div class="video-list" id="video-list">
           ${e.videos.map((v, i) => `<div class="video-item"><a href="${escapeAttr(v.url)}" target="_blank" rel="noopener">${escapeHtml(v.title || v.url)}</a><button data-i="${i}" class="video-del">✕</button></div>`).join('') || '<div class="thread-empty">まだ動画はありません</div>'}
         </div>
-        <input id="v-title" class="video-title-shared" placeholder="タイトル（任意・下のどちらの追加方法でも使えます）">
-        <div class="video-add"><input id="v-url" placeholder="URLを貼り付け"><button id="v-add">追加</button></div>
+        <input id="v-title" class="video-title-shared" placeholder="動画タイトル">
+        <div class="video-add"><input id="v-url" placeholder="外部URL"><button id="v-add">追加</button></div>
         <div class="video-divider">または</div>
         <div class="video-drop" id="v-drop">
           <span class="v-drop-icon">🎥</span>
-          <div class="v-drop-main">タップして動画を選ぶ</div>
+          <div class="v-drop-main">自分の端末からタップして動画を選ぶ</div>
           <div class="v-drop-sub">またはドラッグ＆ドロップ（長い動画・大きいファイルもOK）</div>
         </div>
-        <input type="file" id="v-file" accept="video/*">
+        <input type="file" id="v-file" accept="video/*" hidden style="display:none">
         <div class="video-filename" id="v-filename"></div>
         <div class="video-processing-hint">※アップロード後、変換処理のため動画が見られるようになるまで数十秒〜数分かかることがあります</div>
         <button class="video-upload-btn" id="v-upload-btn" disabled>この動画を追加</button>
@@ -2990,11 +2994,16 @@ async function boot(user, profile) {
         <div class="video-err" id="v-err"></div>
         ${isCoach ? targetPickerHtml('video', state.videoTarget) : ''}
       </div>
+      ${!isCoach ? `
+      <div class="submit-row">
+        <button type="button" class="submit-btn ${e.submittedAt ? 'done' : ''}" id="submit-btn">${e.submittedAt ? '✓ 登録済み（もう一度登録する）' : '登録'}</button>
+        ${e.submittedAt ? `<div class="submit-note">最終登録：${formatDateTime(e.submittedAt)}</div>` : ''}
+      </div>` : ''}
       <div class="thread-card">
-        <div class="thread-title">やり取り</div>
+        <div class="thread-title">メッセージ</div>
         ${threadNoticeHtml(e)}
-        <div class="thread" id="thread">${e.thread.length ? e.thread.map((m, i) => threadMsgHtml(m, i)).join('') : '<div class="thread-empty">まだやり取りはありません</div>'}</div>
-        <div class="thread-input"><textarea id="t-input" placeholder="わからないことがあったら書いてみよう"></textarea><button id="t-send">送信</button></div>
+        <div class="thread" id="thread">${e.thread.length ? e.thread.map((m, i) => threadMsgHtml(m, i)).join('') : '<div class="thread-empty">まだメッセージはありません</div>'}</div>
+        <div class="thread-input"><textarea id="t-input" aria-label="メッセージ"></textarea><button id="t-send">送信</button></div>
       </div>
     `;
     document.getElementById('v-add').onclick = async () => {
@@ -3005,6 +3014,25 @@ async function boot(user, profile) {
       renderPanel();
     };
     setupVideoUpload();
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+      submitBtn.onclick = async () => {
+        clearTimeout(autoSaveTimer);
+        submitBtn.disabled = true;
+        submitBtn.textContent = '登録中…';
+        const prev = state.entry.submittedAt;
+        // 次のアップデートで、この submittedAt の更新をきっかけにコーチへ通知する
+        state.entry.submittedAt = Date.now();
+        const ok = await saveEntry();
+        if (ok === false) {
+          state.entry.submittedAt = prev;
+          submitBtn.disabled = false;
+          submitBtn.textContent = '登録に失敗しました。もう一度押してください';
+          return;
+        }
+        renderPanel();
+      };
+    }
     const matchNameEl = document.getElementById('f-match-name');
     if (matchNameEl) {
       matchNameEl.addEventListener('input', () => {
@@ -3012,7 +3040,6 @@ async function boot(user, profile) {
         scheduleAutoSave();
       });
     }
-    document.getElementById('game-toggle').onclick = () => { state.gameExpanded = !state.gameExpanded; renderPanel(); };
     const importantBtn = document.getElementById('important-toggle');
     if (importantBtn) {
       importantBtn.onclick = () => {
@@ -3270,7 +3297,7 @@ async function boot(user, profile) {
     if (last.author === state.role) return '';
     if (!last.tsRaw || last.tsRaw <= (state.lastReadEpoch || 0)) return '';
     const who = state.role === 'coach' ? (last.authorName || '選手') : 'コーチ';
-    return `<div class="thread-notice">🔔 ${escapeHtml(who)}が新しくやりとりに記入しました</div>`;
+    return `<div class="thread-notice">🔔 ${escapeHtml(who)}から新しいメッセージが届きました</div>`;
   }
   // 自分が送ったメッセージか（複数コーチがいても本人だけ取り消せるよう、送信者のuidで判定する。
   //  uidが記録されていない古いメッセージは、役割と名前が一致する場合のみ本人とみなす）
@@ -3331,7 +3358,8 @@ async function boot(user, profile) {
         const banner = document.querySelector('.remind-banner');
         if (banner) banner.remove();
       }
-    } catch (e) { if (status) status.textContent = '保存に失敗しました'; }
+      return true;
+    } catch (e) { if (status) status.textContent = '保存に失敗しました'; return false; }
   }
   // メッセージの取り消し：確認 → 最新のデータを読み直して該当メッセージだけを除いて保存
   // （相手が直前に書いたメッセージを消してしまわないよう、画面上の古いデータではなく最新データから削除する）
