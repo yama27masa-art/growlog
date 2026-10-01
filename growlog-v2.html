@@ -1,19 +1,24 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dream-notebook">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Self+</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B2A45">
+<meta name="theme-color" content="#121212">
+<script>
+  // テーマ切替：既定は dream-notebook。localStorage に 'selfplus-theme' があればそれを使う
+  // 例）localStorage.setItem('selfplus-theme', 'academic-navy')
+  try { var t = localStorage.getItem('selfplus-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+</script>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Self+">
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DM+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Oswald:wght@500;600;700&family=Montserrat:wght@600;700;800&family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=DM+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Oswald:wght@500;600;700&family=Montserrat:wght@600;700;800&family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet"></noscript>
 <style>
 :root {
   --bg: #F5F3EE; --surface: #FFFFFF; --surface2: #FAF8F4; --border: #E4DFD5; --border2: #D3CCBE;
@@ -22,36 +27,79 @@
   --blue: #2F6FD6; --blue-light: #EEF4FD; --red: #D64545; --red-light: #FDEFEF; --line-green: #8DE36A;
   --green: #3A6B4C; --green-light: #EEF4EF; --rust: #B5562C; --rust-light: #FBF0EA; --stitch: #B0402C;
   --radius: 14px; --radius-sm: 9px;
+  --splash-bg: #1B2A45; --splash-gap: #1B2A45;
+  /* 役割ごとの変数（テーマで上書きする） */
+  --header-bg: var(--navy); --header-text: #FFFFFF; --header-sub: #D5DCE8;
+  --page-bg: var(--navy);
+  --on-primary: #FFFFFF;
+  --primary-grad: var(--navy);
+  --primary-glow: none;
+  --card-bg: var(--surface);
+  --card-shadow: none;
+  --focus-ring: none;
+  --bubble-mine-text: var(--text);
+  --badge-bg: rgba(255,255,255,0.14); --badge-text: #FFFFFF;
+  --font-body: 'Noto Sans JP', sans-serif;
+  --font-display: 'Zen Kaku Gothic New', sans-serif;
+  --font-num: 'DM Mono', monospace;
+  --font-latin: 'Noto Sans JP', sans-serif;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Noto Sans JP', sans-serif; -webkit-font-smoothing: antialiased; padding-bottom: 40px; }
+body { margin: 0; background: var(--page-bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; padding-bottom: 40px; }
 
-/* ---- 起動スプラッシュ（Self+ワードマーク→ヘッダーへ折りたたみ） ---- */
-#introSplash { position: fixed; inset: 0; z-index: 9999; background: var(--navy); display: flex; align-items: center; justify-content: center; }
-.intro-word { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; color: #fff; font-size: 15vw; letter-spacing: 0;
-  transform-origin: center center;
-  opacity: 0;
-  animation: introIn 0.5s ease forwards 0.05s;
-}
-@keyframes introIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
 .plus-mark { position: relative; display: inline-block; width: 0.62em; height: 0.62em; margin-left: 0.09em; vertical-align: -0.08em; }
-.plus-mark::before, .plus-mark::after { content: ''; position: absolute; background: #FF7A2E; border-radius: 1px; }
+.plus-mark::before, .plus-mark::after { content: ''; position: absolute; background: var(--plus-color, #FF7A2E); border-radius: 1px; }
 .plus-mark::before { width: 100%; height: 26%; top: 50%; left: 0; transform: translateY(-50%); }
 .plus-mark::after { height: 100%; width: 26%; left: 50%; top: 0; transform: translateX(-50%); }
-.intro-word .plus-mark { width: 0.62em; height: 0.62em; margin-left: 0.09em; vertical-align: -0.02em; }
-#introSplash.fading { animation: introFade 0.3s ease forwards; }
-@keyframes introFade { to { opacity: 0; } }
-.mono { font-family: 'DM Mono', monospace; } .disp { font-family: 'Zen Kaku Gothic New', sans-serif; }
-.head { background: var(--navy); color: #fff; padding: calc(12px + env(safe-area-inset-top)) 18px 13px; border-bottom: 3px solid var(--stitch); position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+
+/* ---- 起動スプラッシュ（シネマティック版） ----
+   0.0-0.8s  S と＋が合体した状態で登場
+   0.9-2.3s  S は左へ、＋は右へ開き、＋が一瞬光る
+   1.6-2.7s  間から elf がフェードインして Self+ が完成
+   2.9s-     アプリの準備ができたら、手前に迫りながら消える（.exit） */
+#introSplash { position: fixed; inset: 0; z-index: 9999; background: var(--splash-bg, var(--header-bg));
+  display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#introSplash.exit { animation: splashBgOut 0.7s ease 0.1s forwards; pointer-events: none; }
+/* 字体はアイコンの「S」と同じ Helvetica 系（iPhone では Helvetica Neue Bold）。端末内蔵フォントなので起動直後から崩れない */
+.intro-logo { display: inline-flex; align-items: center; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700;
+  font-size: min(19vw, 100px); line-height: 1; color: #F2F2F2; letter-spacing: -0.015em;
+  -webkit-text-stroke: 0.018em #F2F2F2; text-shadow: 0 0.025em 0.05em rgba(0,0,0,0.55);
+  opacity: 0; transform: scale(0.9);
+  animation: logoIn 0.8s cubic-bezier(.2,.8,.2,1) forwards; will-change: transform, opacity; }
+.il-s { display: inline-block; }
+.il-elf { display: inline-block; overflow: hidden; max-width: 0; white-space: nowrap;
+  animation: elfOpen 1.4s cubic-bezier(.65,0,.25,1) 0.9s forwards; }
+.il-elf > span { display: inline-block; opacity: 0; letter-spacing: -0.12em; filter: blur(6px);
+  animation: elfIn 1.1s cubic-bezier(.2,.8,.2,1) 1.6s forwards; }
+.il-s, .il-elf { position: relative; z-index: 1; }
+/* ＋はアイコンと同じく、右下に少し重なる「外枠だけ」のネオン。重なった所は背景色で切り抜く */
+.il-plus { position: relative; z-index: 2; display: inline-flex; margin-left: -0.17em; transform: translateY(0.2em); }
+.il-plus-svg { width: 0.66em; height: 0.66em; overflow: visible; display: block; }
+.ilp-gap { fill: var(--splash-gap, #121212); stroke: var(--splash-gap, #121212); stroke-width: 16; stroke-linejoin: round; }
+.ilp-line, .ilp-glow { fill: none; stroke: var(--plus-color, #FF7A2E); stroke-linejoin: round; }
+.ilp-line { stroke-width: 6.5; }
+.ilp-glow { stroke-width: 12; opacity: 0.75; animation: plusPulse 1.2s ease-out 0.95s both; }
+#introSplash.exit .intro-logo { animation: logoOut 0.8s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes logoIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes elfOpen { from { max-width: 0; } to { max-width: 1.6em; } }
+@keyframes elfIn { from { opacity: 0; letter-spacing: -0.12em; filter: blur(6px); } to { opacity: 1; letter-spacing: 0; filter: blur(0); } }
+@keyframes plusPulse { 0% { opacity: 0.75; } 40% { opacity: 1; } 100% { opacity: 0.85; } }
+@keyframes logoOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.35); } }
+@keyframes splashBgOut { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .intro-logo, .il-elf, .il-elf > span, .ilp-glow { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+}
+.mono { font-family: var(--font-num); } .disp { font-family: var(--font-display); }
+.head { background: var(--header-bg); color: var(--header-text); padding: calc(12px + env(safe-area-inset-top)) 18px 13px; border-bottom: 3px solid var(--stitch); position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
 .head-cal-btn { flex-shrink: 0; width: 64px; height: 64px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); font-size: 32px; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
 .head-text { flex: 1; min-width: 0; }
-.head-eyebrow { font-size: 12px; letter-spacing: 0.12em; color: #D5DCE8; font-weight: 500; margin-bottom: 2px; }
-.head-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 22px; letter-spacing: 0.02em; }
-.head-sub { font-size: 11px; color: #E1E6EF; margin-top: 2px; }
-.head-date { font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px; font-family: 'Zen Kaku Gothic New', sans-serif; letter-spacing: 0.02em; }
+.head-eyebrow { font-size: 12px; letter-spacing: 0.12em; color: var(--header-sub); font-weight: 500; margin-bottom: 2px; }
+.head-title { font-family: var(--font-display); font-weight: 900; font-size: 22px; letter-spacing: 0.02em; }
+.head-sub { font-size: 11px; color: var(--header-sub); margin-top: 2px; }
+.head-date { font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px; font-family: var(--font-display); letter-spacing: 0.02em; }
 .wrap { max-width: 640px; margin: 0 auto; padding: 10px 26px 0; }
 .invite-bar { display: flex; align-items: center; gap: 8px; background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12.5px; color: var(--text2); margin-top: 8px; }
-.invite-code { font-family: 'DM Mono', monospace; font-weight: 700; font-size: 15px; letter-spacing: 0.08em; color: var(--navy); }
+.invite-code { font-family: var(--font-num); font-weight: 700; font-size: 15px; letter-spacing: 0.08em; color: var(--navy); }
 .invite-bar button { margin-left: auto; border: 1px solid var(--border2); background: var(--surface); border-radius: 8px; padding: 5px 10px; font-size: 11.5px; color: var(--text2); cursor: pointer; }
 .ptabs { display: flex; gap: 7px; overflow-x: auto; padding: 8px 14px 0; scrollbar-width: none; }
 .ptab-search { width: 100%; padding: 9px 13px; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; font-family: inherit; background: var(--surface); color: var(--text); margin-top: 8px; }
@@ -61,7 +109,7 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .ptab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
 .cal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 10px; }
 .cal-compact { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; cursor: default; }
-.cal-compact-label { font-family: 'DM Mono', monospace; font-weight: 500; font-size: 14px; color: var(--text); }
+.cal-compact-label { font-family: var(--font-num); font-weight: 500; font-size: 14px; color: var(--text); }
 .cal-grid-wrap { border-top: 1px solid var(--border); }
 .cal-today-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--navy); font-size: 12px; font-weight: 700; border-radius: 16px; padding: 6px 12px; cursor: pointer; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); }
@@ -72,7 +120,7 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .dream-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 14px; margin-top: 12px; margin-bottom: 0; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px; gap: 2px; }
 .cal-dow { text-align: center; font-size: 10.5px; color: var(--text3); font-weight: 500; padding-bottom: 3px; }
-.cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 12.5px; color: var(--text); cursor: pointer; position: relative; font-family: 'DM Mono', monospace; border: 1px solid transparent; }
+.cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 12.5px; color: var(--text); cursor: pointer; position: relative; font-family: var(--font-num); border: 1px solid transparent; }
 .cal-star { position: absolute; top: 2px; right: 3px; color: var(--border2); font-size: 10px; line-height: 1; pointer-events: none; z-index: 2; }
 .cal-star.active { color: var(--rust); }
 .cal-cell { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -133,12 +181,12 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .rec-block.issue > textarea:focus { border-color: var(--red); background: var(--surface); }
 /* ノート全体の登録ボタン */
 .submit-row { margin: 4px 0 12px; }
-.submit-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--navy); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.submit-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--primary-grad); color: var(--on-primary); box-shadow: var(--primary-glow); letter-spacing: 0.08em; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .submit-btn:disabled { opacity: 0.5; cursor: default; }
 .submit-btn.done { background: var(--green); }
 .submit-note { text-align: center; font-size: 11.5px; color: var(--text3); margin-top: 6px; }
 .removed-banner { background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-top: 10px; margin-bottom: 4px; }
-.removed-banner-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 14px; color: var(--navy); margin-bottom: 6px; }
+.removed-banner-title { font-family: var(--font-display); font-weight: 900; font-size: 14px; color: var(--navy); margin-bottom: 6px; }
 .removed-banner-text { font-size: 12.5px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
 .removed-reactivate-btn { width: 100%; padding: 11px; border: none; border-radius: var(--radius-sm); background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
 .removed-reactivate-btn:disabled { opacity: 0.45; cursor: default; }
@@ -147,11 +195,11 @@ body { margin: 0; background: var(--navy); color: var(--text); font-family: 'Not
 .removed-refresh-hint { font-size: 11.5px; color: var(--text3); margin-top: 4px; }
 .removed-join-row { display: flex; gap: 8px; }
 .removed-join-row .modal-select { flex: 1; }
-.removed-date-label { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); margin: 12px 2px 6px; }
+.removed-date-label { font-family: var(--font-num); font-size: 13px; color: var(--text2); margin: 12px 2px 6px; }
 .removed-cond-row { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: var(--text2); }
 .removed-readonly-text { font-size: 13.5px; color: var(--text); white-space: pre-wrap; line-height: 1.6; }
 .removed-coach-comment { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border2); font-size: 12.5px; color: var(--navy); white-space: pre-wrap; }
-textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: var(--text); resize: none; min-height: 44px; background: var(--surface2); overflow-y: hidden; }
+textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-family: var(--font-body); font-size: 14px; color: var(--text); resize: none; min-height: 44px; background: var(--surface2); overflow-y: hidden; }
 .goal-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 14px; margin-top: 10px; }
 .goal-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
 .goal-input { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-size: 14px; font-weight: 700; color: var(--text); background: var(--surface2); margin-bottom: 10px; }
@@ -238,7 +286,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .msg.mine .msg-meta { text-align: right; }
 .msg-del { background: none; border: none; padding: 0 0 0 6px; font-size: 11px; color: var(--text3); text-decoration: underline; cursor: pointer; font-family: inherit; }
 .msg-bubble { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; }
-.msg.mine .msg-bubble { background: var(--line-green); border-color: var(--line-green); }
+.msg.mine .msg-bubble { background: var(--line-green); border-color: var(--line-green); color: var(--bubble-mine-text); }
 .thread-empty { color: var(--text3); font-size: 13px; padding: 4px 0 10px; }
 .thread-input { display: flex; gap: 8px; margin-top: 10px; }
 .thread-input textarea { min-height: 40px; flex: 1; min-width: 0; }
@@ -281,16 +329,16 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 /* ── auth screen ── */
 .auth-wrap { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; background: var(--bg); }
 .auth-box { width: 100%; max-width: 400px; }
-.auth-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 22px; color: var(--navy); margin-bottom: 14px; }
+.auth-title { font-family: var(--font-display); font-weight: 900; font-size: 22px; color: var(--navy); margin-bottom: 14px; }
 .auth-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
 .auth-tab { flex: 1; text-align: center; padding: 10px; border-radius: 10px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); font-weight: 700; font-size: 13px; cursor: pointer; }
 .auth-tab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
 .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
 .auth-card label { display: block; font-size: 12px; color: var(--text2); font-weight: 700; margin: 12px 0 4px; }
 .auth-card label:first-child { margin-top: 0; }
-.auth-card input { width: 100%; padding: 10px 12px; border: 1px solid var(--border2); border-radius: 10px; font-size: 14px; font-family: inherit; background: #fff; color: var(--text); }
+.auth-card input { width: 100%; padding: 10px 12px; border: 1px solid var(--border2); border-radius: 10px; font-size: 14px; font-family: inherit; background: var(--surface); color: var(--text); }
 .birthdate-row { display: flex; gap: 6px; }
-.birthdate-row select { flex: 1; min-width: 0; padding: 10px 6px; border: 1px solid var(--border2); border-radius: 10px; font-size: 13.5px; font-family: inherit; background: #fff; color: var(--text); }
+.birthdate-row select { flex: 1; min-width: 0; padding: 10px 6px; border: 1px solid var(--border2); border-radius: 10px; font-size: 13.5px; font-family: inherit; background: var(--surface); color: var(--text); }
 .role-row { display: flex; gap: 8px; margin-top: 4px; }
 .role-opt { flex: 1; text-align: center; padding: 10px; border-radius: 10px; border: 1px solid var(--border2); cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); }
 .role-opt.active { border-color: var(--navy); background: var(--navy); color: #fff; }
@@ -308,16 +356,16 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 /* ── paywall ── */
 .pay-wrap { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 50px 16px; background: var(--bg); }
 .pay-box { width: 100%; max-width: 400px; text-align: center; }
-.pay-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 20px; color: var(--navy); margin-bottom: 6px; }
+.pay-title { font-family: var(--font-display); font-weight: 900; font-size: 20px; color: var(--navy); margin-bottom: 6px; }
 .pay-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
 .pay-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: left; }
 .pay-role { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
-.pay-amount { font-family: 'DM Mono', monospace; font-size: 30px; color: var(--navy); font-weight: 500; margin-bottom: 14px; }
+.pay-amount { font-family: var(--font-num); font-size: 30px; color: var(--navy); font-weight: 500; margin-bottom: 14px; }
 .plan-grid { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
 .plan-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer; text-align: left; }
 .plan-opt.active { border-color: var(--navy); background: var(--navy-light); }
 .plan-opt-label { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
-.plan-opt-amount { font-family: 'DM Mono', monospace; font-size: 17px; color: var(--navy); font-weight: 700; white-space: nowrap; }
+.plan-opt-amount { font-family: var(--font-num); font-size: 17px; color: var(--navy); font-weight: 700; white-space: nowrap; }
 .plan-opt-amount span { font-size: 10px; color: var(--text3); font-weight: 500; }
 .plan-opt-per { font-size: 10.5px; color: var(--text3); white-space: nowrap; margin-left: 10px; }
 .pay-amount span { font-size: 12px; color: var(--text3); margin-left: 4px; }
@@ -347,11 +395,11 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 @media (min-width: 640px) { .modal-overlay { align-items: center; } }
 .modal-card { background: var(--surface); border-radius: 16px 16px 0 0; padding: 18px 18px 22px; width: 100%; max-width: 480px; max-height: 86vh; overflow-y: auto; }
 @media (min-width: 640px) { .modal-card { border-radius: var(--radius); } }
-.modal-title { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 16px; color: var(--navy); margin-bottom: 4px; }
+.modal-title { font-family: var(--font-display); font-weight: 900; font-size: 16px; color: var(--navy); margin-bottom: 4px; }
 .modal-sub { font-size: 12px; color: var(--text2); margin-bottom: 14px; }
 .modal-field { margin-bottom: 12px; }
 .modal-label { font-size: 11.5px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
-.modal-select, .modal-textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: var(--text); background: var(--surface2); }
+.modal-select, .modal-textarea { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 11px; font-family: var(--font-body); font-size: 14px; color: var(--text); background: var(--surface2); }
 .modal-textarea { min-height: 100px; resize: vertical; }
 .modal-select:focus, .modal-textarea:focus { outline: none; border-color: var(--navy); background: var(--surface); }
 .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
@@ -375,10 +423,159 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .group-member-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 13px; border-top: 1px solid var(--border); cursor: pointer; }
 .group-member-item:first-child { border-top: none; }
 .group-member-item input { width: auto; }
+
+
+
+/* ---- ロゴ（スプラッシュ・アイコンと同じ字体とバランス） ---- */
+.brand-logo { display: inline-flex; align-items: center; vertical-align: middle; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; line-height: 1; letter-spacing: -0.015em; color: var(--brand-text, var(--navy)); }
+.bl-word { position: relative; z-index: 1; -webkit-text-stroke: 0.018em currentColor; }
+.bl-plus { position: relative; z-index: 2; display: inline-flex; margin-left: -0.17em; transform: translateY(0.2em); }
+.bl-plus svg { width: 0.66em; height: 0.66em; overflow: visible; display: block; }
+.blp-gap { fill: var(--brand-gap, var(--bg)); stroke: var(--brand-gap, var(--bg)); stroke-width: 16; stroke-linejoin: round; }
+.blp-line, .blp-glow { fill: none; stroke: var(--plus-color, #FF7A2E); stroke-linejoin: round; }
+.blp-line { stroke-width: 6.5; } .blp-glow { stroke-width: 12; opacity: 0.8; }
+.auth-title .brand-logo { font-size: 34px; }
+.auth-title { --brand-gap: var(--bg); margin-bottom: 18px; }
+.pay-title .brand-logo { font-size: 26px; }
+.pay-title { --brand-gap: var(--surface); }
+.bl-after { margin-left: 0.45em; color: var(--text); }
+html[data-theme="dream-notebook"] .brand-logo { --brand-text: #F2F2F2; }
+/* =========================================================
+   テーマ共通の仕上げ
+   ========================================================= */
+.brand-badge { display: inline-block; font-family: var(--font-latin); font-weight: 700; font-size: 11px; letter-spacing: 0.06em; padding: 2px 8px; margin-right: 8px; border-radius: 4px; background: var(--badge-bg); color: var(--badge-text); vertical-align: 1px; }
+.head-eyebrow { display: flex; align-items: center; }
+.card, .goal-card, .thread-card, .cal, .auth-card, .pay-card, .modal-card { background: var(--card-bg); box-shadow: var(--card-shadow); }
+textarea:focus, input:focus, .goal-input:focus, .goal-task-input:focus { box-shadow: var(--focus-ring); }
+.submit-btn, .auth-btn, .pay-btn, .video-upload-btn, .menu-send-btn, .modal-btn-send, .removed-reactivate-btn { transition: transform .12s ease, filter .12s ease, box-shadow .2s ease; }
+.submit-btn:active, .auth-btn:active, .pay-btn:active, .goal-ai-btn:active { transform: scale(0.98); filter: brightness(1.12); }
+.cal-cell, .goal-progress, .invite-code, .pay-amount, .plan-opt-amount, .cal-compact-label, .removed-date-label, .msg-meta { font-variant-numeric: tabular-nums; }
+
+/* =========================================================
+   1. dream-notebook（夢ノート / 既定）
+   マットブラック × エレクトリックオレンジ × ホワイト
+   ========================================================= */
+html[data-theme="dream-notebook"] {
+  --bg: #121212; --surface: #1E1E1E; --surface2: #252525; --border: #2D2D2D; --border2: #3A3A3A;
+  --navy: #E8804A; --navy2: #CF6B36; --navy-light: rgba(232,128,74,0.12);
+  --text: #FFFFFF; --text2: #D7DCE3; --text3: #A0AEC0; --text-faint: #6B7280;
+  --blue: #00E676; --blue-light: rgba(0,230,118,0.08); --red: #FF5252; --red-light: rgba(255,82,82,0.08);
+  --line-green: #25D366; --bubble-mine-text: #08130C;
+  --green: #00E676; --green-light: rgba(0,230,118,0.10); --rust: #E8804A; --rust-light: rgba(232,128,74,0.12); --stitch: #D9733E;
+  --radius: 12px; --radius-sm: 8px;
+  --header-bg: linear-gradient(180deg, #232323 0%, #161616 100%); --header-text: #FFFFFF; --header-sub: #A0AEC0;
+  --page-bg: #121212;
+  --on-primary: #FFFFFF;
+  --primary-grad: linear-gradient(135deg, #EC9361 0%, #E07A43 55%, #CF6B36 100%);
+  --primary-glow: 0 4px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+  --card-bg: linear-gradient(180deg, #222222 0%, #1B1B1B 100%);
+  --card-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.35);
+  --focus-ring: 0 0 0 3px rgba(232,128,74,0.22);
+  --badge-bg: #E07A43; --badge-text: #FFFFFF;
+  --font-body: 'Noto Sans JP', sans-serif;
+  --font-display: 'Noto Sans JP', sans-serif;
+  --font-num: 'Oswald', 'Noto Sans JP', sans-serif;
+  --font-latin: 'Montserrat', 'Noto Sans JP', sans-serif;
+  color-scheme: dark;
+}
+html[data-theme="dream-notebook"] .wrap { background: transparent; }
+/* ロゴ：Selfは白、＋だけオレンジ */
+html[data-theme="dream-notebook"] { --plus-color: #E8804A; --splash-bg: #121212; --splash-gap: #121212; }
+html[data-theme="dream-notebook"] .auth-title { color: #FFFFFF; }
+html[data-theme="dream-notebook"] .head-title { font-weight: 900; letter-spacing: 0.04em; }
+html[data-theme="dream-notebook"] .section-title { font-family: var(--font-latin); letter-spacing: 0.12em; color: var(--text3); }
+html[data-theme="dream-notebook"] .goal-ai-btn { background: var(--primary-grad); color: #fff; border: none; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+html[data-theme="dream-notebook"] .msg-bubble { background: #2A2A2A; border-color: #333; }
+html[data-theme="dream-notebook"] .cal-cell { font-family: var(--font-num); font-size: 14px; }
+html[data-theme="dream-notebook"] .cal-cell.selected { background: var(--primary-grad); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
+html[data-theme="dream-notebook"] .tri-opt.active { box-shadow: 0 0 0 1px var(--navy); }
+html[data-theme="dream-notebook"] .goal-task-check { background: var(--surface2); }
+html[data-theme="dream-notebook"] .head-cal-btn { border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); }
+
+/* =========================================================
+   2. school-notebook（ルーズリーフ風）
+   ウォームホワイト × 罫線 × 深緑 ＆ オレンジ
+   ========================================================= */
+html[data-theme="school-notebook"] {
+  --splash-bg: #2E5E4E; --splash-gap: #2E5E4E;
+  --bg: #F7F4EC; --surface: #FFFFFD; --surface2: #FFFFFD; --border: #E6E0D2; --border2: #D6CEBB;
+  --navy: #2E5E4E; --navy2: #224739; --navy-light: #E8F1EC;
+  --text: #22302A; --text2: #3A4741; --text3: #55605A; --text-faint: #A9A491;
+  --blue: #2F6FBF; --blue-light: #F3F7FC; --red: #D2483F; --red-light: #FCF2F1; --line-green: #A6DF7A;
+  --green: #2E7D55; --green-light: #EAF3EC; --rust: #E8782A; --rust-light: #FDF0E6; --stitch: #F08A24;
+  --radius: 16px; --radius-sm: 10px;
+  --header-bg: #2E5E4E; --header-sub: #CFE3D8; --page-bg: #2E5E4E;
+  --primary-grad: linear-gradient(135deg, #3A7360, #2E5E4E);
+  --primary-glow: 0 4px 12px rgba(46,94,78,0.25);
+  --card-shadow: 0 1px 2px rgba(60,50,30,0.06);
+  --focus-ring: 0 0 0 3px rgba(240,138,36,0.22);
+  --badge-bg: #F08A24; --badge-text: #FFFFFF;
+  --font-body: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+  --font-display: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+  --font-num: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+  --font-latin: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+}
+/* 罫線（ルーズリーフ）：記録の入力欄に横線を引く */
+html[data-theme="school-notebook"] .rec-block > textarea,
+html[data-theme="school-notebook"] #f-menu {
+  line-height: 28px; padding-top: 4px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #DCE5EE 27px, #DCE5EE 28px);
+  background-attachment: local;
+}
+html[data-theme="school-notebook"] .card, html[data-theme="school-notebook"] .goal-card { border-left: 3px solid #F2B8B0; }
+
+/* =========================================================
+   3. academic-navy（スタイリッシュネイビー）
+   ディープネイビー × エメラルド × ホワイト
+   ========================================================= */
+html[data-theme="academic-navy"] {
+  --splash-bg: #0F2A4A; --splash-gap: #0F2A4A;
+  --bg: #F3F6F9; --surface: #FFFFFF; --surface2: #F7F9FC; --border: #E2E8F0; --border2: #CBD5E1;
+  --navy: #0F2A4A; --navy2: #0A1E36; --navy-light: #EAF0F7;
+  --text: #0F172A; --text2: #334155; --text3: #4A5568; --text-faint: #A0AEC0;
+  --blue: #2563EB; --blue-light: #EEF3FE; --red: #DC4A4A; --red-light: #FDEFEF; --line-green: #A7EBCB;
+  --green: #0F8B6E; --green-light: #E6F5F0; --rust: #0F8B6E; --rust-light: #E6F5F0; --stitch: #10B981;
+  --radius: 10px; --radius-sm: 7px;
+  --header-bg: #0F2A4A; --header-sub: #B9C7DA; --page-bg: #0F2A4A;
+  --primary-grad: linear-gradient(135deg, #16385F, #0F2A4A);
+  --primary-glow: 0 4px 14px rgba(15,42,74,0.22);
+  --card-shadow: 0 1px 3px rgba(15,23,42,0.06);
+  --focus-ring: 0 0 0 3px rgba(16,185,129,0.22);
+  --badge-bg: #10B981; --badge-text: #FFFFFF;
+  --font-body: 'Noto Sans JP', sans-serif;
+  --font-display: 'Noto Sans JP', sans-serif;
+  --font-num: 'Outfit', 'Noto Sans JP', sans-serif;
+  --font-latin: 'Outfit', 'Noto Sans JP', sans-serif;
+}
+html[data-theme="academic-navy"] .head-title { font-weight: 700; }
+
+/* =========================================================
+   4. architectural-beige（建築北欧モダン）
+   サンドベージュ × スレートグレー × テラコッタ
+   ========================================================= */
+html[data-theme="architectural-beige"] {
+  --splash-bg: #3E4A52; --splash-gap: #3E4A52;
+  --bg: #EFEAE1; --surface: #FBF9F5; --surface2: #F4F0E8; --border: #E1D9CA; --border2: #CFC4B1;
+  --navy: #3E4A52; --navy2: #2F393F; --navy-light: #E8EBED;
+  --text: #2A2A28; --text2: #424548; --text3: #5A5D60; --text-faint: #ADA697;
+  --blue: #4A72A8; --blue-light: #ECF1F7; --red: #B9553B; --red-light: #F7EBE6; --line-green: #B4D9A0;
+  --green: #5E7F67; --green-light: #ECF1EC; --rust: #B85C38; --rust-light: #F5E8E0; --stitch: #C2643F;
+  --radius: 6px; --radius-sm: 4px;
+  --header-bg: #3E4A52; --header-sub: #D3D8DB; --page-bg: #3E4A52;
+  --primary-grad: #3E4A52;
+  --card-shadow: none;
+  --focus-ring: 0 0 0 2px rgba(194,100,63,0.25);
+  --badge-bg: #C2643F; --badge-text: #FFFFFF;
+  --font-body: 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif;
+  --font-display: 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif;
+  --font-num: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  --font-latin: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+}
+html[data-theme="architectural-beige"] .section-title { font-family: var(--font-latin); letter-spacing: 0.14em; }
 </style>
 </head>
 <body>
-<div id="introSplash"><div class="intro-word">Self<span class="plus-mark"></span></div></div>
+<div id="introSplash" aria-hidden="true"><div class="intro-logo"><span class="il-s">S</span><span class="il-elf"><span>elf</span></span><span class="il-plus"><svg class="il-plus-svg" viewBox="-12 -12 124 124" aria-hidden="true"><defs><filter id="ilGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs><path class="ilp-gap" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="ilp-glow" filter="url(#ilGlow)" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="ilp-line" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/></svg></span></div></div>
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4/dist/tus.min.js"></script>
@@ -813,17 +1010,21 @@ async function kvList(prefix, withValues) {
 const app = document.getElementById('app');
 const introSplash = document.getElementById('introSplash');
 const splashStartTime = Date.now();
-const SPLASH_MIN_MS = 2200; // ロゴが一瞬で消えないための最低表示時間
+const SPLASH_MIN_MS = 2900; // ロゴが完成するまでの時間（ここまでは必ず見せる）
+const SPLASH_EXIT_MS = 850;  // 手前に迫りながら消える演出の長さ
 
 function hideIntroSplash() {
-  if (!introSplash) return;
+  if (!introSplash || introSplash.dataset.leaving) return;
+  introSplash.dataset.leaving = '1';
   const elapsed = Date.now() - splashStartTime;
   const wait = Math.max(0, SPLASH_MIN_MS - elapsed);
   setTimeout(() => {
-    introSplash.classList.add('fading');
-    setTimeout(() => introSplash.remove(), 300);
+    introSplash.classList.add('exit');
+    setTimeout(() => { introSplash.style.display = 'none'; introSplash.remove(); }, SPLASH_EXIT_MS);
   }, wait);
 }
+// 万一アプリの読み込みが止まっても、スプラッシュが出っぱなしにならないようにする
+setTimeout(hideIntroSplash, 8000);
 
 const bgResetObserver = new MutationObserver(() => {
   document.body.style.background = 'var(--bg)';
@@ -841,7 +1042,7 @@ let authStudentMode = 'team'; // 'team'（招待コードでチームに参加�
 function renderAuth() {
   app.innerHTML = `
     <div class="auth-wrap"><div class="auth-box">
-      <div class="auth-title">Self<span class="plus-mark"></span></div>
+      <div class="auth-title"><span class="brand-logo"><span class="bl-word">Self</span><span class="bl-plus"><svg viewBox="-12 -12 124 124" aria-hidden="true"><defs><filter id="blGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs><path class="blp-gap" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-glow" filter="url(#blGlow)" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-line" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/></svg></span></span></div>
       <div class="auth-tabs">
         <div class="auth-tab ${authMode==='login'?'active':''}" data-tab="login">ログイン</div>
         <div class="auth-tab ${authMode==='signup'?'active':''}" data-tab="signup">新規登録</div>
@@ -1258,7 +1459,7 @@ function renderCheckFailedScreen(profile, onRetry) {
 function renderWaitingForCoach(profile) {
   app.innerHTML = `
     <div class="pay-wrap"><div class="pay-box">
-      <div class="pay-title">Self<span class="plus-mark"></span>をはじめる</div>
+      <div class="pay-title"><span class="brand-logo"><span class="bl-word">Self</span><span class="bl-plus"><svg viewBox="-12 -12 124 124" aria-hidden="true"><defs><filter id="blGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs><path class="blp-gap" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-glow" filter="url(#blGlow)" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-line" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/></svg></span></span><span class="bl-after">をはじめる</span></div>
       <div class="pay-sub">${profile.displayName}さん、担当コーチがまだプランに加入していません。コーチが加入すると、そのまま使えるようになります。</div>
       <div class="pay-logout" id="pay-logout">ログアウト</div>
       ${legalLinksHtml()}
@@ -1283,7 +1484,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   app.innerHTML = `
     <div class="head">
       <div class="head-text">
-        <div class="head-eyebrow">Self+・${profile.sport}</div>
+        <div class="head-eyebrow"><span class="brand-badge">Self+</span>${escapeHtml(profile.sport || '')}</div>
         <div class="head-title">${profile.displayName}さん</div>
         <div class="head-sub">${isCoachInactive ? '今までの記録はそのまま見られます' : (isIndividual ? '個人アカウント' : 'チームの記録はそのまま見られます')}</div>
       </div>
@@ -1571,7 +1772,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
 function renderNativeNoPlanScreen(user, profile) {
   app.innerHTML = `
     <div class="pay-wrap"><div class="pay-box">
-      <div class="pay-title">Self<span class="plus-mark"></span></div>
+      <div class="pay-title"><span class="brand-logo"><span class="bl-word">Self</span><span class="bl-plus"><svg viewBox="-12 -12 124 124" aria-hidden="true"><defs><filter id="blGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs><path class="blp-gap" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-glow" filter="url(#blGlow)" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-line" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/></svg></span></span></div>
       <div class="pay-sub">${escapeHtml(profile.displayName)}さん、このアカウントでは現在、ご利用いただけるプランが有効になっていません。</div>
       <div class="pay-terms-note">プランが有効になっている場合は、下のボタンで状況を更新してください。</div>
       <button class="pay-btn" id="native-recheck-btn">${RECHECK_LABEL}</button>
@@ -1628,7 +1829,7 @@ function renderPaywall(user, profile) {
   `).join('');
   app.innerHTML = `
     <div class="pay-wrap"><div class="pay-box">
-      <div class="pay-title">Self<span class="plus-mark"></span>をはじめる</div>
+      <div class="pay-title"><span class="brand-logo"><span class="bl-word">Self</span><span class="bl-plus"><svg viewBox="-12 -12 124 124" aria-hidden="true"><defs><filter id="blGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs><path class="blp-gap" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-glow" filter="url(#blGlow)" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/><path class="blp-line" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/></svg></span></span><span class="bl-after">をはじめる</span></div>
       <div class="pay-sub">${profile.displayName}さん、チームの人数に合わせてプランを選んでください</div>
       <div class="plan-grid">${cards}</div>
       <button class="pay-btn" id="pay-btn" disabled>プランを選んでください</button>
@@ -1817,7 +2018,7 @@ async function boot(user, profile) {
     app.innerHTML = `
       <div class="head">
         <div class="head-text">
-          <div class="head-eyebrow">Self+・${profile.sport}</div>
+          <div class="head-eyebrow"><span class="brand-badge">Self+</span>${escapeHtml(profile.sport || '')}</div>
           <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + `<span class="head-name">${escapeHtml(player.name)}さん</span>` : ''}</div>
         </div>
         ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く">📅</button>` : ''}
