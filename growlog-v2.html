@@ -344,6 +344,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .role-opt.active { border-color: var(--navy); background: var(--navy); color: #fff; }
 .auth-btn { width: 100%; margin-top: 18px; padding: 12px; border: none; border-radius: 10px; background: var(--navy); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
 .auth-forgot { text-align: center; margin-top: 12px; font-size: 12.5px; color: var(--text2); text-decoration: underline; cursor: pointer; }
+.auth-mail-note { margin-top: 12px; font-size: 11.5px; line-height: 1.6; color: var(--text3); }
 .auth-msg { font-size: 12.5px; margin-top: 10px; padding: 8px 10px; border-radius: 8px; }
 .auth-msg.err { background: var(--rust-light); color: var(--rust); }
 .auth-msg.ok { background: var(--green-light); color: var(--green); }
@@ -413,6 +414,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .coachmate-item { padding: 8px 10px; font-size: 13px; color: var(--text); border-top: 1px solid var(--border); }
 .coachmate-item:first-child { border-top: none; }
 .coachmate-item.remove-student-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.login-id-tag { display: block; font-size: 11px; color: var(--text3); margin-top: 2px; }
 .group-block { border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 10px; }
 .group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .group-name { font-size: 13px; font-weight: 700; color: var(--navy); }
@@ -829,6 +831,15 @@ function openProQuestionModal(profile) {
 
 // アカウント削除後、ログイン画面に表示するメッセージ（onAuthStateChanged経由でrenderAuthが呼ばれるため）
 let pendingAuthNotice = null;
+let lastAuthEmail = ''; // ログイン画面を描き直しても、入力したメールアドレスを消さないため
+// ───── ID登録（チームの選手のみ）─────
+// 選手はメールアドレスの代わりにIDで登録できる。Firebase Authには、IDから作った「届かない内部用アドレス」で登録する
+const ID_EMAIL_DOMAIN = 'student.yakyu-nikki.firebaseapp.com';
+const ID_PATTERN = /^[a-z0-9_]{4,20}$/;
+function idToEmail(id) { return `${id.toLowerCase()}@${ID_EMAIL_DOMAIN}`; }
+function isIdEmail(email) { return (email || '').toLowerCase().endsWith('@' + ID_EMAIL_DOMAIN); }
+function toLoginEmail(input) { const v = (input || '').trim(); return v.includes('@') ? v : idToEmail(v); }
+let signupInProgress = false; // ID登録中は、プロフィール保存が終わるまで自動ログイン処理を待たせる
 
 // ── アカウント削除（Appleガイドライン5.1.1(v)対応）──
 // アプリ内で完結して削除できるようにする。Firestore上の日記・動画などの関連データは、
@@ -1096,11 +1107,17 @@ function renderAuth() {
             </div>
           ` : ``}
         ` : ``}
-        <label>メールアドレス</label>
-        <input id="a-email" type="email" autocomplete="username" placeholder="you@example.com">
+        ${(authMode === 'signup' && authRole === 'student' && (isNativeApp || authStudentMode === 'team')) ? `
+          <label>ID（ログインに使います）</label>
+          <input id="a-email" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="例）kanta2013" value="${escapeHtml(lastAuthEmail)}">
+          <div class="auth-hint">半角の英小文字・数字・「_」で4〜20文字。メールアドレスは不要です。IDとパスワードは忘れないようにメモしておいてください。</div>
+        ` : `
+          <label>${authMode === 'login' ? 'メールアドレスまたはID' : 'メールアドレス'}</label>
+          <input id="a-email" type="${authMode === 'login' ? 'text' : 'email'}" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="${authMode === 'login' ? 'you@example.com または ID' : 'you@example.com'}" value="${escapeHtml(lastAuthEmail)}">
+        `}
         <label>パスワード</label>
         <div style="display:flex; gap:6px;">
-          <input id="a-pass" type="password" autocomplete="${authMode==='signup'?'new-password':'current-password'}" placeholder="6文字以上" style="flex:1;">
+          <input id="a-pass" type="password" autocomplete="${authMode==='signup'?'new-password':'current-password'}" placeholder="${(authMode === 'signup' && authRole === 'student' && (isNativeApp || authStudentMode === 'team')) ? '8文字以上' : '6文字以上'}" style="flex:1;">
           <button type="button" id="a-pass-toggle" style="flex-shrink:0; border:1px solid var(--border2); background:var(--surface2); border-radius:10px; padding:0 14px; font-size:12.5px; cursor:pointer; color:var(--text2);">表示</button>
         </div>
         ${authMode === 'signup' ? `
@@ -1110,7 +1127,9 @@ function renderAuth() {
           </label>
         ` : ''}
         <button id="a-submit" class="auth-btn">${authMode==='signup' ? '仮登録する' : 'ログイン'}</button>
-        ${authMode === 'login' ? `<div class="auth-forgot" id="a-forgot">パスワードをお忘れですか？</div>` : ''}
+        ${authMode === 'login' ? `<div class="auth-forgot" id="a-forgot">パスワードをお忘れですか？</div>
+        <div class="auth-forgot" id="a-resend">確認メールが届かない方はこちら（もう一度送る）</div>` : ''}
+        <div class="auth-mail-note">※IDで登録した選手は、パスワードを忘れたらコーチに再設定を頼んでください。<br>※メールが届かない場合は、迷惑メールフォルダもご確認ください。送信元は noreply@yakyu-nikki.firebaseapp.com です。携帯会社のメール（docomo・au・SoftBank等）は届かないことがあるため、Gmail等のご利用をおすすめします。</div>
         <div id="a-msg"></div>
       </div>
       ${legalLinksHtml()}
@@ -1126,6 +1145,10 @@ function renderAuth() {
   document.getElementById('a-submit').onclick = authMode === 'signup' ? handleSignup : handleLogin;
   const forgotLink = document.getElementById('a-forgot');
   if (forgotLink) forgotLink.onclick = handleForgotPassword;
+  const resendLink = document.getElementById('a-resend');
+  if (resendLink) resendLink.onclick = handleResendVerification;
+  const emailInput = document.getElementById('a-email');
+  if (emailInput) emailInput.addEventListener('input', () => { lastAuthEmail = emailInput.value.trim(); });
   const toggleBtn = document.getElementById('a-pass-toggle');
   const passInput = document.getElementById('a-pass');
   toggleBtn.onclick = () => {
@@ -1156,6 +1179,7 @@ function showAuthMsg(text, type) {
 }
 async function handleForgotPassword() {
   const email = document.getElementById('a-email').value.trim();
+  if (email && !email.includes('@')) { showAuthMsg('IDで登録した方は、パスワードをメールで再設定できません。チームのコーチに「パスワードの再設定」を頼んでください。', 'err'); return; }
   if (!email) { showAuthMsg('パスワードを再設定するメールアドレスを入力してください', 'err'); return; }
   const forgotLink = document.getElementById('a-forgot');
   const original = forgotLink.textContent;
@@ -1188,6 +1212,16 @@ async function handleSignup() {
   let teamCode = '';
   // 個人アカウントはWeb版でのみ登録できる（アプリ版はストア審査の都合で購入導線を持たないため）
   const isIndividualSignup = authRole === 'student' && authStudentMode === 'individual' && !isNativeApp;
+  // チームの選手はIDで登録する（メール確認なし）
+  const isIdSignup = authRole === 'student' && !isIndividualSignup;
+  let loginId = '';
+  let signupEmail = email;
+  if (isIdSignup) {
+    loginId = email.toLowerCase();
+    if (!ID_PATTERN.test(loginId)) { showAuthMsg('IDは半角の英小文字・数字・「_」で4〜20文字にしてください（例：kanta2013）', 'err'); return; }
+    if (password.length < 8) { showAuthMsg('IDで登録する場合、パスワードは8文字以上にしてください', 'err'); return; }
+    signupEmail = idToEmail(loginId);
+  }
 
   if (isIndividualSignup) {
     if (!name || !sport || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
@@ -1217,7 +1251,8 @@ async function handleSignup() {
     // Firestoreへの問い合わせ（招待コードの検証・発行）はセキュリティルール上
     // 認証済みユーザーでないと permission-denied になるため、
     // 先にFirebase Authenticationのアカウント作成を済ませる。
-    cred = await createUserWithEmailAndPassword(auth, email, password);
+    if (isIdSignup) signupInProgress = true;
+    cred = await createUserWithEmailAndPassword(auth, signupEmail, password);
 
     if (isIndividualSignup) {
       teamCode = null;
@@ -1227,6 +1262,7 @@ async function handleSignup() {
       if (coachSnaps.empty) {
         // 招待コードが無効だった場合、作成済みの認証アカウントをロールバック（削除）する
         const rolledBack = await rollbackSignupAccount(cred);
+        signupInProgress = false;
         showAuthMsg(
           rolledBack
             ? 'その招待コードに一致するコーチが見つかりませんでした。コードを確認してください。'
@@ -1254,7 +1290,8 @@ async function handleSignup() {
       teamCode = await generateUniqueTeamCode();
     }
 
-    const profileData = { email, displayName: name, role: authRole, sport, teamCode, createdAt: Date.now() };
+    const profileData = { email: isIdSignup ? signupEmail : email, displayName: name, role: authRole, sport, teamCode, createdAt: Date.now() };
+    if (isIdSignup) Object.assign(profileData, { loginType: 'id', loginId });
     if (authRole === 'student') {
       Object.assign(profileData, { birthdate });
     }
@@ -1270,17 +1307,30 @@ async function handleSignup() {
         await setDoc(doc(db, 'users', cred.user.uid), { teamCode }, { merge: true });
       }
     }
+    if (isIdSignup) {
+      // IDの選手はメール確認なし。そのままログインした状態で始める
+      signupInProgress = false;
+      pendingAuthNotice = null;
+      location.reload();
+      return;
+    }
     await sendEmailVerification(cred.user);
     if (authRole === 'coach' && authCoachMode === 'new') {
-      showAuthMsg(`仮登録できました。あなたの招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。`, 'ok');
+      showAuthMsg(`仮登録できました。あなたの招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。`, 'ok');
     } else if (authRole === 'coach') {
-      showAuthMsg('仮登録できました。チームに参加しました。届いた確認メールのリンクを開いてから、ログインしてください。', 'ok');
+      showAuthMsg('仮登録できました。チームに参加しました。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。', 'ok');
     } else if (isIndividualSignup) {
       showAuthMsg('仮登録できました。届いた確認メールのリンクを開いてからログインし、個人プランの手続きに進んでください。', 'ok');
     } else {
-      showAuthMsg('仮登録できました。届いた確認メールのリンクを開いてから、ログインしてください。', 'ok');
+      showAuthMsg('仮登録できました。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。', 'ok');
     }
   } catch (e) {
+    signupInProgress = false;
+    if (isIdSignup && (e.code || '').includes('email-already-in-use')) {
+      showAuthMsg('そのIDはすでに使われています。別のIDにしてください。', 'err');
+      submitBtn.disabled = false;
+      return;
+    }
     // setDoc等の後半処理で失敗した場合も、認証アカウントだけ残ってしまわないようロールバックを試みる
     if (cred && cred.user) {
       const rolledBack = await rollbackSignupAccount(cred);
@@ -1294,15 +1344,58 @@ async function handleSignup() {
   }
   submitBtn.disabled = false;
 }
-async function handleLogin() {
+async function handleResendVerification() {
   const email = document.getElementById('a-email').value.trim();
+  if (email && !email.includes('@')) { showAuthMsg('IDで登録した方は、確認メールは不要です。そのまま「ログイン」を押してください。', 'ok'); return; }
+  const password = document.getElementById('a-pass').value;
+  lastAuthEmail = email;
+  if (!email || !password) { showAuthMsg('登録したメールアドレスとパスワードを入力してから、もう一度押してください。', 'err'); return; }
+  let text, type = 'ok';
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    await reload(cred.user);
+    if (cred.user.emailVerified) {
+      text = 'このアカウントはメール確認が済んでいます。そのまま「ログイン」を押してください。';
+    } else {
+      try {
+        await sendEmailVerification(cred.user);
+        text = `${email} に確認メールをもう一度送りました。迷惑メールフォルダもご確認のうえ、メールアプリから直接リンクを開いてから、ログインしてください。`;
+      } catch (re) {
+        type = 'err';
+        text = ((re && re.code) || '').includes('too-many-requests')
+          ? '確認メールは少し前に送っています。10分ほど待ってから、もう一度お試しください。'
+          : '確認メールを送れませんでした。時間をおいてお試しいただくか、お問い合わせフォームからご連絡ください。';
+      }
+    }
+    pendingAuthNotice = { text, type };
+    await signOut(auth);
+  } catch (e) {
+    showAuthMsg(translateError(e), 'err');
+  }
+}
+async function handleLogin() {
+  const rawInput = document.getElementById('a-email').value.trim();
+  lastAuthEmail = rawInput;
+  const email = toLoginEmail(rawInput);
   const password = document.getElementById('a-pass').value;
   if (!email || !password) { showAuthMsg('メールアドレスとパスワードを入力してください', 'err'); return; }
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     await reload(cred.user);
-    if (!cred.user.emailVerified) {
-      showAuthMsg('まだメール確認が済んでいません。届いたメールのリンクを開いてから、もう一度ログインしてください。', 'err');
+    if (!cred.user.emailVerified && !isIdEmail(cred.user.email)) {
+      // 確認メールを自動で送り直す（短時間に何度も送ると Firebase 側で止められるので、そのときは待ってもらう）
+      let resendMsg;
+      try {
+        await sendEmailVerification(cred.user);
+        resendMsg = `まだメール確認が済んでいません。${email} に確認メールをもう一度送りました。迷惑メールフォルダもご確認のうえ、メールアプリから直接リンクを開いてから、もう一度ログインしてください。`;
+      } catch (re) {
+        const rc = (re && re.code) || '';
+        resendMsg = rc.includes('too-many-requests')
+          ? 'まだメール確認が済んでいません。確認メールは少し前に送っています。届いたメールのリンクを開いてから、もう一度ログインしてください（届かない場合は10分ほど待ってから、もう一度ログインすると送り直します）。'
+          : 'まだメール確認が済んでいません。届いたメールのリンクを開いてから、もう一度ログインしてください。';
+      }
+      pendingAuthNotice = { text: resendMsg, type: 'err' };
+      showAuthMsg(resendMsg, 'err');
       await signOut(auth);
       return;
     }
@@ -1313,13 +1406,16 @@ function translateError(e) {
   if (code.includes('email-already-in-use')) return 'このメールアドレスはすでに登録されています。ログインタブからお試しください。';
   if (code.includes('invalid-email')) return 'メールアドレスの形式が正しくありません。';
   if (code.includes('weak-password')) return 'パスワードは6文字以上にしてください。';
-  if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) return 'メールアドレスまたはパスワードが正しくありません。';
+  if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) return 'メールアドレス（またはID）かパスワードが正しくありません。';
+  if (code.includes('too-many-requests')) return 'ログインに何度か失敗したため、しばらく操作できません。10分ほど待ってからお試しいただくか、「パスワードをお忘れですか？」から再設定してください。';
+  if (code.includes('network-request-failed')) return '通信できませんでした。電波の良い場所でもう一度お試しください。フィルター（あんしんフィルター等）が有効な端末では、つながらない場合があります。';
   return 'エラーが発生しました：' + code;
 }
 
 /* ────────── 起動フロー ────────── */
 onAuthStateChanged(auth, async (user) => {
-  if (user && user.emailVerified) {
+  if (signupInProgress) return; // ID登録の途中（プロフィール保存前）は何もしない
+  if (user && (user.emailVerified || isIdEmail(user.email))) {
     try {
       let profSnap;
       try {
@@ -1960,7 +2056,7 @@ async function boot(user, profile) {
     const q = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'student'));
     const snaps = await getDocs(q);
     const members = [];
-    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null }));
+    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null, loginType: d.data().loginType || 'email', loginId: d.data().loginId || '' }));
     if (members.length) TEAM = members;
 
     const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
@@ -2939,8 +3035,11 @@ async function boot(user, profile) {
             <div id="remove-student-list" class="coachmate-list" style="margin-top:8px;">
               ${TEAM.map(m => `
                 <div class="coachmate-item remove-student-item" data-remove-name="${escapeAttr(m.name)}">
-                  <span>${escapeHtml(m.name)}</span>
-                  <button class="group-del" data-remove-student="${m.uid}">削除</button>
+                  <span>${escapeHtml(m.name)}${m.loginType === 'id' ? `<span class="login-id-tag">ID：${escapeHtml(m.loginId)}</span>` : ''}</span>
+                  <span style="display:flex; gap:6px; flex-shrink:0;">
+                    ${m.loginType === 'id' ? `<button class="group-del" data-reset-pass="${m.uid}">パスワード再設定</button>` : ''}
+                    <button class="group-del" data-remove-student="${m.uid}">削除</button>
+                  </span>
                 </div>
               `).join('') || '<div class="thread-empty">選手がいません</div>'}
             </div>
@@ -3111,6 +3210,28 @@ async function boot(user, profile) {
           });
         };
       }
+      document.querySelectorAll('[data-reset-pass]').forEach(btn => {
+        btn.onclick = async () => {
+          const studentUid = btn.dataset.resetPass;
+          const member = TEAM.find(r => r.uid === studentUid);
+          const studentName = member ? member.name : '選手';
+          const newPass = prompt(`${studentName}さんの新しいパスワードを入力してください（8文字以上）`);
+          if (newPass === null) return;
+          if (newPass.length < 8) { alert('パスワードは8文字以上にしてください。'); return; }
+          btn.disabled = true;
+          const original = btn.textContent;
+          btn.textContent = '再設定中…';
+          try {
+            const resetFn = httpsCallable(functions, 'resetStudentPassword');
+            await resetFn({ studentUid, newPassword: newPass });
+            alert(`再設定しました。\n${studentName}さんに、次のIDと新しいパスワードを伝えてください。\n\nID：${member ? member.loginId : ''}\nパスワード：${newPass}`);
+          } catch (e) {
+            alert('再設定できませんでした。時間をおいてもう一度お試しください。（' + ((e && e.message) || '') + '）');
+          }
+          btn.disabled = false;
+          btn.textContent = original;
+        };
+      });
       document.querySelectorAll('[data-remove-student]').forEach(btn => {
         btn.onclick = async () => {
           const studentUid = btn.dataset.removeStudent;
