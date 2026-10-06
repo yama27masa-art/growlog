@@ -1097,7 +1097,7 @@ document.addEventListener('compositionend', (ev) => {
 const app = document.getElementById('app');
 const introSplash = document.getElementById('introSplash');
 const splashStartTime = Date.now();
-const SPLASH_MIN_MS = 4400; // ロゴ完成（2.7秒）→ スポンサー表示（2.8〜3.5秒）→ 余韻（約0.9秒）。ここまでは必ず見せる
+const SPLASH_MIN_MS = 5500; // ロゴ完成（2.7秒）→ スポンサー表示（2.8〜3.5秒）→ 出そろってから約2秒静止。ここまでは必ず見せる
 const SPLASH_EXIT_MS = 850;  // 手前に迫りながら消える演出の長さ
 
 function hideIntroSplash() {
