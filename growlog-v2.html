@@ -390,6 +390,30 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 /* ── 利用規約・プライバシーポリシー／アカウント削除 ── */
 .legal-links { text-align: center; font-size: 11.5px; color: var(--text3); margin-top: 14px; line-height: 1.7; }
 .legal-links a { color: var(--text2); text-decoration: underline; cursor: pointer; }
+.plan-flow { max-height: 88vh; overflow-y: auto; }
+.plan-flow .nb { display: inline-block; } /* 言葉の途中で改行しない */
+.plan-links { font-size: 12px; margin: -2px 0 10px 28px; }
+.plan-links a { color: var(--text2); text-decoration: underline; cursor: pointer; }
+.plan-email { word-break: break-all; }
+.plan-steps { display: flex; gap: 6px; margin: -2px 0 14px; flex-wrap: wrap; }
+.plan-steps > span { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border2); color: var(--text3); }
+.plan-steps > span.on { background: var(--plus-color, var(--rust)); border-color: transparent; color: #fff; font-weight: 700; }
+.plan-steps > span.done { color: var(--text2); }
+.plan-lead { font-size: 13.5px; line-height: 1.75; color: var(--text2); margin: 0 0 12px; }
+.plan-points { margin: 0 0 14px; padding-left: 1.2em; font-size: 13px; line-height: 1.75; color: var(--text2); }
+.plan-points li { margin-bottom: 6px; }
+.plan-points b { color: var(--text); }
+.plan-points.small { font-size: 12px; }
+.plan-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.7; color: var(--text); margin: 10px 0; cursor: pointer; }
+.plan-check input { margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--plus-color, var(--rust)); }
+.plan-check.minor { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--plus-color, var(--rust)); }
+.plan-check a { text-decoration: underline; cursor: pointer; color: inherit; }
+.plan-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 12px; }
+.plan-table th, .plan-table td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--border2); }
+.plan-table th { width: 30%; color: var(--text3); font-weight: 700; white-space: nowrap; }
+.plan-table td { color: var(--text); }
+.modal-status.err { color: var(--red); font-size: 12.5px; font-weight: 700; margin-top: 8px; word-break: keep-all; overflow-wrap: anywhere; }
+.partner-credit { margin-top: 6px; font-size: 11px; color: var(--text3); letter-spacing: 0.02em; }
 .agree-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 12px; color: var(--text2); line-height: 1.6; text-align: left; }
 .agree-row input { margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px; }
 .agree-row a { color: var(--navy); text-decoration: underline; cursor: pointer; }
@@ -634,10 +658,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import {
   getAuth, initializeAuth, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendEmailVerification, onAuthStateChanged, signOut, reload, sendPasswordResetEmail,
-  EmailAuthProvider, reauthenticateWithCredential, deleteUser
+  EmailAuthProvider, reauthenticateWithCredential, deleteUser, verifyBeforeUpdateEmail
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId
+  getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getFunctions, httpsCallable
@@ -759,7 +783,7 @@ function openExternal(url) {
   else window.open(url, '_blank', 'noopener');
 }
 function legalLinksHtml() {
-  return `<div class="legal-links"><a data-legal="terms">利用規約</a>　<a data-legal="privacy">プライバシーポリシー</a>　<a data-legal="tokusho">特定商取引法に基づく表記</a></div>`;
+  return `<div class="legal-links"><a data-legal="terms">利用規約</a>　<a data-legal="privacy">プライバシーポリシー</a>　<a data-legal="tokusho">特定商取引法に基づく表記</a><div class="partner-credit">パートナーシップ：合同会社STRIVE FORCE</div></div>`;
 }
 function wireLegalLinks(root) {
   (root || document).querySelectorAll('[data-legal]').forEach(el => {
@@ -801,6 +825,200 @@ function resizeImageToDataUrl(file, size = 160) {
 }
 
 // ── プロアスリートへの質問 ──
+// ───── 個人プランのお申し込みの流れ ─────
+// ①プランの説明 ②（18歳未満なら）保護者の同意 ③（IDで登録した選手は）メールアドレスの登録と確認 ④最終確認 → 決済
+const TERMS_AGREED_VERSION = '1.0';
+function ageFromBirthdate(birthdate) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthdate || '');
+  if (!m) return null;
+  const now = new Date();
+  let age = now.getFullYear() - Number(m[1]);
+  const beforeBirthday = (now.getMonth() + 1 < Number(m[2])) || (now.getMonth() + 1 === Number(m[2]) && now.getDate() < Number(m[3]));
+  if (beforeBirthday) age -= 1;
+  return age;
+}
+function openIndividualPlanFlow(user, profile, startCheckout) {
+  const age = ageFromBirthdate(profile.birthdate);
+  // 生年月日がない場合は、安全のため未成年として扱う
+  const isMinor = age === null || age < 18;
+  const needsEmail = isIdEmail(user.email);
+  const priceText = `月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円（税込）`;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+  // ① プランの説明と同意
+  const showConsent = () => {
+    overlay.innerHTML = `
+      <div class="modal-card plan-flow">
+        <div class="modal-title"><span class="nb">個人プランの</span><span class="nb">お申し込み</span></div>
+        <div class="plan-steps">${needsEmail ? '<span class="on"><span class="nb">1 確認</span></span><span><span class="nb">2 メール登録</span></span><span><span class="nb">3 お支払い</span></span>' : '<span class="on"><span class="nb">1 確認</span></span><span><span class="nb">2 お支払い</span></span>'}</div>
+        <ul class="plan-points">
+          <li><b>${priceText}</b>（税抜${INDIVIDUAL_PLAN.amountExTax.toLocaleString()}円）</li>
+          <li><b><span class="nb">毎月、</span><span class="nb">自動で</span><span class="nb">更新されます。</span></b><span class="nb">お申し込み日と同じ日に、</span><span class="nb">毎月</span><span class="nb">料金が</span><span class="nb">かかります。</span></li>
+          <li><b><span class="nb">いつでも</span><span class="nb">解約できます。</span></b><span class="nb">Web版の</span><span class="nb">「プラン・支払い管理」</span><span class="nb">から</span><span class="nb">解約でき、</span><span class="nb">支払い</span><span class="nb">済みの</span><span class="nb">期間の</span><span class="nb">終わりまでは</span><span class="nb">使えます。</span></li>
+          <li><b><span class="nb">ご都合による</span><span class="nb">返金は</span><span class="nb">ありません。</span></b><span class="nb">使わなくなった、</span><span class="nb">操作を</span><span class="nb">まちが</span><span class="nb">えた等の</span><span class="nb">場合も、</span><span class="nb">返金や</span><span class="nb">日割りの</span><span class="nb">返金は</span><span class="nb">ありません。</span></li>
+          <li><span class="nb">今までの</span><span class="nb">記録は、</span><span class="nb">そのまま</span><span class="nb">引き継がれます。</span></li>
+          <li><b><span class="nb">チームに</span><span class="nb">入り直したら、</span><span class="nb">ご自身で</span><span class="nb">解約してください。</span></b><span class="nb">個人プランは、</span><span class="nb">自動では</span><span class="nb">止まりません。</span></li>
+        </ul>
+        ${isMinor ? `
+        <label class="plan-check minor">
+          <input type="checkbox" id="pf-parent">
+          <span><b><span class="nb">保護者の</span><span class="nb">同意を</span><span class="nb">得ています。</span></b><span class="nb">18歳未満の方は、</span><span class="nb">保護者の方の</span><span class="nb">同意を</span><span class="nb">得てから</span><span class="nb">お申し込みください。</span></span>
+        </label>` : ''}
+        <label class="plan-check">
+          <input type="checkbox" id="pf-terms">
+          <span><span class="nb">利用規約と</span><span class="nb">特定商取引法に</span><span class="nb">基づく</span><span class="nb">表記を読み、</span><span class="nb">上の</span><span class="nb">内容に</span><span class="nb">同意します。</span></span>
+        </label>
+        <div class="plan-links"><a data-legal="terms"><span class="nb">利用規約を見る</span></a>　<a data-legal="tokusho"><span class="nb">特定商取引法に</span><span class="nb">基づく</span><span class="nb">表記を見る</span></a></div>
+        <div class="modal-status err" id="pf-msg" style="display:none;"></div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" id="pf-cancel"><span class="nb">やめる</span></button>
+          <button class="modal-btn modal-btn-send" id="pf-next"><span class="nb">次へ</span></button>
+        </div>
+      </div>`;
+    wireLegalLinks(overlay);
+    overlay.querySelector('#pf-cancel').onclick = close;
+    overlay.querySelector('#pf-next').onclick = () => {
+      const m = overlay.querySelector('#pf-msg');
+      if (isMinor && !overlay.querySelector('#pf-parent').checked) { m.textContent = '18歳未満の方は、保護者の同意を得たうえでチェックしてください。'; m.style.display = 'block'; return; }
+      if (!overlay.querySelector('#pf-terms').checked) { m.textContent = '内容をご確認のうえ、同意のチェックを入れてください。'; m.style.display = 'block'; return; }
+      if (needsEmail) showEmailStep(); else showFinal();
+    };
+  };
+
+  // ② メールアドレスの登録（IDで登録した選手のみ）
+  const showEmailStep = () => {
+    overlay.innerHTML = `
+      <div class="modal-card plan-flow">
+        <div class="modal-title"><span class="nb">メールアドレスの登録</span></div>
+        <div class="plan-steps"><span class="done"><span class="nb">1 確認</span></span><span class="on"><span class="nb">2 メール登録</span></span><span><span class="nb">3 お支払い</span></span></div>
+        <p class="plan-lead"><span class="nb">お支払いの</span><span class="nb">領収書や</span><span class="nb">更新の</span><span class="nb">お知らせを</span><span class="nb">届けるため、</span><span class="nb">メールアドレスの</span><span class="nb">登録が</span><span class="nb">必要です。</span></p>
+        <div class="modal-field">
+          <div class="modal-label"><span class="nb">メールアドレス</span></div>
+          <input class="modal-select" id="pf-email" type="email" autocomplete="email" placeholder="you@example.com">
+        </div>
+        <ul class="plan-points small">
+          <li><span class="nb">入力した</span><span class="nb">アドレスに、</span><span class="nb">確認メールが</span><span class="nb">届きます。</span><span class="nb">メールの</span><span class="nb">リンクを</span><span class="nb">開くと、</span><span class="nb">登録が</span><span class="nb">完了します。</span></li>
+          <li><b><span class="nb">次からは、</span><span class="nb">このメールアドレスと今の</span><span class="nb">パスワードで</span><span class="nb">ログインします。</span></b><span class="nb">IDでの</span><span class="nb">ログインは</span><span class="nb">できなくなります。</span></li>
+          <li><span class="nb">今までの</span><span class="nb">記録は、</span><span class="nb">そのまま</span><span class="nb">引き継がれます。</span></li>
+          <li><span class="nb">携帯会社の</span><span class="nb">メール</span><span class="nb">（docomo・au・SoftBank等）</span><span class="nb">は</span><span class="nb">届かないことが</span><span class="nb">あるため、</span><span class="nb">Gmail等を</span><span class="nb">おすすめします。</span></li>
+        </ul>
+        <div class="modal-status err" id="pf-msg" style="display:none;"></div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" id="pf-back"><span class="nb">もどる</span></button>
+          <button class="modal-btn modal-btn-send" id="pf-send"><span class="nb">確認メールを送る</span></button>
+        </div>
+      </div>`;
+    overlay.querySelector('#pf-back').onclick = showConsent;
+    overlay.querySelector('#pf-send').onclick = async () => {
+      const m = overlay.querySelector('#pf-msg');
+      const btn = overlay.querySelector('#pf-send');
+      const newEmail = overlay.querySelector('#pf-email').value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail) || isIdEmail(newEmail)) { m.textContent = 'メールアドレスの形を確認してください。'; m.style.display = 'block'; return; }
+      btn.disabled = true; btn.textContent = '送信中…';
+      try {
+        // 確認後に戻る先は、https のページで開いているときだけ指定する（ファイルを直接開いたときなどは指定しない）
+        const backUrl = /^https:/.test(SITE_URL) ? { url: SITE_URL } : undefined;
+        await verifyBeforeUpdateEmail(auth.currentUser, newEmail, backUrl);
+        showEmailSent(newEmail);
+      } catch (e) {
+        const code = (e && e.code) || '';
+        m.textContent = code.includes('email-already-in-use') ? 'このメールアドレスは、すでに別のアカウントで使われています。'
+          : code.includes('requires-recent-login') ? '安全のため、一度ログアウトして、IDとパスワードでログインし直してからお試しください。'
+          : code.includes('too-many-requests') ? '少し時間をおいてから、もう一度お試しください。'
+          : code.includes('invalid-email') ? 'メールアドレスの形を確認してください。'
+          : code.includes('operation-not-allowed') ? '現在、メールアドレスの登録を受け付けられない設定になっています。お問い合わせフォームからご連絡ください。'
+          : `確認メールを送れませんでした。時間をおいてもう一度お試しください。（${code || 'unknown'}）`;
+        m.style.display = 'block';
+        btn.disabled = false; btn.textContent = '確認メールを送る';
+      }
+    };
+  };
+  const showEmailSent = (newEmail) => {
+    overlay.innerHTML = `
+      <div class="modal-card plan-flow">
+        <div class="modal-title"><span class="nb">確認メールを</span><span class="nb">送りました</span></div>
+        <p class="plan-lead"><span class="nb">次の</span><span class="nb">アドレスに、</span><span class="nb">確認メールを</span><span class="nb">送りました。</span><br><b class="plan-email">${escapeHtml(newEmail)}</b></p>
+        <ol class="plan-points">
+          <li><span class="nb">メールアプリで、</span><span class="nb">届いた</span><span class="nb">メールの</span><span class="nb">リンクを</span><span class="nb">1回だけ</span><span class="nb">開きます。</span><span class="nb">迷惑メールフォルダも</span><span class="nb">ご確認ください。</span></li>
+          <li><span class="nb">Self+ を</span><span class="nb">開き直して、</span><span class="nb">このメールアドレスと今の</span><span class="nb">パスワードで</span><span class="nb">ログインします。</span></li>
+          <li><span class="nb">もう一度</span><span class="nb">「個人プラン」</span><span class="nb">の</span><span class="nb">ボタンを</span><span class="nb">押すと、</span><span class="nb">お支払いに</span><span class="nb">進めます。</span></li>
+        </ol>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-send" id="pf-ok"><span class="nb">わかりました</span></button>
+        </div>
+      </div>`;
+    overlay.querySelector('#pf-ok').onclick = close;
+  };
+
+  // ③ 最終確認 → 同意の記録 → 決済へ
+  const showFinal = () => {
+    overlay.innerHTML = `
+      <div class="modal-card plan-flow">
+        <div class="modal-title"><span class="nb">お申し込み内容の確認</span></div>
+        <div class="plan-steps">${needsEmail ? '<span class="done"><span class="nb">1 確認</span></span><span class="done"><span class="nb">2 メール登録</span></span><span class="on"><span class="nb">3 お支払い</span></span>' : '<span class="done"><span class="nb">1 確認</span></span><span class="on"><span class="nb">2 お支払い</span></span>'}</div>
+        <table class="plan-table">
+          <tr><th><span class="nb">プラン</span></th><td><span class="nb">Self+ 個人プラン</span></td></tr>
+          <tr><th><span class="nb">料金</span></th><td>${priceText}（税抜${INDIVIDUAL_PLAN.amountExTax.toLocaleString()}円）</td></tr>
+          <tr><th><span class="nb">お支払い</span></th><td><span class="nb">今</span><span class="nb">日1か月分。</span><span class="nb">以降、</span><span class="nb">毎月同じ日に</span><span class="nb">自動で</span><span class="nb">支払い</span></td></tr>
+          <tr><th><span class="nb">契約期間</span></th><td><span class="nb">1か</span><span class="nb">月ごとの</span><span class="nb">自動更新</span></td></tr>
+          <tr><th><span class="nb">解約</span></th><td><span class="nb">Web版の</span><span class="nb">「プラン・支払い管理」</span><span class="nb">から</span><span class="nb">いつでも</span></td></tr>
+          <tr><th><span class="nb">返金</span></th><td><span class="nb">ご都合による</span><span class="nb">返金・</span><span class="nb">日割りの</span><span class="nb">返金は</span><span class="nb">ありません</span></td></tr>
+          <tr><th><span class="nb">連絡先</span></th><td>${escapeHtml(user.email || '')}</td></tr>
+        </table>
+        <label class="plan-check">
+          <input type="checkbox" id="pf-final">
+          <span><span class="nb">上の</span><span class="nb">内容を</span><span class="nb">確認しました。</span></span>
+        </label>
+        <div class="modal-status err" id="pf-msg" style="display:none;"></div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" id="pf-cancel"><span class="nb">やめる</span></button>
+          <button class="modal-btn modal-btn-send" id="pf-pay"><span class="nb">お支払いへ進む</span></button>
+        </div>
+      </div>`;
+    overlay.querySelector('#pf-cancel').onclick = close;
+    overlay.querySelector('#pf-pay').onclick = async () => {
+      const m = overlay.querySelector('#pf-msg');
+      const btn = overlay.querySelector('#pf-pay');
+      if (!overlay.querySelector('#pf-final').checked) { m.textContent = '内容をご確認のうえ、チェックを入れてください。'; m.style.display = 'block'; return; }
+      btn.disabled = true; btn.textContent = '準備中…';
+      const consentAtIso = new Date().toISOString();
+      // 同意の記録（民法21条などのトラブル対策の証拠として残す）
+      const record = {
+        parentalConsentRequired: isMinor,
+        parentalConsentObtained: isMinor ? true : null,
+        parentalConsentTimestamp: isMinor ? serverTimestamp() : null,
+        termsAgreedVersion: TERMS_AGREED_VERSION,
+        termsAgreedTimestamp: serverTimestamp(),
+        ageAtConsent: age,
+        consentEmail: user.email || ''
+      };
+      try {
+        await setDoc(doc(db, 'users', user.uid), record, { merge: true });
+      } catch (e) {
+        m.textContent = '同意の記録を保存できなかったため、お申し込みを中止しました。電波の良い場所でもう一度お試しください。';
+        m.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'お支払いへ進む';
+        return;
+      }
+      close();
+      startCheckout({
+        terms_version: TERMS_AGREED_VERSION,
+        terms_agreed_at: consentAtIso,
+        is_minor: String(isMinor),
+        parental_consent: isMinor ? 'true' : 'not_required',
+        age_at_consent: age === null ? 'unknown' : String(age),
+        firebase_uid: user.uid
+      });
+    };
+  };
+
+  showConsent();
+}
+
 function openProQuestionModal(profile) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -1506,6 +1724,14 @@ onAuthStateChanged(auth, async (user) => {
         return;
       }
       const profile = profSnap.data();
+      // IDで登録した選手が、確認メールのリンクを開いてメールアドレスに切り替えた直後のログイン
+      if (profile.loginType === 'id' && user.emailVerified && !isIdEmail(user.email)) {
+        try {
+          await setDoc(doc(db, 'users', user.uid), { loginType: 'email', email: user.email, emailRegisteredAt: serverTimestamp() }, { merge: true });
+          profile.loginType = 'email';
+          profile.email = user.email;
+        } catch (e) { /* 切り替えの記録に失敗しても利用は続けられる。次回ログイン時に再試行 */ }
+      }
       if (profile.freeAccess === true) {
         boot(user, profile);
         return;
@@ -1720,7 +1946,8 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   if (contactBtn) contactBtn.onclick = () => openContactModal(profile, {});
   const reactivateBtn = document.getElementById('removed-reactivate-btn');
   if (reactivateBtn) {
-    reactivateBtn.onclick = async () => {
+    reactivateBtn.onclick = () => openIndividualPlanFlow(user, profile, (consentMeta) => runIndividualCheckout(consentMeta));
+    const runIndividualCheckout = async (consentMeta) => {
       const msg = document.getElementById('removed-reactivate-msg');
       if (!isPriceReady(INDIVIDUAL_PLAN_PRICE_ID)) {
         msg.innerHTML = `<div class="pay-msg err">このプランは現在準備中です。しばらくしてからお試しください。</div>`;
@@ -1732,7 +1959,9 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
         const sessionRef = await addDoc(collection(db, 'customers', user.uid, 'checkout_sessions'), {
           price: INDIVIDUAL_PLAN_PRICE_ID,
           success_url: SITE_URL,
-          cancel_url: SITE_URL
+          cancel_url: SITE_URL,
+          // 同意の記録を Stripe 側にも残す（利用者があとから書き換えられない控え）
+          metadata: consentMeta || {}
         });
         let settled = false;
         let timeoutId;
