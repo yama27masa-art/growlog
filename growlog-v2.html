@@ -772,9 +772,84 @@ const PRIVACY_URL = LEGAL_BASE_URL + 'privacy.html';
 const TOKUSHO_URL = LEGAL_BASE_URL + 'tokushoho.html';
 
 // ── アプリ版（iOS/Android）の課金方針 ──
-// ストア審査対策として、アプリ版では料金表示・購入ボタン・支払い管理への導線を一切出さない。
-// 有料プランの契約・解約はWeb版でのみ行う（アプリはWebで契約したアカウントでログインして使う）。
+// チーム（コーチ）の契約：Web版でのみ行う（アプリには料金・購入ボタン・支払い管理への導線を出さない）。
+// 選手の個人プラン：iOSアプリでは App Store のアプリ内課金（RevenueCat経由）で申し込める。
+// Androidは未対応のため、これまでどおり購入導線を出さない。
 const RECHECK_LABEL = isNativeApp ? '契約状況を更新する' : '決済が終わったら：契約状況を更新する';
+
+// ── RevenueCat（iOSのアプリ内課金） ──
+const RC_API_KEY_IOS = 'appl_oTKeUiPTRkrXVadVVsiXavitxRs'; // 公開しても問題ない種類のキー
+const RC_ENTITLEMENT = 'individual';
+const isIOSApp = isNativeApp && typeof window.Capacitor.getPlatform === 'function' && window.Capacitor.getPlatform() === 'ios';
+const RC = isIOSApp
+  ? ((window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases)
+      || (typeof window.Capacitor.registerPlugin === 'function' ? window.Capacitor.registerPlugin('Purchases') : null))
+  : null;
+const IAP_ENABLED = !!RC;
+const IAP_CANCEL_HOWTO = 'iPhoneの「設定」→ 一番上の自分の名前 →「サブスクリプション」';
+let rcCurrentUid = null;
+async function rcEnsure(uid) {
+  if (!RC) throw new Error('in-app purchase is not available');
+  if (rcCurrentUid === null) {
+    await RC.configure({ apiKey: RC_API_KEY_IOS, appUserID: uid });
+    rcCurrentUid = uid;
+  } else if (rcCurrentUid !== uid) {
+    await RC.logIn({ appUserID: uid });
+    rcCurrentUid = uid;
+  }
+}
+function rcHasEntitlement(info) {
+  const ci = info && (info.customerInfo || info);
+  return !!(ci && ci.entitlements && ci.entitlements.active && ci.entitlements.active[RC_ENTITLEMENT]);
+}
+// true＝App Storeで個人プランが有効 / false＝無効 / null＝確認できなかった
+async function rcIsIndividualActive(uid) {
+  // Web版・Androidアプリ：iPhoneで買った個人プランを、Firestoreの rc_customers/{uid} で確認する
+  // （RevenueCatのWebhookが購入・更新・解約のたびに書き込む。本人だけが読める）
+  if (!IAP_ENABLED) {
+    try {
+      const snap = await getDoc(doc(db, 'rc_customers', uid));
+      const ind = snap.exists() ? (snap.data().individual || null) : null;
+      if (!ind || ind.active !== true) return false;
+      // 期限切れの通知が届かなかった場合に備えて、有効期限から3日を過ぎたら無効とみなす
+      const GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+      return !ind.expiresAtMs || Number(ind.expiresAtMs) + GRACE_MS > Date.now();
+    } catch (e) {
+      console.warn('rc_customers check failed', e);
+      return null;
+    }
+  }
+  try {
+    await rcEnsure(uid);
+    return rcHasEntitlement(await RC.getCustomerInfo());
+  } catch (e) {
+    console.warn('RevenueCat check failed', e);
+    return null;
+  }
+}
+async function rcGetMonthlyPackage(uid) {
+  await rcEnsure(uid);
+  const res = await RC.getOfferings();
+  const cur = res && (res.current || (res.offerings && res.offerings.current));
+  if (!cur) return null;
+  return cur.monthly || (cur.availablePackages && cur.availablePackages[0]) || null;
+}
+function rcPriceText(pkg) {
+  const p = pkg && pkg.product && pkg.product.priceString;
+  return p ? `月額${p}（税込）` : '';
+}
+function rcIsCancelled(e) {
+  return !!(e && (e.userCancelled || String(e.code) === '1' || /cancel/i.test(e.message || '')));
+}
+// 個人の選手が記録を書けるか：Web（Stripe）かApp Store（アプリ内はRevenueCat、Webはrc_customers）のどちらかが有効ならOK
+// true / false / null（どちらかが確認できず、有効も見つからなかった）
+async function checkIndividualAccess(uid) {
+  const stripe = await checkActiveSubscription(uid);
+  if (stripe === true) return true;
+  const iap = await rcIsIndividualActive(uid);
+  if (iap === true) return true;
+  return (stripe === null || iap === null) ? null : false;
+}
 
 function openExternal(url) {
   // アプリ版：自分以外のドメインへ移動すると、Capacitorが自動で外部ブラウザ（Safari/Chrome）で開く
@@ -837,12 +912,15 @@ function ageFromBirthdate(birthdate) {
   if (beforeBirthday) age -= 1;
   return age;
 }
-function openIndividualPlanFlow(user, profile, startCheckout) {
+function openIndividualPlanFlow(user, profile, startCheckout, opts = {}) {
   const age = ageFromBirthdate(profile.birthdate);
   // 生年月日がない場合は、安全のため未成年として扱う
   const isMinor = age === null || age < 18;
   const needsEmail = isIdEmail(user.email);
-  const priceText = `月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円（税込）`;
+  // opts.iap：iOSアプリでApp Storeから申し込む場合（料金はAppleから受け取った表示をそのまま使う）
+  const iap = !!opts.iap;
+  const priceText = iap ? opts.priceText : `月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円（税込）`;
+  const exTaxText = iap ? '' : `（税抜${INDIVIDUAL_PLAN.amountExTax.toLocaleString()}円）`;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   document.body.appendChild(overlay);
@@ -856,10 +934,16 @@ function openIndividualPlanFlow(user, profile, startCheckout) {
         <div class="modal-title"><span class="nb">個人プランの</span><span class="nb">お申し込み</span></div>
         <div class="plan-steps">${needsEmail ? '<span class="on"><span class="nb">1 確認</span></span><span><span class="nb">2 メール登録</span></span><span><span class="nb">3 お支払い</span></span>' : '<span class="on"><span class="nb">1 確認</span></span><span><span class="nb">2 お支払い</span></span>'}</div>
         <ul class="plan-points">
-          <li><b>${priceText}</b>（税抜${INDIVIDUAL_PLAN.amountExTax.toLocaleString()}円）</li>
+          <li><b>${priceText}</b>${exTaxText}</li>
+          ${iap ? `
+          <li><b><span class="nb">1か月ごとに、</span><span class="nb">自動で</span><span class="nb">更新されます。</span></b><span class="nb">お支払いは</span><span class="nb">App Store</span><span class="nb">（Apple ID）</span><span class="nb">で行います。</span><span class="nb">期間が</span><span class="nb">終わる</span><span class="nb">24時間前までに</span><span class="nb">解約しないと、</span><span class="nb">自動で</span><span class="nb">更新されます。</span></li>
+          <li><b><span class="nb">いつでも</span><span class="nb">解約できます。</span></b><span class="nb">iPhoneの</span><span class="nb">「設定」→</span><span class="nb">一番上の</span><span class="nb">自分の名前 →</span><span class="nb">「サブスクリプション」</span><span class="nb">から</span><span class="nb">解約でき、</span><span class="nb">支払い</span><span class="nb">済みの</span><span class="nb">期間の</span><span class="nb">終わりまでは</span><span class="nb">使えます。</span></li>
+          <li><b><span class="nb">返金は、</span><span class="nb">Appleの</span><span class="nb">規定に</span><span class="nb">したがいます。</span></b><span class="nb">App Storeでの</span><span class="nb">お支払いの</span><span class="nb">返金は</span><span class="nb">Appleが</span><span class="nb">判断するため、</span><span class="nb">Self+ からは</span><span class="nb">返金の</span><span class="nb">手続きが</span><span class="nb">できません。</span></li>
+          ` : `
           <li><b><span class="nb">毎月、</span><span class="nb">自動で</span><span class="nb">更新されます。</span></b><span class="nb">お申し込み日と同じ日に、</span><span class="nb">毎月</span><span class="nb">料金が</span><span class="nb">かかります。</span></li>
           <li><b><span class="nb">いつでも</span><span class="nb">解約できます。</span></b><span class="nb">Web版の</span><span class="nb">「プラン・支払い管理」</span><span class="nb">から</span><span class="nb">解約でき、</span><span class="nb">支払い</span><span class="nb">済みの</span><span class="nb">期間の</span><span class="nb">終わりまでは</span><span class="nb">使えます。</span></li>
           <li><b><span class="nb">ご都合による</span><span class="nb">返金は</span><span class="nb">ありません。</span></b><span class="nb">使わなくなった、</span><span class="nb">操作を</span><span class="nb">まちが</span><span class="nb">えた等の</span><span class="nb">場合も、</span><span class="nb">返金や</span><span class="nb">日割りの</span><span class="nb">返金は</span><span class="nb">ありません。</span></li>
+          `}
           <li><span class="nb">今までの</span><span class="nb">記録は、</span><span class="nb">そのまま</span><span class="nb">引き継がれます。</span></li>
           <li><b><span class="nb">チームに</span><span class="nb">入り直したら、</span><span class="nb">ご自身で</span><span class="nb">解約してください。</span></b><span class="nb">個人プランは、</span><span class="nb">自動では</span><span class="nb">止まりません。</span></li>
         </ul>
@@ -872,7 +956,7 @@ function openIndividualPlanFlow(user, profile, startCheckout) {
           <input type="checkbox" id="pf-terms">
           <span><span class="nb">利用規約と</span><span class="nb">特定商取引法に</span><span class="nb">基づく</span><span class="nb">表記を読み、</span><span class="nb">上の</span><span class="nb">内容に</span><span class="nb">同意します。</span></span>
         </label>
-        <div class="plan-links"><a data-legal="terms"><span class="nb">利用規約を見る</span></a>　<a data-legal="tokusho"><span class="nb">特定商取引法に</span><span class="nb">基づく</span><span class="nb">表記を見る</span></a></div>
+        <div class="plan-links"><a data-legal="terms"><span class="nb">利用規約を見る</span></a>　${iap ? '<a data-legal="privacy"><span class="nb">プライバシー</span><span class="nb">ポリシーを見る</span></a>　' : ''}<a data-legal="tokusho"><span class="nb">特定商取引法に</span><span class="nb">基づく</span><span class="nb">表記を見る</span></a></div>
         <div class="modal-status err" id="pf-msg" style="display:none;"></div>
         <div class="modal-actions">
           <button class="modal-btn modal-btn-cancel" id="pf-cancel"><span class="nb">やめる</span></button>
@@ -962,11 +1046,18 @@ function openIndividualPlanFlow(user, profile, startCheckout) {
         <div class="plan-steps">${needsEmail ? '<span class="done"><span class="nb">1 確認</span></span><span class="done"><span class="nb">2 メール登録</span></span><span class="on"><span class="nb">3 お支払い</span></span>' : '<span class="done"><span class="nb">1 確認</span></span><span class="on"><span class="nb">2 お支払い</span></span>'}</div>
         <table class="plan-table">
           <tr><th><span class="nb">プラン</span></th><td><span class="nb">Self+ 個人プラン</span></td></tr>
-          <tr><th><span class="nb">料金</span></th><td>${priceText}（税抜${INDIVIDUAL_PLAN.amountExTax.toLocaleString()}円）</td></tr>
+          <tr><th><span class="nb">料金</span></th><td>${priceText}${exTaxText}</td></tr>
+          ${iap ? `
+          <tr><th><span class="nb">お支払い</span></th><td><span class="nb">App Store</span><span class="nb">（Apple ID）</span><span class="nb">で、</span><span class="nb">今日</span><span class="nb">1か月分。</span><span class="nb">以降、</span><span class="nb">1か月ごとに</span><span class="nb">自動で</span><span class="nb">支払い</span></td></tr>
+          <tr><th><span class="nb">契約期間</span></th><td><span class="nb">1か</span><span class="nb">月ごとの</span><span class="nb">自動更新</span><span class="nb">（期間が</span><span class="nb">終わる</span><span class="nb">24時間前までに</span><span class="nb">解約しないと</span><span class="nb">更新）</span></td></tr>
+          <tr><th><span class="nb">解約</span></th><td><span class="nb">iPhoneの</span><span class="nb">「設定」→</span><span class="nb">自分の名前 →</span><span class="nb">「サブスクリプション」</span><span class="nb">から</span><span class="nb">いつでも</span></td></tr>
+          <tr><th><span class="nb">返金</span></th><td><span class="nb">Appleの</span><span class="nb">規定に</span><span class="nb">したがいます</span></td></tr>
+          ` : `
           <tr><th><span class="nb">お支払い</span></th><td><span class="nb">今</span><span class="nb">日1か月分。</span><span class="nb">以降、</span><span class="nb">毎月同じ日に</span><span class="nb">自動で</span><span class="nb">支払い</span></td></tr>
           <tr><th><span class="nb">契約期間</span></th><td><span class="nb">1か</span><span class="nb">月ごとの</span><span class="nb">自動更新</span></td></tr>
           <tr><th><span class="nb">解約</span></th><td><span class="nb">Web版の</span><span class="nb">「プラン・支払い管理」</span><span class="nb">から</span><span class="nb">いつでも</span></td></tr>
           <tr><th><span class="nb">返金</span></th><td><span class="nb">ご都合による</span><span class="nb">返金・</span><span class="nb">日割りの</span><span class="nb">返金は</span><span class="nb">ありません</span></td></tr>
+          `}
           <tr><th><span class="nb">連絡先</span></th><td>${escapeHtml(user.email || '')}</td></tr>
         </table>
         <label class="plan-check">
@@ -976,7 +1067,7 @@ function openIndividualPlanFlow(user, profile, startCheckout) {
         <div class="modal-status err" id="pf-msg" style="display:none;"></div>
         <div class="modal-actions">
           <button class="modal-btn modal-btn-cancel" id="pf-cancel"><span class="nb">やめる</span></button>
-          <button class="modal-btn modal-btn-send" id="pf-pay"><span class="nb">お支払いへ進む</span></button>
+          <button class="modal-btn modal-btn-send" id="pf-pay"><span class="nb">${iap ? 'App Storeで申し込む' : 'お支払いへ進む'}</span></button>
         </div>
       </div>`;
     overlay.querySelector('#pf-cancel').onclick = close;
@@ -1001,7 +1092,7 @@ function openIndividualPlanFlow(user, profile, startCheckout) {
       } catch (e) {
         m.textContent = '同意の記録を保存できなかったため、お申し込みを中止しました。電波の良い場所でもう一度お試しください。';
         m.style.display = 'block';
-        btn.disabled = false; btn.textContent = 'お支払いへ進む';
+        btn.disabled = false; btn.textContent = iap ? 'App Storeで申し込む' : 'お支払いへ進む';
         return;
       }
       close();
@@ -1160,14 +1251,23 @@ async function openDeleteAccountModal(profile) {
   confirmEl.oninput = updateState;
 
   // 有料プランの注意書き（確認できなかった場合も、念のため注意を出す）
-  checkActiveSubscription(current.uid).then(active => {
+  Promise.all([
+    checkActiveSubscription(current.uid),
+    !isCoachRole ? rcIsIndividualActive(current.uid) : Promise.resolve(false)
+  ]).then(([active, iapActive]) => {
     const note = document.getElementById('del-sub-note');
     if (!note) return;
-    if (active === false) { note.remove(); return; }
+    // App Storeの購入は、こちらからは解約できないため、先に自分で解約してもらう
+    const iapNote = iapActive === true
+      ? `<b>App Storeで加入中の個人プランは、アカウントを削除しても自動では解約されません。</b>先に${IAP_CANCEL_HOWTO}から解約してください。`
+      : (iapActive === null ? `App Storeで個人プランに加入している場合は、アカウントを削除しても自動では解約されません。${IAP_CANCEL_HOWTO}から解約してください。` : '');
+    if (active === false && !iapNote) { note.remove(); return; }
     const teamNote = isCoachRole ? 'チームの他のコーチが契約していない場合、選手もSelf+を使えなくなります。' : '';
-    note.innerHTML = active
-      ? `<b>加入中の有料プランは、削除と同時に解約されます。</b>日割りでの返金はありません。${teamNote}`
-      : `契約状況を確認できませんでした。有料プランに加入中の場合は、削除と同時に解約されます（日割りでの返金はありません）。${teamNote}`;
+    const webNote = active === false ? ''
+      : active
+        ? `<b>Web版で加入中の有料プランは、削除と同時に解約されます。</b>日割りでの返金はありません。${teamNote}`
+        : `契約状況を確認できませんでした。Web版で有料プランに加入中の場合は、削除と同時に解約されます（日割りでの返金はありません）。${teamNote}`;
+    note.innerHTML = [iapNote, webNote].filter(Boolean).join('<br>');
   });
 
   submitBtn.onclick = async () => {
@@ -1342,7 +1442,7 @@ bgResetObserver.observe(app, { childList: true });
 let authMode = 'login';
 let authRole = 'student';
 let authCoachMode = 'new';
-let authStudentMode = 'team'; // 'team'（招待コードでチームに参加）| 'individual'（個人アカウント。Web版のみ）
+let authStudentMode = 'team'; // 'team'（招待コードでチームに参加）| 'individual'（個人アカウント。Web版とiOSアプリ）
 
 function renderAuth() {
   app.innerHTML = `
@@ -1370,30 +1470,34 @@ function renderAuth() {
               <div class="role-opt ${authCoachMode==='join'?'active':''}" data-coachmode="join">既存チームに参加する</div>
             </div>
             ${authCoachMode === 'new' ? `
-              <div class="auth-hint">登録すると、選手を招待するための「招待コード」が自動で発行されます。</div>
+              <label>招待コード</label>
+              <input id="a-newcode" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例）BASEBALL2026">
+              <div class="auth-hint">選手がチームに参加するときに入力するコードです。<br>半角の英字と数字で、4〜16文字で決めてください。</div>
             ` : `
               <label>招待コード</label>
               <input id="a-team" type="text" autocapitalize="characters" autocomplete="off" placeholder="参加したいチームの招待コード">
               <div class="auth-hint">同じチームの他のコーチから教えてもらった招待コードを入力してください。</div>
             `}
           ` : `
-            ${isNativeApp ? '' : `
+            ${!IAP_ENABLED ? '' : `
             <label>使い方</label>
             <div class="role-row">
               <div class="role-opt ${authStudentMode==='team'?'active':''}" data-studentmode="team">チームに参加する</div>
               <div class="role-opt ${authStudentMode==='individual'?'active':''}" data-studentmode="individual">個人で使う</div>
             </div>
             `}
-            ${(isNativeApp || authStudentMode === 'team') ? `
+            ${(!IAP_ENABLED || authStudentMode === 'team') ? `
             <label>招待コード</label>
             <input id="a-team" type="text" autocapitalize="characters" autocomplete="off" placeholder="コーチから教えてもらったコード">
             <div class="auth-hint">担当コーチから教えてもらった招待コードを入力してください。</div>
             ` : `
-            <div class="auth-hint">個人アカウントは、チームに入らずに自分の記録をつけられるプランです（月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円・税込）。登録してログインした後に、プランの手続きがあります。</div>
+            <div class="auth-hint">${IAP_ENABLED
+              ? '個人アカウントは、チームに入らずに自分の記録をつけられる有料プラン（月額・自動更新）です。登録してログインした後に、App Storeでのお申し込みがあります。'
+              : `個人アカウントは、チームに入らずに自分の記録をつけられるプランです（月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円・税込）。登録してログインした後に、プランの手続きがあります。`}</div>
             `}
           `}
           ${authRole === 'student' ? `
-            <label>生年月日</label>
+            <label>生年月日（任意）</label>
             <div class="birthdate-row">
               <select id="a-birth-y">${birthYearOptions()}</select>
               <select id="a-birth-m">${monthDayOptions(12, '月')}</select>
@@ -1401,7 +1505,7 @@ function renderAuth() {
             </div>
           ` : ``}
         ` : ``}
-        ${(authMode === 'signup' && authRole === 'student' && (isNativeApp || authStudentMode === 'team')) ? `
+        ${(authMode === 'signup' && authRole === 'student' && ((isNativeApp && !IAP_ENABLED) || authStudentMode === 'team')) ? `
           <label>ID（ログインに使います）</label>
           <input id="a-email" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="例）kanta2013" value="${escapeHtml(lastAuthEmail)}">
           <div class="auth-hint">半角の英小文字・数字・「_」で4〜20文字。メールアドレスは不要です。IDとパスワードは忘れないようにメモしておいてください。</div>
@@ -1411,7 +1515,7 @@ function renderAuth() {
         `}
         <label>パスワード</label>
         <div style="display:flex; gap:6px;">
-          <input id="a-pass" type="password" autocomplete="${authMode==='signup'?'new-password':'current-password'}" placeholder="${(authMode === 'signup' && authRole === 'student' && (isNativeApp || authStudentMode === 'team')) ? '8文字以上' : '6文字以上'}" style="flex:1;">
+          <input id="a-pass" type="password" autocomplete="${authMode==='signup'?'new-password':'current-password'}" placeholder="${(authMode === 'signup' && authRole === 'student' && ((isNativeApp && !IAP_ENABLED) || authStudentMode === 'team')) ? '8文字以上' : '6文字以上'}" style="flex:1;">
           <button type="button" id="a-pass-toggle" style="flex-shrink:0; border:1px solid var(--border2); background:var(--surface2); border-radius:10px; padding:0 14px; font-size:12.5px; cursor:pointer; color:var(--text2);">表示</button>
         </div>
         ${authMode === 'signup' ? `
@@ -1504,8 +1608,8 @@ async function handleSignup() {
   const email = document.getElementById('a-email').value.trim();
   const password = document.getElementById('a-pass').value;
   let teamCode = '';
-  // 個人アカウントはWeb版でのみ登録できる（アプリ版はストア審査の都合で購入導線を持たないため）
-  const isIndividualSignup = authRole === 'student' && authStudentMode === 'individual' && !isNativeApp;
+  // 個人アカウントはiOSアプリだけで登録できる（個人プランはApp Storeのアプリ内課金のみ）
+  const isIndividualSignup = authRole === 'student' && authStudentMode === 'individual' && IAP_ENABLED;
   // チームの選手はIDで登録する（メール確認なし）
   const isIdSignup = authRole === 'student' && !isIndividualSignup;
   let loginId = '';
@@ -1526,7 +1630,9 @@ async function handleSignup() {
     teamCode = document.getElementById('a-team').value.trim().toUpperCase();
     if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
   } else {
-    if (!name || !sport || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
+    teamCode = (document.getElementById('a-newcode').value || '').trim().toUpperCase();
+    if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
+    if (!/^[A-Z0-9]{4,16}$/.test(teamCode)) { showAuthMsg('招待コードは、半角の英字と数字で4〜16文字にしてください', 'err'); return; }
   }
 
   let birthdate = null;
@@ -1534,8 +1640,11 @@ async function handleSignup() {
     const by = document.getElementById('a-birth-y').value;
     const bm = document.getElementById('a-birth-m').value;
     const bd = document.getElementById('a-birth-d').value;
-    if (!by || !bm || !bd) { showAuthMsg('生年月日を入力してください', 'err'); return; }
-    birthdate = `${by}-${String(bm).padStart(2, '0')}-${String(bd).padStart(2, '0')}`;
+    if (by || bm || bd) {
+      // 生年月日は任意。入れる場合だけ、年・月・日がそろっているかを確認する
+      if (!by || !bm || !bd) { showAuthMsg('生年月日は、年・月・日をすべて選ぶか、すべて空欄のままにしてください', 'err'); return; }
+      birthdate = `${by}-${String(bm).padStart(2, '0')}-${String(bd).padStart(2, '0')}`;
+    }
   }
 
   const submitBtn = document.getElementById('a-submit');
@@ -1581,7 +1690,18 @@ async function handleSignup() {
         return;
       }
     } else {
-      teamCode = await generateUniqueTeamCode();
+      // 新しいチーム：コーチが決めた招待コードが、他のチームで使われていないか確認する
+      if (await isTeamCodeTaken(teamCode, cred.user.uid)) {
+        const rolledBack = await rollbackSignupAccount(cred);
+        showAuthMsg(
+          rolledBack
+            ? 'この招待コードは、すでに他のチームで使われています。別のコードにしてください。'
+            : 'この招待コードは、すでに他のチームで使われています。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
+          'err'
+        );
+        submitBtn.disabled = false;
+        return;
+      }
     }
 
     const profileData = { email: isIdSignup ? signupEmail : email, displayName: name, role: authRole, sport, teamCode, createdAt: Date.now() };
@@ -1595,11 +1715,12 @@ async function handleSignup() {
     await setDoc(doc(db, 'users', cred.user.uid), profileData);
     // 新しいチームを作った場合：保存した直後にもう一度、同じコードの別チームがないか確認する。
     // ごくまれに他のコーチと同時に同じコードが発行された場合は、自分のコードを発行し直す
-    if (authRole === 'coach' && authCoachMode === 'new') {
-      for (let i = 0; i < 3 && await isTeamCodeTaken(teamCode, cred.user.uid); i++) {
-        teamCode = await generateUniqueTeamCode();
-        await setDoc(doc(db, 'users', cred.user.uid), { teamCode }, { merge: true });
-      }
+    // ごくまれに他のコーチと同時に同じコードで登録された場合は、登録を取り消して選び直してもらう
+    if (authRole === 'coach' && authCoachMode === 'new' && await isTeamCodeTaken(teamCode, cred.user.uid)) {
+      await rollbackSignupAccount(cred);
+      showAuthMsg('この招待コードは、すでに他のチームで使われています。別のコードにしてもう一度登録してください。', 'err');
+      submitBtn.disabled = false;
+      return;
     }
     if (isIdSignup) {
       // IDの選手はメール確認なし。そのままログインした状態で始める
@@ -1772,7 +1893,7 @@ async function routeStudent(user, profile) {
   // チームから外れた（コーチに削除された）選手は、担当コーチ検索より前にここで検知する
   if (!profile.teamCode) {
     if (profile.freeAccess === true) { boot(user, profile); return; }
-    const result = await checkActiveSubscription(user.uid);
+    const result = await checkIndividualAccess(user.uid);
     if (result === true) {
       boot(user, profile);
     } else if (result === null) {
@@ -1875,8 +1996,16 @@ function renderWaitingForCoach(profile) {
 async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   const isCoachInactive = mode === 'coachInactive';
   const isIndividual = mode === 'individual';
-  const planPriceText = `月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円（税込）`;
-  const REACTIVATE_LABEL = isIndividual ? `${planPriceText}で記録を始める` : `${planPriceText}で記入を再開する`;
+  // iOSアプリ：App Storeの商品と価格を先に読み込む（表示する料金は必ずAppleから受け取ったもの）
+  let iapPkg = null;
+  if (IAP_ENABLED && !isCoachInactive) {
+    try { iapPkg = await rcGetMonthlyPackage(user.uid); } catch (e) { console.warn('RevenueCat offerings failed', e); }
+  }
+  const iapPriceText = rcPriceText(iapPkg);
+  const planPriceText = IAP_ENABLED ? iapPriceText : `月額${INDIVIDUAL_PLAN.amount.toLocaleString()}円（税込）`;
+  const REACTIVATE_LABEL = IAP_ENABLED
+    ? (iapPriceText ? `${iapPriceText}で${isIndividual ? '記録を始める' : '記入を再開する'}` : '個人プランの準備中です')
+    : (isIndividual ? `${planPriceText}で記録を始める` : `${planPriceText}で記入を再開する`);
   const t0 = todayParts();
   const rState = { year: t0.y, month: t0.m, selected: dateKey(t0.y, t0.m, t0.d) };
   app.innerHTML = `
@@ -1900,17 +2029,24 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       ` : `
       <div class="removed-banner">
         <div class="removed-banner-title">${isIndividual ? '個人アカウント' : '現在、チームに所属していません'}</div>
-        ${isNativeApp ? `
+        ${(isNativeApp && !IAP_ENABLED) ? `
         <div class="removed-banner-text">${isIndividual
           ? 'このアカウントでは現在、ご利用いただけるプランが有効になっていません。プランが有効になっている場合は、下のボタンで状況を更新してください。'
           : '今までの記録はいつでも閲覧できます。新しいチームに参加すると、また記録を書けるようになります。'}</div>
+        ` : IAP_ENABLED ? `
+        <div class="removed-banner-text">${isIndividual
+          ? `個人プラン${iapPriceText ? `（${iapPriceText}）` : ''}に加入すると、記録を書けるようになります。`
+          : `今までの記録はいつでも閲覧できます。新しく記録を書くには、個人プラン${iapPriceText ? `（${iapPriceText}）` : ''}が必要です。`}</div>
+        <button class="removed-reactivate-btn" id="removed-reactivate-btn" ${iapPkg ? '' : 'disabled'}>${REACTIVATE_LABEL}</button>
+        <div class="pay-terms-note">${iapPriceText ? `${iapPriceText}・` : ''}1か月ごとの自動更新です（App Storeでのお支払い）。期間が終わる24時間前までに解約しないと、自動で更新されます。解約は、${IAP_CANCEL_HOWTO}からいつでもでき、解約後も期間の終わりまでは使えます。</div>
+        <div id="removed-reactivate-msg">${iapPkg ? '' : '<div class="pay-msg err">App Storeの情報を読み込めませんでした。電波の良い場所で、アプリを開き直してください。</div>'}</div>
+        <div class="removed-refresh-row">
+          <button class="removed-refresh-btn" id="removed-restore-btn">購入を復元する</button>
+        </div>
         ` : `
         <div class="removed-banner-text">${isIndividual
-          ? `個人プラン（${planPriceText}・税抜${INDIVIDUAL_PLAN.amountExTax.toLocaleString()}円）に加入すると、記録を書けるようになります。`
-          : `今までの記録はいつでも閲覧できます。新しく記録を書くには、個人プラン（${planPriceText}）が必要です。`}</div>
-        <button class="removed-reactivate-btn" id="removed-reactivate-btn">${REACTIVATE_LABEL}</button>
-        <div class="pay-terms-note">${planPriceText}・毎月自動更新です。「プラン・支払い管理」からいつでも解約でき、解約後も契約期間の終わりまでは使えます。</div>
-        <div id="removed-reactivate-msg"></div>
+          ? '個人プランは、iPhoneのSelf+アプリからお申し込みいただけます。お申し込み後は、同じアカウントでWeb版でも記録を書けます。'
+          : '今までの記録はいつでも閲覧できます。新しく記録を書くには、iPhoneのSelf+アプリから個人プランにお申し込みいただくか、新しいチームに参加してください。'}</div>
         `}
         <div class="removed-refresh-row">
           <button class="removed-refresh-btn" id="removed-refresh-btn">${RECHECK_LABEL}</button>
@@ -1919,7 +2055,9 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       </div>
       <div class="removed-banner">
         <div class="removed-banner-title">新しいチームに参加する</div>
-        <div class="removed-banner-text">${isNativeApp
+        <div class="removed-banner-text">${IAP_ENABLED
+          ? `新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（App Storeで加入している場合は、${IAP_CANCEL_HOWTO}からご自身で解約してください）。`
+          : isNativeApp
           ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
           : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
         <div class="removed-join-row">
@@ -1945,7 +2083,50 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   const contactBtn = document.getElementById('removed-contact');
   if (contactBtn) contactBtn.onclick = () => openContactModal(profile, {});
   const reactivateBtn = document.getElementById('removed-reactivate-btn');
-  if (reactivateBtn) {
+  if (reactivateBtn && IAP_ENABLED) {
+    // iOSアプリ：App Storeのアプリ内課金で申し込む
+    const runIapPurchase = async () => {
+      const msg = document.getElementById('removed-reactivate-msg');
+      if (msg) msg.innerHTML = '';
+      reactivateBtn.disabled = true;
+      reactivateBtn.textContent = '処理中…';
+      try {
+        await rcEnsure(user.uid);
+        const res = await RC.purchasePackage({ aPackage: iapPkg });
+        if (rcHasEntitlement(res)) { boot(user, profile); return; }
+        if (msg) msg.innerHTML = `<div class="pay-msg err">お申し込みは受け付けましたが、まだ反映を確認できません。少し待ってから「${RECHECK_LABEL}」を押してください。</div>`;
+      } catch (e) {
+        if (!rcIsCancelled(e) && msg) {
+          msg.innerHTML = `<div class="pay-msg err">お申し込みを完了できませんでした。時間をおいてもう一度お試しください。（${escapeHtml(String((e && (e.code || e.message)) || 'unknown'))}）</div>`;
+        }
+      }
+      reactivateBtn.disabled = false;
+      reactivateBtn.textContent = REACTIVATE_LABEL;
+    };
+    reactivateBtn.onclick = () => {
+      if (!iapPkg) return;
+      openIndividualPlanFlow(user, profile, () => runIapPurchase(), { iap: true, priceText: iapPriceText });
+    };
+  }
+  const restoreBtn = document.getElementById('removed-restore-btn');
+  if (restoreBtn) {
+    restoreBtn.onclick = async () => {
+      const hint = document.getElementById('removed-refresh-hint');
+      restoreBtn.disabled = true;
+      restoreBtn.textContent = '確認中…';
+      try {
+        await rcEnsure(user.uid);
+        const res = await RC.restorePurchases();
+        if (rcHasEntitlement(res)) { boot(user, profile); return; }
+        if (hint) hint.textContent = 'このApple IDで、有効な個人プランの購入は見つかりませんでした。';
+      } catch (e) {
+        if (hint) hint.textContent = '購入を確認できませんでした。電波の良い場所でもう一度お試しください。';
+      }
+      restoreBtn.disabled = false;
+      restoreBtn.textContent = '購入を復元する';
+    };
+  }
+  if (reactivateBtn && !IAP_ENABLED) {
     reactivateBtn.onclick = () => openIndividualPlanFlow(user, profile, (consentMeta) => runIndividualCheckout(consentMeta));
     const runIndividualCheckout = async (consentMeta) => {
       const msg = document.getElementById('removed-reactivate-msg');
@@ -2026,7 +2207,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       refreshBtn.textContent = '確認中…';
       if (hint) hint.textContent = '';
       try {
-        const result = await checkActiveSubscription(user.uid);
+        const result = await checkIndividualAccess(user.uid);
         if (result === true) {
           boot(user, profile);
           return;
