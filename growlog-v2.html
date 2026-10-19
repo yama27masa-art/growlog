@@ -664,7 +664,7 @@ import {
   EmailAuthProvider, reauthenticateWithCredential, deleteUser, verifyBeforeUpdateEmail
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getFunctions, httpsCallable
@@ -789,6 +789,63 @@ const RC = isIOSApp
       || (typeof window.Capacitor.registerPlugin === 'function' ? window.Capacitor.registerPlugin('Purchases') : null))
   : null;
 const IAP_ENABLED = !!RC;
+// ── プッシュ通知（アプリ版のみ）──────────────────────
+// 端末ごとの通知の宛先（トークン）を push_tokens/{トークン} に保存する。
+// 送るのは Cloud Functions 側。通知をタップしたら、その日の日記を開く。
+const FCM = isNativeApp
+  ? ((window.Capacitor.Plugins && window.Capacitor.Plugins.FirebaseMessaging)
+      || (typeof window.Capacitor.registerPlugin === 'function' ? window.Capacitor.registerPlugin('FirebaseMessaging') : null))
+  : null;
+let pushToken = null;
+let pushUid = null;
+let pendingPushOpen = null;
+async function savePushToken(uid, token) {
+  if (!uid || !token) return;
+  try {
+    await setDoc(doc(db, 'push_tokens', token), {
+      uid,
+      platform: window.Capacitor.getPlatform(),
+      updatedAt: serverTimestamp()
+    });
+  } catch (e) { console.warn('[push] 通知の宛先の保存に失敗しました', e); }
+}
+async function registerPush(uid) {
+  if (!FCM) return;
+  pushUid = uid;
+  try {
+    let perm = await FCM.checkPermissions();
+    if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') {
+      perm = await FCM.requestPermissions();
+    }
+    if (perm.receive !== 'granted') return;
+    const res = await FCM.getToken();
+    pushToken = res && res.token;
+    await savePushToken(uid, pushToken);
+  } catch (e) { console.warn('[push] 通知の準備に失敗しました', e); }
+}
+async function unregisterPush() {
+  if (!FCM || !pushToken) return;
+  try { await deleteDoc(doc(db, 'push_tokens', pushToken)); } catch (e) {}
+  pushToken = null;
+  pushUid = null;
+}
+// ログアウトするときは、この端末に前の人の通知が届かないよう宛先を消してから
+async function appSignOut() {
+  await unregisterPush();
+  return signOut(auth);
+}
+if (FCM) {
+  FCM.addListener('tokenReceived', (ev) => {
+    if (ev && ev.token) { pushToken = ev.token; savePushToken(pushUid, pushToken); }
+  });
+  FCM.addListener('notificationActionPerformed', (ev) => {
+    const data = (ev && ev.notification && ev.notification.data) || {};
+    if (!data.date) return;
+    if (typeof window.__selfplusPushOpen === 'function') window.__selfplusPushOpen(data);
+    else pendingPushOpen = data; // まだログイン中なら、終わってから開く
+  });
+}
+
 const IAP_CANCEL_HOWTO = 'iPhoneの「設定」→ 一番上の自分の名前 →「サブスクリプション」';
 let rcCurrentUid = null;
 async function rcEnsure(uid) {
@@ -1786,7 +1843,7 @@ async function handleResendVerification() {
       }
     }
     pendingAuthNotice = { text, type };
-    await signOut(auth);
+    await appSignOut();
   } catch (e) {
     showAuthMsg(translateError(e), 'err');
   }
@@ -1814,7 +1871,7 @@ async function handleLogin() {
       }
       pendingAuthNotice = { text: resendMsg, type: 'err' };
       showAuthMsg(resendMsg, 'err');
-      await signOut(auth);
+      await appSignOut();
       return;
     }
   } catch (e) { showAuthMsg(translateError(e), 'err'); }
@@ -1975,7 +2032,7 @@ function renderCheckFailedScreen(profile, onRetry) {
     </div></div>
   `;
   document.getElementById('check-retry-btn').onclick = onRetry;
-  document.getElementById('pay-logout').onclick = () => signOut(auth);
+  document.getElementById('pay-logout').onclick = () => appSignOut();
 }
 
 function renderWaitingForCoach(profile) {
@@ -1988,7 +2045,7 @@ function renderWaitingForCoach(profile) {
       <div class="delete-account-link" id="delete-account-link">アカウントを削除</div>
     </div></div>
   `;
-  document.getElementById('pay-logout').onclick = () => signOut(auth);
+  document.getElementById('pay-logout').onclick = () => appSignOut();
   wireLegalLinks(app);
   document.getElementById('delete-account-link').onclick = () => openDeleteAccountModal(profile);
 }
@@ -2080,7 +2137,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       <div class="delete-account-link" id="delete-account-link">アカウントを削除</div>
     </div>
   `;
-  document.getElementById('removed-logout').onclick = () => signOut(auth);
+  document.getElementById('removed-logout').onclick = () => appSignOut();
   wireLegalLinks(app);
   document.getElementById('delete-account-link').onclick = () => openDeleteAccountModal(profile);
   const contactBtn = document.getElementById('removed-contact');
@@ -2369,7 +2426,7 @@ function renderNativeNoPlanScreen(user, profile) {
     </div></div>
   `;
   wireLegalLinks(app);
-  document.getElementById('pay-logout').onclick = () => signOut(auth);
+  document.getElementById('pay-logout').onclick = () => appSignOut();
   document.getElementById('pay-contact').onclick = () => openContactModal(profile, {});
   document.getElementById('delete-account-link').onclick = () => openDeleteAccountModal(profile);
   const btn = document.getElementById('native-recheck-btn');
@@ -2438,7 +2495,7 @@ function renderPaywall(user, profile) {
       btn.textContent = '加入手続きに進む';
     };
   });
-  document.getElementById('pay-logout').onclick = () => signOut(auth);
+  document.getElementById('pay-logout').onclick = () => appSignOut();
   document.getElementById('pay-btn').onclick = () => { if (selectedPrice) startCheckout(user.uid, selectedPrice); };
 }
 
@@ -2673,7 +2730,7 @@ async function boot(user, profile) {
     document.getElementById('tile-diary').onclick = () => { if (!isCoach) state.view = 'home'; render(); };
     document.getElementById('tile-athlete').onclick = () => openProQuestionModal(profile);
     document.getElementById('launch-settings').onclick = () => { render().then(() => openSettingsModal()); };
-    document.getElementById('launch-logout').onclick = () => signOut(auth);
+    document.getElementById('launch-logout').onclick = () => appSignOut();
     wireLegalLinks(app);
   }
 
@@ -2710,7 +2767,7 @@ async function boot(user, profile) {
       </div>
     `;
     document.getElementById('settings-link').onclick = () => openSettingsModal();
-    document.getElementById('logout-link').onclick = () => signOut(auth);
+    document.getElementById('logout-link').onclick = () => appSignOut();
     const portalLinkEl = document.getElementById('portal-link');
     if (portalLinkEl) portalLinkEl.onclick = () => openPortal();
     document.getElementById('contact-link').onclick = () => openContactModal(profile, state);
@@ -4504,6 +4561,22 @@ async function boot(user, profile) {
   }
   function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function escapeAttr(s) { return escapeHtml(s); }
+  // 通知をタップしたときに、その日の日記を開く（コーチはその選手に切り替えてから）
+  window.__selfplusPushOpen = async (data) => {
+    try {
+      if (isCoach) {
+        if (!data.playerId || !TEAM.some(r => r.uid === data.playerId)) return;
+        state.playerId = data.playerId;
+      }
+      await openDate(data.date);
+    } catch (e) { console.warn('[push] 日記を開けませんでした', e); }
+  };
+  registerPush(user.uid);
+  if (pendingPushOpen) {
+    const d = pendingPushOpen;
+    pendingPushOpen = null;
+    window.__selfplusPushOpen(d);
+  }
 }
 </script>
 <script>
