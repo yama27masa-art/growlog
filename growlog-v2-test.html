@@ -646,6 +646,9 @@ html[data-theme="architectural-beige"] {
   --font-latin: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
 }
 html[data-theme="architectural-beige"] .section-title { font-family: var(--font-latin); letter-spacing: 0.14em; }
+.v-up-banner { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(92vw, 420px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 10px 12px; z-index: 9999; display: none; }
+.v-up-banner.show { display: block; }
+.v-up-banner .v-up-text { font-size: 11.5px; color: var(--text2); margin-bottom: 6px; text-align: center; }
 </style>
 </head>
 <body>
@@ -4115,6 +4118,85 @@ async function boot(user, profile) {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => { saveEntry(); }, 700);
   }
+  // ── 動画アップロード（アップ中でも他の画面に移れるよう、進み具合は画面の外で管理する）──
+  const videoUp = { active: false, pct: 0, ctx: null };
+  const VIDEO_CHUNK_SIZE = 25 * 1024 * 1024; // 小分けの大きさ（25MB）
+  function ensureVideoUpBanner() {
+    let el = document.getElementById('v-up-banner');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'v-up-banner';
+      el.className = 'v-up-banner';
+      el.innerHTML = '<div class="v-up-text" id="v-up-text"></div><div class="video-track"><div class="video-fill" id="v-up-fill"></div></div>';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function showVideoUpBanner(text, pct) {
+    const el = ensureVideoUpBanner();
+    document.getElementById('v-up-text').textContent = text;
+    document.getElementById('v-up-fill').style.width = (pct || 0) + '%';
+    el.classList.add('show');
+  }
+  function hideVideoUpBanner(delay) {
+    setTimeout(() => {
+      const el = document.getElementById('v-up-banner');
+      if (el && !videoUp.active) el.classList.remove('show');
+    }, delay || 0);
+  }
+  window.addEventListener('beforeunload', (e) => {
+    if (videoUp.active) { e.preventDefault(); e.returnValue = ''; }
+  });
+  // 指定した選手・日付の日記に、直接書き足す
+  async function mergeEntryAt(uid, dateStr, mutateFn) {
+    const key = `entry:${uid}:${dateStr}`;
+    let data = null;
+    try {
+      const res = await kvGet(key);
+      if (res && res.value) data = JSON.parse(res.value);
+    } catch (e) { data = null; }
+    if (!data) data = emptyEntry();
+    if (!data.videos) data.videos = [];
+    mutateFn(data);
+    await kvSet(key, JSON.stringify(data));
+    const dt = dateStr.split('-');
+    delete state.calCache[`${uid}:${dt[0]}-${dt[1]}`];
+  }
+  // アップを始めたときの日記（選手・日付・共有先）に動画を追加する
+  async function distributeVideoTo(ctx, video) {
+    const samePage = state.playerId === ctx.playerId && state.selected === ctx.date && state.entry;
+    if (samePage && document.getElementById('f-good')) {
+      state.entry.videos.push(video);
+      await saveEntry();
+    } else {
+      if (samePage) state.entry.videos.push({ ...video });
+      await mergeEntryAt(ctx.playerId, ctx.date, (data) => { data.videos.push({ ...video }); });
+    }
+    for (const uid of ctx.otherUids) {
+      await mergeEntryAt(uid, ctx.date, (data) => { data.videos.push({ ...video }); });
+    }
+    return samePage;
+  }
+  // 選んだだけで使わなかった「空の動画枠」を Bunny から消す
+  function discardPreparedUpload(prep) {
+    if (!prep) return;
+    prep.then(init => {
+      if (init && init.ok && init.videoId) {
+        fetch(BUNNY_PROXY_ENDPOINT, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'deleteVideo', videoId: init.videoId })
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }
+  function requestUploadInit(file) {
+    return fetch(BUNNY_PROXY_ENDPOINT, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'createUpload', title: file.name })
+    }).then(res => res.json());
+  }
+  let preparedUpload = null; // { file, promise }
+
   function setupVideoUpload() {
     const drop = document.getElementById('v-drop');
     const fileInput = document.getElementById('v-file');
@@ -4127,6 +4209,16 @@ async function boot(user, profile) {
     const titleInput = document.getElementById('v-title');
     if (!drop) return;
     let selectedFile = null;
+
+    // 前の画面で選んだまま使わなかった動画枠は片付ける
+    if (preparedUpload && !videoUp.active) { discardPreparedUpload(preparedUpload.promise); preparedUpload = null; }
+
+    if (videoUp.active) {
+      uploadBtn.disabled = true;
+      board.classList.add('show');
+      fill.style.width = videoUp.pct + '%';
+      statusTxt.textContent = '別の動画をアップロード中です。終わってから追加してください';
+    }
 
     drop.addEventListener('click', () => fileInput.click());
     drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag'); });
@@ -4147,10 +4239,18 @@ async function boot(user, profile) {
       if (file.size > 3 * 1024 * 1024 * 1024) { showError('ファイルサイズが3GBを超えています。さすがに大きすぎるので、動画を分割するかご相談ください。'); return; }
       selectedFile = file;
       filenameEl.textContent = `${file.name}（${(file.size / 1024 / 1024).toFixed(1)}MB）`;
+      if (videoUp.active) return;
       uploadBtn.disabled = false;
+      // 選んだ瞬間に許可証をもらっておく（別の動画に選び直したら、前の枠は消す）
+      if (preparedUpload && preparedUpload.file !== file) { discardPreparedUpload(preparedUpload.promise); preparedUpload = null; }
+      if (!preparedUpload) {
+        const promise = requestUploadInit(file);
+        promise.catch(() => {});
+        preparedUpload = { file, promise };
+      }
     }
 
-    uploadBtn.addEventListener('click', () => { if (selectedFile) handleUpload(selectedFile); });
+    uploadBtn.addEventListener('click', () => { if (selectedFile && !videoUp.active) handleUpload(selectedFile); });
 
     async function handleUpload(file) {
       hideError();
@@ -4158,47 +4258,86 @@ async function boot(user, profile) {
       board.classList.add('show');
       fill.style.width = '0%';
       statusTxt.textContent = 'アップロード準備中…';
+      // アップを始めたときの日記を覚えておく（途中で他の画面に移っても、ここに追加する）
+      const ctx = {
+        playerId: state.playerId,
+        date: state.selected,
+        otherUids: isCoach ? resolveTargetUids(state.videoTarget).filter(uid => uid !== state.playerId) : []
+      };
+      const title = titleInput.value.trim();
+      const prep = (preparedUpload && preparedUpload.file === file) ? preparedUpload.promise : null;
+      preparedUpload = null;
+      videoUp.active = true; videoUp.pct = 0; videoUp.ctx = ctx;
+      showVideoUpBanner('アップロード準備中…', 0);
+      const setProgress = (pct) => {
+        videoUp.pct = pct;
+        showVideoUpBanner(`動画をアップロード中… ${pct}%`, pct);
+        const f = document.getElementById('v-fill');
+        const s = document.getElementById('v-status');
+        if (f && s && ctx.playerId === state.playerId && ctx.date === state.selected) {
+          f.style.width = pct + '%';
+          s.textContent = `アップロード中… ${pct}%`;
+        }
+      };
       try {
-        const uploaded = await uploadToBunny(file, (pct) => {
-          fill.style.width = pct + '%';
-          statusTxt.textContent = `アップロード中… ${pct}%`;
-        });
-        statusTxt.textContent = '追加中…';
-        await distributeVideo({
-          title: titleInput.value.trim(),
+        const uploaded = await uploadToBunny(file, prep, setProgress);
+        showVideoUpBanner('追加中…', 100);
+        const samePage = await distributeVideoTo(ctx, {
+          title,
           url: uploaded.embedUrl,
           hlsUrl: uploaded.hlsUrl,
           videoId: uploaded.videoId,
           uploadedAt: Date.now()
         });
-        statusTxt.textContent = '追加しました！（動画は変換処理中です。少し待ってから開いてください）';
-        fill.style.width = '100%';
-        selectedFile = null;
-        setTimeout(() => { board.classList.remove('show'); renderPanel(); }, 2500);
+        videoUp.active = false; videoUp.ctx = null;
+        showVideoUpBanner('動画を追加しました！（変換処理中のため、少し待ってから開いてください）', 100);
+        hideVideoUpBanner(3500);
+        const s = document.getElementById('v-status');
+        if (samePage && s) {
+          s.textContent = '追加しました！（動画は変換処理中です。少し待ってから開いてください）';
+          setTimeout(() => {
+            if (state.playerId === ctx.playerId && state.selected === ctx.date && document.getElementById('v-board')) renderPanel();
+          }, 2500);
+        } else if (document.getElementById('v-board')) {
+          // 別の日記を開いている場合は、その画面のボタンを元に戻す
+          const b = document.getElementById('v-board');
+          const btn = document.getElementById('v-upload-btn');
+          b.classList.remove('show');
+          if (btn) btn.disabled = !selectedFile;
+        }
       } catch (err) {
         console.error(err);
-        board.classList.remove('show');
-        uploadBtn.disabled = false;
-        showError('失敗しました。もう一度お試しください。（' + (err.message || err) + '）');
+        videoUp.active = false; videoUp.ctx = null;
+        showVideoUpBanner('動画のアップロードに失敗しました。もう一度お試しください', 0);
+        hideVideoUpBanner(4000);
+        const b = document.getElementById('v-board');
+        if (b && ctx.playerId === state.playerId && ctx.date === state.selected) {
+          b.classList.remove('show');
+          const btn = document.getElementById('v-upload-btn');
+          if (btn) btn.disabled = false;
+          const eb = document.getElementById('v-err');
+          if (eb) { eb.textContent = '失敗しました。もう一度お試しください。（' + (err.message || err) + '）'; eb.classList.add('show'); }
+        }
       }
     }
 
-    function uploadToBunny(file, onProgress) {
+    function uploadToBunny(file, prep, onProgress) {
       return new Promise(async (resolve, reject) => {
         try {
-          // ① Apps Scriptにアップロード許可証（署名付きトークン）を発行してもらう
-          const initRes = await fetch(BUNNY_PROXY_ENDPOINT, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'createUpload', title: file.name })
-          });
-          const init = await initRes.json();
+          // ① 許可証（選んだ瞬間にもらっておいたもの。期限が近い・失敗していたら、もらい直す）
+          let init = null;
+          if (prep) { try { init = await prep; } catch (e) { init = null; } }
+          const nowSec = Math.floor(Date.now() / 1000);
+          if (!init || !init.ok || Number(init.authorizationExpire) - nowSec < 300) {
+            init = await requestUploadInit(file);
+          }
           if (!init.ok) { reject(new Error(init.error || 'アップロード準備に失敗しました')); return; }
 
           // ② TUSプロトコルでBunny Streamへ直接・再開可能アップロード
           const upload = new tus.Upload(file, {
             endpoint: init.uploadEndpoint,
             retryDelays: [0, 3000, 5000, 10000, 20000],
-            chunkSize: 5 * 1024 * 1024,
+            chunkSize: VIDEO_CHUNK_SIZE,
             metadata: { filetype: file.type, title: file.name },
             headers: {
               AuthorizationSignature: init.authorizationSignature,
