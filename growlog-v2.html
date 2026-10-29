@@ -739,6 +739,12 @@ function generateTeamCode(length = 6) {
 }
 // そのコードを使っているコーチが（自分以外に）いるか
 async function isTeamCodeTaken(code, exceptUid) {
+  // チーム名簿があれば、名簿に載っていない人にとっては「使われている」コード
+  // （コーチが全員いなくなったチームのコードも、選手が残っているので他の人には使わせない）
+  try {
+    const teamSnap = await getDoc(doc(db, 'teams', code));
+    if (teamSnap.exists() && !(teamSnap.data().coachUids || []).includes(exceptUid)) return true;
+  } catch (e) { /* 名簿を読めないときは、今まで通りコーチのプロフィールで確かめる */ }
   const q = query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach'));
   const snaps = await getDocs(q);
   return snaps.docs.some(d => d.id !== exceptUid);
@@ -1534,9 +1540,9 @@ function renderAuth() {
               <input id="a-newcode" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例）BASEBALL2026">
               <div class="auth-hint">選手がチームに参加するときに入力するコードです。<br>半角の英字と数字で、4〜16文字で決めてください。</div>
             ` : `
-              <label>招待コード</label>
-              <input id="a-team" type="text" autocapitalize="characters" autocomplete="off" placeholder="参加したいチームの招待コード">
-              <div class="auth-hint">同じチームの他のコーチから教えてもらった招待コードを入力してください。</div>
+              <label>コーチ用コード</label>
+              <input id="a-coachkey" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例）ABCDE-FGHJK">
+              <div class="auth-hint">同じチームのコーチから教えてもらった<br>「コーチ用コード」（10文字）を入力してください。<br>選手用の招待コードでは参加できません。</div>
             `}
           ` : `
             ${!IAP_ENABLED ? '' : `
@@ -1668,6 +1674,7 @@ async function handleSignup() {
   const email = document.getElementById('a-email').value.trim();
   const password = document.getElementById('a-pass').value;
   let teamCode = '';
+  let coachKey = '';
   // 個人アカウントはiOSアプリだけで登録できる（個人プランはApp Storeのアプリ内課金のみ）
   const isIndividualSignup = authRole === 'student' && authStudentMode === 'individual' && IAP_ENABLED;
   // チームの選手はIDで登録する（メール確認なし）
@@ -1687,8 +1694,9 @@ async function handleSignup() {
     teamCode = document.getElementById('a-team').value.trim().toUpperCase();
     if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
   } else if (authRole === 'coach' && authCoachMode === 'join') {
-    teamCode = document.getElementById('a-team').value.trim().toUpperCase();
-    if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
+    coachKey = (document.getElementById('a-coachkey').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!name || !sport || !coachKey || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
+    if (coachKey.length !== 10) { showAuthMsg('コーチ用コードは10文字です。もう一度確認してください', 'err'); return; }
   } else {
     teamCode = (document.getElementById('a-newcode').value || '').trim().toUpperCase();
     if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
@@ -1736,14 +1744,21 @@ async function handleSignup() {
         return;
       }
     } else if (authRole === 'coach' && authCoachMode === 'join') {
-      const coachQ = query(collection(db, 'users'), where('teamCode', '==', teamCode), where('role', '==', 'coach'));
-      const coachSnaps = await getDocs(coachQ);
-      if (coachSnaps.empty) {
+      // コーチ用コードをサーバーで確かめて、チームの名簿に加えてもらう
+      // （選手用の招待コードを知っているだけでは、コーチとして参加できない）
+      try {
+        const joinFn = httpsCallable(functions, 'joinTeamAsCoach');
+        const res = await joinFn({ coachKey });
+        teamCode = res.data.teamCode;
+      } catch (e) {
         const rolledBack = await rollbackSignupAccount(cred);
+        const reason = (e && e.code === 'functions/not-found')
+          ? 'そのコーチ用コードに一致するチームが見つかりませんでした。コードを確認してください。'
+          : 'チームに参加できませんでした。時間をおいてもう一度お試しください。';
         showAuthMsg(
           rolledBack
-            ? 'その招待コードに一致するチームが見つかりませんでした。コードを確認してください。'
-            : 'その招待コードに一致するチームが見つかりませんでした。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
+            ? reason
+            : reason + 'また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
           'err'
         );
         submitBtn.disabled = false;
@@ -3572,6 +3587,15 @@ async function boot(user, profile) {
         coachSnaps.forEach(d => coachMates.push({ uid: d.id, name: d.data().displayName }));
       } catch (e) {}
     }
+    // コーチ用コード（他のコーチを誘うためのコード。そのチームのコーチだけが読める）
+    let coachKey = '';
+    if (isCoach && profile.teamCode) {
+      try {
+        const secretSnap = await getDoc(doc(db, 'team_secrets', profile.teamCode));
+        if (secretSnap.exists()) coachKey = secretSnap.data().coachKey || '';
+      } catch (e) {}
+    }
+    const coachKeyText = coachKey ? `${coachKey.slice(0, 5)}-${coachKey.slice(5)}` : '';
     if (!categories.groups) categories.groups = [];
 
     async function saveCategories() {
@@ -3641,13 +3665,22 @@ async function boot(user, profile) {
           <div class="modal-field">
             <div class="modal-label">招待コード</div>
             <div class="invite-bar" style="margin:0;">招待コード：<span class="invite-code">${profile.teamCode}</span><button id="set-invite-copy">コピー</button></div>
-            <div class="auth-hint">このコードで、選手だけでなく他のコーチも同じチームに参加できます。</div>
+            <div class="auth-hint">選手がチームに参加するときに入力するコードです。</div>
             <div class="custom-code-row">
               <input class="modal-select" id="set-custom-code" placeholder="新しい招待コード（例：BASEBALL2026）" autocapitalize="characters" autocomplete="off" spellcheck="false">
               <button class="menu-send-btn" id="set-custom-code-btn">このコードにする</button>
             </div>
             <div class="auth-hint">半角の英大文字と数字で4〜16文字。選手や他のコーチがまだいないチームだけ変更できます。</div>
             <div id="set-custom-code-msg"></div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-label">コーチ用コード</div>
+            ${coachKeyText ? `
+            <div class="invite-bar" style="margin:0;">コーチ用コード：<span class="invite-code">${coachKeyText}</span><button id="set-coachkey-copy">コピー</button></div>
+            <div class="auth-hint">ほかのコーチを同じチームに誘うときに渡すコードです。<br>選手には渡さないでください。</div>
+            ` : `
+            <div class="auth-hint">コーチ用コードを準備しています。<br>しばらくしてから、設定を開き直してください。</div>
+            `}
           </div>
           <div class="modal-field">
             <div class="modal-label">同じチームのコーチ（${coachMates.length}人）</div>
@@ -3797,18 +3830,16 @@ async function boot(user, profile) {
           customCodeBtn.disabled = true;
           const oldCode = profile.teamCode;
           try {
-            const dupQ = query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach'));
-            const dupSnaps = await getDocs(dupQ);
-            if (!dupSnaps.empty) { showMsg('この招待コードは既に他の方に使用されています', true); customCodeBtn.disabled = false; return; }
             // カテゴリー設定があれば新しいコードへ引き継ぐ
             let oldCategories = null;
             try { const r = await kvGet(`categories:${oldCode}`); if (r && r.value) oldCategories = r.value; } catch (e) {}
-            await setDoc(doc(db, 'users', auth.currentUser.uid), { teamCode: code }, { merge: true });
-            // 保存の直後にもう一度確認（同時に同じコードを取られていないか）
-            const recheck = await getDocs(dupQ);
-            if (recheck.docs.some(d => d.id !== auth.currentUser.uid)) {
-              await setDoc(doc(db, 'users', auth.currentUser.uid), { teamCode: oldCode }, { merge: true });
-              showMsg('この招待コードは既に他の方に使用されています', true);
+            // 招待コードの変更はサーバーで行う（チーム名簿とコーチ用コードも一緒に移す）
+            try {
+              const changeFn = httpsCallable(functions, 'changeTeamCode');
+              await changeFn({ newCode: code });
+            } catch (e) {
+              const known = e && ['functions/already-exists', 'functions/failed-precondition', 'functions/invalid-argument'].includes(e.code);
+              showMsg(known ? e.message : '変更できませんでした。時間をおいてもう一度お試しください。', true);
               customCodeBtn.disabled = false;
               return;
             }
@@ -3821,6 +3852,15 @@ async function boot(user, profile) {
             showMsg('変更できませんでした。時間をおいてもう一度お試しください。', true);
           }
           customCodeBtn.disabled = false;
+        };
+      }
+      const coachKeyCopyBtn = document.getElementById('set-coachkey-copy');
+      if (coachKeyCopyBtn) {
+        coachKeyCopyBtn.onclick = () => {
+          navigator.clipboard.writeText(coachKeyText).then(() => {
+            coachKeyCopyBtn.textContent = 'コピーしました';
+            setTimeout(() => { coachKeyCopyBtn.textContent = 'コピー'; }, 1500);
+          });
         };
       }
       const inviteCopyBtn = document.getElementById('set-invite-copy');
