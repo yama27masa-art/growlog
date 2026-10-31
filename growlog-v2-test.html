@@ -692,6 +692,23 @@ html[data-theme="architectural-beige"] .section-title { font-family: var(--font-
 .abs-cal-day.sel { background: var(--navy); color: #fff; }
 .abs-cal-day:disabled { color: var(--text-faint); opacity: 0.35; cursor: default; }
 .abs-picked { font-size: 12.5px; color: var(--text2); margin-top: 8px; line-height: 1.6; }
+.notice-tab-count { display: inline-block; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: #FF5722; color: #fff; font-size: 11px; line-height: 18px; vertical-align: 1px; }
+.tn-item { border: 1px solid var(--border); background: var(--surface2); border-radius: var(--radius-sm); padding: 11px 12px; margin-bottom: 10px; overflow: hidden; }
+.tn-item.urgent { border-color: #D64545; }
+.tn-band { background: #D64545; color: #fff; font-weight: 700; font-size: 12.5px; padding: 5px 12px; margin: -11px -12px 10px; letter-spacing: 0.04em; }
+.tn-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tn-level { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px; color: #fff; }
+.tn-level.urgent { background: #D64545; }
+.tn-level.important { background: #FF5722; }
+.tn-title { font-weight: 700; font-size: 15px; color: var(--text); word-break: break-word; }
+.tn-meta { font-size: 11.5px; color: var(--text3); margin-top: 4px; }
+.tn-body { font-size: 13.5px; color: var(--text); margin-top: 8px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+.tn-119 { font-size: 12.5px; font-weight: 700; color: #FF5252; background: rgba(214,69,69,0.12); border-radius: 8px; padding: 8px 10px; margin-top: 10px; line-height: 1.6; }
+.tn-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.tn-ack-sum { background: none; border: 1px solid var(--border2); color: var(--text2); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.tn-ack-names { font-size: 12.5px; color: var(--text2); margin-top: 8px; line-height: 1.8; }
+.tn-ack-names b { color: var(--text); }
+.tn-count { font-size: 12.5px; color: var(--text2); margin-top: 8px; }
 .cal-abs { position: absolute; top: 2px; left: 3px; font-size: 9.5px; font-weight: 700; line-height: 1; color: #FF5252; pointer-events: none; z-index: 2; font-family: var(--font-body); }
 .cal-cell.selected .cal-abs { color: #fff; }
 </style>
@@ -2777,7 +2794,18 @@ async function boot(user, profile) {
   const BELL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
   let absences = null; // 読み込んだ欠席連絡 [{ id, ...中身 }]
   let absLoadedAt = 0;
-  let noticeTab = 'absence';
+  let noticeTab = 'team';
+  // チーム連絡（コーチ → 選手）。notices/{id}、確認は notices/{id}/acks/{選手uid}
+  const NOTICE_LEVELS = { normal: '通常', important: '重要', urgent: '緊急' };
+  const NOTICE_119 = '命にかかわるときは、119番や保護者に<br>直接連絡してください。';
+  let notices = null; // 読み込んだチーム連絡（新しい順）
+  let myAcks = new Set(); // 選手：自分が「確認しました」を押した連絡の id
+  function tsMillis(ts) { return ts && ts.toMillis ? ts.toMillis() : (typeof ts === 'number' ? ts : Date.now()); }
+  function formatNoticeTime(ts) {
+    const d = new Date(tsMillis(ts));
+    const dow = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+    return `${d.getMonth() + 1}月${d.getDate()}日（${dow}）${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
 
   function todayKey() { const t = todayParts(); return dateKey(t.y, t.m, t.d); }
   function addDaysKey(key, n) {
@@ -2802,8 +2830,30 @@ async function boot(user, profile) {
     return absences;
   }
 
-  // ベルの数字：選手＝コーチが確認して、まだ見ていない連絡／コーチ＝まだ確認していない連絡（30日前まで）
-  function bellCount() {
+  // チーム連絡を読み込む（60日前まで）。選手は、自分が確認したかどうかも読む
+  async function loadNotices() {
+    if (!hasTeam) { notices = []; return notices; }
+    const q = isCoach
+      ? query(collection(db, 'notices'), where('teamCode', '==', profile.teamCode))
+      : query(collection(db, 'notices'), where('targetUids', 'array-contains', user.uid));
+    const snaps = await getDocs(q);
+    const cutoff = Date.now() - 60 * 86400000;
+    const list = snaps.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(n => n.teamCode === profile.teamCode && tsMillis(n.createdAt) >= cutoff)
+      .sort((a, b) => tsMillis(b.createdAt) - tsMillis(a.createdAt));
+    if (!isCoach) {
+      const acked = await Promise.all(list.map(n =>
+        getDoc(doc(db, 'notices', n.id, 'acks', user.uid)).then(snap => snap.exists()).catch(() => false)
+      ));
+      myAcks = new Set(list.filter((n, i) => acked[i]).map(n => n.id));
+    }
+    notices = list;
+    return notices;
+  }
+
+  // ベルの数字：選手＝まだ確認していないチーム連絡＋コーチが確認して、まだ見ていない欠席連絡
+  //            コーチ＝まだ確認していない欠席連絡（30日前まで）
+  function absenceBellCount() {
     if (!absences) return 0;
     if (isCoach) {
       const cutoff = addDaysKey(todayKey(), -30);
@@ -2811,6 +2861,11 @@ async function boot(user, profile) {
     }
     return absences.filter(a => a.confirmedAt && !a.seenByPlayerAt).length;
   }
+  function noticeBellCount() {
+    if (isCoach || !notices) return 0;
+    return notices.filter(n => !myAcks.has(n.id)).length;
+  }
+  function bellCount() { return absenceBellCount() + noticeBellCount(); }
   function bellHtml() {
     if (!hasTeam) return '';
     return `<button type="button" class="bell-btn" data-bell aria-label="お知らせ">${BELL_SVG}<span class="bell-badge" data-bell-badge style="display:none"></span></button>`;
@@ -2821,6 +2876,7 @@ async function boot(user, profile) {
       el.textContent = n > 99 ? '99+' : String(n);
       el.style.display = n > 0 ? '' : 'none';
     });
+    updateNoticeTabs();
   }
   function wireBells() {
     if (!hasTeam) return;
@@ -2832,7 +2888,9 @@ async function boot(user, profile) {
   async function refreshBell(force) {
     if (!hasTeam) return;
     if (force || !absences || Date.now() - absLoadedAt > 60000) {
-      try { await loadAbsences(); } catch (e) { console.warn('[notices] 欠席連絡を読み込めませんでした', e); return; }
+      const [a, n] = await Promise.allSettled([loadAbsences(), loadNotices()]);
+      if (a.status === 'rejected') console.warn('[notices] 欠席連絡を読み込めませんでした', a.reason);
+      if (n.status === 'rejected') console.warn('[notices] チーム連絡を読み込めませんでした', n.reason);
     }
     updateBellBadges();
     markAbsenceDays();
@@ -2870,28 +2928,54 @@ async function boot(user, profile) {
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
     overlay.querySelector('#notices-close').onclick = () => overlay.remove();
     overlay.querySelectorAll('.notice-tab').forEach(t => { t.onclick = () => { noticeTab = t.dataset.tab; renderNoticesBody(false); }; });
+    // 数字が付いているほうのタブから開く
+    if (isCoach) noticeTab = absenceBellCount() > 0 ? 'absence' : 'team';
+    else noticeTab = noticeBellCount() > 0 ? 'team' : (absenceBellCount() > 0 ? 'absence' : 'team');
     renderNoticesBody(true);
   }
 
   async function renderNoticesBody(reload) {
     const body = document.getElementById('notices-body');
     if (!body) return;
-    document.querySelectorAll('#notices-overlay .notice-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === noticeTab));
+    updateNoticeTabs();
+    const failedHtml = '<div class="notice-empty">読み込めませんでした。<br>電波の良い場所で、<br>もう一度開いてください。</div>';
     if (noticeTab === 'team') {
-      body.innerHTML = `<div class="notice-empty">チームからの連絡は、<br>ここに届くようになります。<br>（もうすぐ使えるようになります）</div>`;
+      if (reload || !notices) {
+        body.innerHTML = '<div class="notice-empty">読み込み中…</div>';
+        try { await loadNotices(); } catch (e) {
+          console.error('[notices] チーム連絡を読み込めませんでした', e);
+          body.innerHTML = failedHtml;
+          return;
+        }
+        updateBellBadges();
+        updateNoticeTabs();
+      }
+      if (noticeTab !== 'team') return;
+      if (isCoach) renderCoachNotices(body); else renderStudentNotices(body);
       return;
     }
     if (reload || !absences) {
       body.innerHTML = '<div class="notice-empty">読み込み中…</div>';
       try { await loadAbsences(); } catch (e) {
         console.error('[notices] 欠席連絡を読み込めませんでした', e);
-        body.innerHTML = '<div class="notice-empty">読み込めませんでした。<br>電波の良い場所で、<br>もう一度開いてください。</div>';
+        body.innerHTML = failedHtml;
         return;
       }
       updateBellBadges();
+      updateNoticeTabs();
       markAbsenceDays();
     }
+    if (noticeTab !== 'absence') return;
     if (isCoach) renderCoachAbsences(body); else renderStudentAbsences(body);
+  }
+  // タブの横に、まだのものの数を出す
+  function updateNoticeTabs() {
+    document.querySelectorAll('#notices-overlay .notice-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === noticeTab);
+      const n = t.dataset.tab === 'team' ? noticeBellCount() : absenceBellCount();
+      const label = t.dataset.tab === 'team' ? 'チーム連絡' : '欠席連絡';
+      t.innerHTML = label + (n > 0 ? `<span class="notice-tab-count">${n}</span>` : '');
+    });
   }
 
   function absMetaHtml(a) {
@@ -3117,6 +3201,262 @@ async function boot(user, profile) {
         showMsg('送れませんでした。電波の良い場所で、もう一度お試しください。');
         sendBtn.disabled = false;
         sendBtn.textContent = 'コーチに送る';
+      }
+    };
+  }
+
+  // ── チーム連絡：1件の見た目（選手・コーチ共通） ──
+  function noticeCardHtml(n, footHtml, extraHtml) {
+    const level = n.importance === 'urgent' || n.importance === 'important' ? n.importance : 'normal';
+    const sender = COACH_NAME_BY_UID[n.createdBy] || '';
+    return `
+      <div class="tn-item ${level === 'urgent' ? 'urgent' : ''}">
+        ${level === 'urgent' ? '<div class="tn-band">緊急の連絡</div>' : ''}
+        <div class="tn-top">
+          ${level !== 'normal' ? `<span class="tn-level ${level}">${NOTICE_LEVELS[level]}</span>` : ''}
+          <span class="tn-title">${escapeHtml(n.title || '')}</span>
+        </div>
+        <div class="tn-meta">${formatNoticeTime(n.createdAt)}${sender ? `　${escapeHtml(sender)}コーチ` : ''}</div>
+        ${n.body ? `<div class="tn-body">${escapeHtml(n.body)}</div>` : ''}
+        ${level === 'urgent' ? `<div class="tn-119">${NOTICE_119}</div>` : ''}
+        <div class="tn-foot">${footHtml}</div>
+        ${extraHtml || ''}
+      </div>`;
+  }
+
+  // ── 選手：届いたチーム連絡。「確認しました」を押すだけ ──
+  function renderStudentNotices(body) {
+    if (!notices.length) {
+      body.innerHTML = '<div class="notice-empty">チームからの連絡は、<br>まだありません。</div>';
+      return;
+    }
+    body.innerHTML = notices.map(n => noticeCardHtml(n,
+      myAcks.has(n.id)
+        ? '<span class="abs-status done">✓ 確認しました</span>'
+        : `<span class="abs-status"><span class="abs-new-dot"></span> まだ確認していません</span><button type="button" class="abs-btn" data-tn-ack="${n.id}">確認しました</button>`
+    )).join('');
+    body.querySelectorAll('[data-tn-ack]').forEach(btn => { btn.onclick = () => ackNotice(btn.dataset.tnAck, btn); });
+  }
+  async function ackNotice(id, btn) {
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      await setDoc(doc(db, 'notices', id, 'acks', user.uid), { at: serverTimestamp() });
+      myAcks.add(id);
+    } catch (e) {
+      console.error('[notices] 確認に失敗', e);
+      alert('確認できませんでした。\n電波の良い場所で、もう一度お試しください。');
+    }
+    updateBellBadges();
+    renderNoticesBody(false);
+  }
+
+  // ── コーチ：送ったチーム連絡と、確認した人数 ──
+  function renderCoachNotices(body) {
+    const nameOf = (uid) => { const m = TEAM.find(r => r.uid === uid); return m ? m.name : 'チームを外れた選手'; };
+    body.innerHTML = `
+      <button type="button" class="abs-new-btn" id="tn-new">＋ チームに連絡する</button>
+      ${notices.length
+        ? notices.map(n => noticeCardHtml(n,
+            `<button type="button" class="tn-ack-sum" data-tn-sum="${n.id}">確認状況を読み込み中…</button>
+             <button type="button" class="abs-btn ghost" data-tn-del="${n.id}">削除</button>`,
+            `<div class="tn-ack-names" data-tn-names="${n.id}" style="display:none;"></div>`)).join('')
+        : '<div class="notice-empty">送ったチーム連絡は、<br>ここに並びます。</div>'}
+    `;
+    body.querySelector('#tn-new').onclick = () => openNoticeForm();
+    body.querySelectorAll('[data-tn-del]').forEach(btn => { btn.onclick = () => deleteNotice(btn.dataset.tnDel, btn); });
+    body.querySelectorAll('[data-tn-sum]').forEach(btn => {
+      btn.onclick = () => {
+        const box = body.querySelector(`[data-tn-names="${btn.dataset.tnSum}"]`);
+        if (box && box.innerHTML) box.style.display = box.style.display === 'none' ? '' : 'none';
+      };
+    });
+    // 確認した人を、連絡ごとに読み込む
+    notices.forEach(async (n) => {
+      const sumBtn = body.querySelector(`[data-tn-sum="${n.id}"]`);
+      const box = body.querySelector(`[data-tn-names="${n.id}"]`);
+      try {
+        const snaps = await getDocs(collection(db, 'notices', n.id, 'acks'));
+        const ackSet = new Set(snaps.docs.map(d => d.id));
+        const targets = n.targetUids || [];
+        const done = targets.filter(u => ackSet.has(u));
+        const yet = targets.filter(u => !ackSet.has(u));
+        if (sumBtn) sumBtn.textContent = `確認済み ${done.length}人／未確認 ${yet.length}人 ▾`;
+        if (box) box.innerHTML = `
+          <div><b>確認済み：</b>${done.length ? done.map(u => escapeHtml(nameOf(u))).join('、') : 'まだいません'}</div>
+          <div><b>未確認：</b>${yet.length ? yet.map(u => escapeHtml(nameOf(u))).join('、') : 'いません'}</div>`;
+      } catch (e) {
+        console.warn('[notices] 確認状況を読み込めませんでした', e);
+        if (sumBtn) sumBtn.textContent = '確認状況を読み込めませんでした';
+      }
+    });
+  }
+
+  async function deleteNotice(id, btn) {
+    const n = (notices || []).find(x => x.id === id);
+    if (!n) return;
+    if (!confirm(`「${n.title}」を削除しますか？\n選手の画面からも消えます。`)) return;
+    btn.disabled = true;
+    try {
+      const acks = await getDocs(collection(db, 'notices', id, 'acks'));
+      const batch = writeBatch(db);
+      acks.docs.forEach(d => batch.delete(d.ref));
+      batch.delete(doc(db, 'notices', id));
+      await batch.commit();
+      notices = notices.filter(x => x.id !== id);
+    } catch (e) {
+      console.error('[notices] 削除に失敗', e);
+      alert('削除できませんでした。\n電波の良い場所で、もう一度お試しください。');
+    }
+    renderNoticesBody(false);
+  }
+
+  // ── コーチ：チーム連絡を書いて送る ──
+  function openNoticeForm() {
+    const students = TEAM.filter(r => r.uid !== user.uid);
+    const f = { level: 'normal', mode: 'all', one: null, uids: [], categoryIds: [] };
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'notice-form-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-title">チームに連絡する</div>
+        <div class="modal-sub">送った選手の「お知らせ」に届きます。</div>
+        <div class="modal-field">
+          <div class="modal-label">大事さ</div>
+          <div class="abs-opts" id="tnf-level">${Object.keys(NOTICE_LEVELS).map(k => `<button type="button" class="abs-opt ${k === 'normal' ? 'active' : ''}" data-v="${k}">${NOTICE_LEVELS[k]}</button>`).join('')}</div>
+          <div class="tn-119" id="tnf-119" style="display:none;">${NOTICE_119}<br>（この文は、選手の画面にも出ます）</div>
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">タイトル</div>
+          <input type="text" class="modal-select" id="tnf-title" maxlength="60" placeholder="例）明日の練習は9時からです">
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">本文（なくてもOK）</div>
+          <textarea class="modal-textarea" id="tnf-body" maxlength="2000" placeholder="くわしい内容を書いてください"></textarea>
+        </div>
+        <div class="modal-field">
+          <div class="send-target" style="margin-top:0;">
+            <div class="send-target-label">送り先</div>
+            <div class="send-target-opts" id="tnf-modes">
+              <button type="button" class="send-target-opt" data-mode="one">個人</button>
+              <button type="button" class="send-target-opt" data-mode="pick">複数</button>
+              <button type="button" class="send-target-opt" data-mode="category">カテゴリー</button>
+              <button type="button" class="send-target-opt" data-mode="all">全員</button>
+            </div>
+            <div id="tnf-picker"></div>
+            <div class="tn-count" id="tnf-count"></div>
+          </div>
+        </div>
+        <div class="modal-status error" id="tnf-msg" style="display:none;"></div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" id="tnf-cancel">やめる</button>
+          <button class="modal-btn modal-btn-send" id="tnf-send">送る</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#tnf-cancel').onclick = () => overlay.remove();
+    const msg = overlay.querySelector('#tnf-msg');
+    const showMsg = (text) => { msg.textContent = text; msg.style.display = text ? 'block' : 'none'; };
+
+    overlay.querySelectorAll('#tnf-level .abs-opt').forEach(b => {
+      b.onclick = () => {
+        f.level = b.dataset.v;
+        overlay.querySelectorAll('#tnf-level .abs-opt').forEach(x => x.classList.toggle('active', x === b));
+        overlay.querySelector('#tnf-119').style.display = f.level === 'urgent' ? '' : 'none';
+      };
+    });
+
+    function resolveUids() {
+      const ids = new Set(students.map(r => r.uid));
+      if (f.mode === 'all') return [...ids];
+      if (f.mode === 'one') return f.one ? [f.one] : [];
+      if (f.mode === 'pick') return f.uids.filter(u => ids.has(u));
+      const set = new Set();
+      f.categoryIds.forEach(cid => {
+        const g = CATEGORIES.groups.find(x => x.id === cid);
+        if (g) g.memberUids.forEach(u => { if (ids.has(u)) set.add(u); });
+      });
+      return [...set];
+    }
+    function updateCount() {
+      const n = resolveUids().length;
+      overlay.querySelector('#tnf-count').textContent = n ? `${n}人に送ります` : '';
+    }
+    function drawPicker() {
+      overlay.querySelectorAll('#tnf-modes .send-target-opt').forEach(x => x.classList.toggle('active', x.dataset.mode === f.mode));
+      const box = overlay.querySelector('#tnf-picker');
+      if (f.mode === 'all') { box.innerHTML = ''; updateCount(); return; }
+      if (f.mode === 'category') {
+        box.innerHTML = `<div class="send-target-picker"><div class="send-target-list">
+          ${CATEGORIES.groups.map(g => `<label class="send-target-item"><input type="checkbox" data-cat-id="${g.id}" ${f.categoryIds.includes(g.id) ? 'checked' : ''}> ${escapeHtml(g.name)}（${g.memberUids.length}人）</label>`).join('') || '<div class="thread-empty">まだカテゴリーがありません（設定画面で作れます）</div>'}
+        </div></div>`;
+        box.querySelectorAll('[data-cat-id]').forEach(cb => {
+          cb.onchange = () => {
+            if (cb.checked) { if (!f.categoryIds.includes(cb.dataset.catId)) f.categoryIds.push(cb.dataset.catId); }
+            else f.categoryIds = f.categoryIds.filter(id => id !== cb.dataset.catId);
+            updateCount();
+          };
+        });
+        updateCount();
+        return;
+      }
+      const inputType = f.mode === 'one' ? 'radio' : 'checkbox';
+      box.innerHTML = `<div class="send-target-picker">
+        <input class="send-target-search" id="tnf-search" placeholder="選手を検索">
+        <div class="send-target-list">
+          ${students.map(r => `<label class="send-target-item"><input type="${inputType}" name="tnf-one" data-uid="${r.uid}" ${(f.mode === 'one' ? f.one === r.uid : f.uids.includes(r.uid)) ? 'checked' : ''}> ${escapeHtml(r.name)}</label>`).join('') || '<div class="thread-empty">まだ選手がいません</div>'}
+        </div></div>`;
+      box.querySelectorAll('[data-uid]').forEach(cb => {
+        cb.onchange = () => {
+          if (f.mode === 'one') f.one = cb.dataset.uid;
+          else if (cb.checked) { if (!f.uids.includes(cb.dataset.uid)) f.uids.push(cb.dataset.uid); }
+          else f.uids = f.uids.filter(u => u !== cb.dataset.uid);
+          updateCount();
+        };
+      });
+      const search = box.querySelector('#tnf-search');
+      search.oninput = () => {
+        const q = search.value.trim();
+        box.querySelectorAll('.send-target-item').forEach(item => { item.style.display = item.textContent.includes(q) ? '' : 'none'; });
+      };
+      updateCount();
+    }
+    overlay.querySelectorAll('#tnf-modes .send-target-opt').forEach(b => {
+      b.onclick = () => { f.mode = b.dataset.mode; drawPicker(); showMsg(''); };
+    });
+    drawPicker();
+
+    overlay.querySelector('#tnf-send').onclick = async () => {
+      const sendBtn = overlay.querySelector('#tnf-send');
+      const title = overlay.querySelector('#tnf-title').value.trim().slice(0, 60);
+      const text = overlay.querySelector('#tnf-body').value.trim().slice(0, 2000);
+      const targetUids = resolveUids();
+      if (!title) { showMsg('タイトルを入れてください'); return; }
+      if (!targetUids.length) { showMsg('送り先の選手を選んでください'); return; }
+      sendBtn.disabled = true;
+      sendBtn.textContent = '送っています…';
+      try {
+        await addDoc(collection(db, 'notices'), {
+          teamCode: profile.teamCode,
+          title,
+          body: text,
+          photos: [],
+          importance: f.level,
+          targetUids,
+          createdBy: user.uid,
+          createdAt: serverTimestamp()
+        });
+        overlay.remove();
+        noticeTab = 'team';
+        renderNoticesBody(true);
+      } catch (e) {
+        console.error('[notices] チーム連絡を送れませんでした', e);
+        showMsg('送れませんでした。電波の良い場所で、もう一度お試しください。');
+        sendBtn.disabled = false;
+        sendBtn.textContent = '送る';
       }
     };
   }
