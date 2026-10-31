@@ -649,6 +649,51 @@ html[data-theme="architectural-beige"] .section-title { font-family: var(--font-
 .v-up-banner { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(92vw, 420px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 10px 12px; z-index: 9999; display: none; }
 .v-up-banner.show { display: block; }
 .v-up-banner .v-up-text { font-size: 11.5px; color: var(--text2); margin-bottom: 6px; text-align: center; }
+/* ---- お知らせ（ベル・欠席連絡） ---- */
+.head-btns { display: flex; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.bell-btn { position: relative; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.bell-btn svg { width: 24px; height: 24px; }
+.head .bell-btn { width: 52px; height: 64px; border-radius: 16px; }
+.launcher-top .bell-btn { margin-left: auto; }
+.bell-badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #FF5722; color: #fff; font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center; font-family: var(--font-latin); box-shadow: 0 0 0 2px #121212; }
+.notice-tabs { display: flex; gap: 6px; margin: 6px 0 14px; }
+.notice-tab { flex: 1; padding: 11px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text2); font-size: 14px; font-weight: 700; cursor: pointer; }
+.notice-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.notice-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 26px 8px; line-height: 1.8; }
+.abs-new-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--primary-grad); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
+.abs-section { font-size: 12px; font-weight: 700; color: var(--text3); margin: 16px 0 8px; letter-spacing: 0.04em; }
+.abs-date-head { font-size: 14px; font-weight: 700; color: var(--text); margin: 12px 0 6px; }
+.abs-item { border: 1px solid var(--border); background: var(--surface2); border-radius: var(--radius-sm); padding: 11px 12px; margin-bottom: 8px; }
+.abs-item-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.abs-type { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; color: #fff; background: #D64545; }
+.abs-type.late { background: #D9921F; }
+.abs-type.early { background: #2F7FD6; }
+.abs-name { font-weight: 700; font-size: 14.5px; color: var(--text); }
+.abs-meta { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.6; }
+.abs-comment { font-size: 13px; color: var(--text); margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+.abs-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.abs-status { font-size: 12.5px; color: var(--text3); }
+.abs-status.done { color: var(--green); font-weight: 700; }
+.abs-btn { flex-shrink: 0; border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-size: 14px; font-weight: 700; cursor: pointer; background: var(--navy); color: #fff; }
+.abs-btn.ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.abs-btn:disabled { opacity: 0.5; cursor: default; }
+.abs-new-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF5722; display: inline-block; }
+.abs-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.abs-opt { flex: 1 1 auto; min-width: 72px; padding: 11px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; }
+.abs-opt.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.abs-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.abs-cal-head button { background: none; border: 1px solid var(--border2); color: var(--text); border-radius: 8px; width: 38px; height: 32px; font-size: 16px; cursor: pointer; }
+.abs-cal-head button:disabled { opacity: 0.3; cursor: default; }
+.abs-cal-title { font-weight: 700; font-size: 14px; color: var(--text); }
+.abs-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.abs-cal-dow { text-align: center; font-size: 11px; color: var(--text3); padding: 2px 0; }
+.abs-cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 14px; border: 1px solid transparent; background: none; color: var(--text); cursor: pointer; font-family: var(--font-num); padding: 0; }
+.abs-cal-day.today { border-color: var(--border2); }
+.abs-cal-day.sel { background: var(--navy); color: #fff; }
+.abs-cal-day:disabled { color: var(--text-faint); opacity: 0.35; cursor: default; }
+.abs-picked { font-size: 12.5px; color: var(--text2); margin-top: 8px; line-height: 1.6; }
+.cal-abs { position: absolute; top: 2px; left: 3px; font-size: 9.5px; font-weight: 700; line-height: 1; color: #FF5252; pointer-events: none; z-index: 2; font-family: var(--font-body); }
+.cal-cell.selected .cal-abs { color: #fff; }
 </style>
 </head>
 <body>
@@ -664,7 +709,7 @@ import {
   EmailAuthProvider, reauthenticateWithCredential, deleteUser, verifyBeforeUpdateEmail
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getFunctions, httpsCallable
@@ -2692,12 +2737,15 @@ async function boot(user, profile) {
   COACHES.forEach(c => { PHOTO_BY_UID[c.uid] = c.photo || null; });
   const COACH_PHOTO_BY_NAME = {};
   COACHES.forEach(c => { if (c.name) COACH_PHOTO_BY_NAME[c.name] = c.photo || null; });
+  const COACH_NAME_BY_UID = {};
+  COACHES.forEach(c => { COACH_NAME_BY_UID[c.uid] = c.name || ''; });
   if (!isCoach && profile.teamCode) {
     try {
       const cq = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
       const cs = await getDocs(cq);
       cs.forEach(d => {
         PHOTO_BY_UID[d.id] = d.data().photo || null;
+        COACH_NAME_BY_UID[d.id] = d.data().displayName || '';
         if (d.data().displayName) COACH_PHOTO_BY_NAME[d.data().displayName] = d.data().photo || null;
       });
     } catch (e) {}
@@ -2718,6 +2766,413 @@ async function boot(user, profile) {
     calCache: {}, // 月ごとの取得結果をメモリにキャッシュ（同じ月に戻った時の再取得を避ける）
   };
 
+  // ===== お知らせ（ベルのマーク・欠席連絡） =====
+  // 欠席連絡は absences/{id} に、1日ずつ1つの連絡として保存する。
+  // 選手：自分の連絡を見る・送る・（コーチが確認する前なら）取り消す
+  // コーチ：チームの連絡を日付ごとに見て「確認」を押す
+  const hasTeam = !!profile.teamCode && profile.accountType !== 'individual';
+  const ABS_TYPES = { absent: '欠席', late: '遅刻', early: '早退' };
+  const ABS_MARK = { absent: '欠', late: '遅', early: '早' };
+  const ABS_REASONS = { sick: '体調不良', injury: 'けが', school: '学校行事', family: '家庭の都合', other: 'その他' };
+  const BELL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+  let absences = null; // 読み込んだ欠席連絡 [{ id, ...中身 }]
+  let absLoadedAt = 0;
+  let noticeTab = 'absence';
+
+  function todayKey() { const t = todayParts(); return dateKey(t.y, t.m, t.d); }
+  function addDaysKey(key, n) {
+    const [y, m, d] = key.split('-').map(Number);
+    const dt = new Date(y, m - 1, d + n);
+    return dateKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  }
+  function formatAbsDate(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    const dow = ['日', '月', '火', '水', '木', '金', '土'][new Date(y, m - 1, d).getDay()];
+    return `${m}月${d}日（${dow}）`;
+  }
+
+  async function loadAbsences() {
+    if (!hasTeam) { absences = []; return absences; }
+    const q = isCoach
+      ? query(collection(db, 'absences'), where('teamCode', '==', profile.teamCode))
+      : query(collection(db, 'absences'), where('uid', '==', user.uid));
+    const snaps = await getDocs(q);
+    absences = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
+    absLoadedAt = Date.now();
+    return absences;
+  }
+
+  // ベルの数字：選手＝コーチが確認して、まだ見ていない連絡／コーチ＝まだ確認していない連絡（30日前まで）
+  function bellCount() {
+    if (!absences) return 0;
+    if (isCoach) {
+      const cutoff = addDaysKey(todayKey(), -30);
+      return absences.filter(a => !a.confirmedAt && a.date >= cutoff).length;
+    }
+    return absences.filter(a => a.confirmedAt && !a.seenByPlayerAt).length;
+  }
+  function bellHtml() {
+    if (!hasTeam) return '';
+    return `<button type="button" class="bell-btn" data-bell aria-label="お知らせ">${BELL_SVG}<span class="bell-badge" data-bell-badge style="display:none"></span></button>`;
+  }
+  function updateBellBadges() {
+    const n = bellCount();
+    document.querySelectorAll('[data-bell-badge]').forEach(el => {
+      el.textContent = n > 99 ? '99+' : String(n);
+      el.style.display = n > 0 ? '' : 'none';
+    });
+  }
+  function wireBells() {
+    if (!hasTeam) return;
+    document.querySelectorAll('[data-bell]').forEach(b => { b.onclick = () => openNoticesScreen(); });
+    updateBellBadges();
+    refreshBell();
+  }
+  // 1分以内に読み込んでいれば、読み直さずに表示だけ更新する
+  async function refreshBell(force) {
+    if (!hasTeam) return;
+    if (force || !absences || Date.now() - absLoadedAt > 60000) {
+      try { await loadAbsences(); } catch (e) { console.warn('[notices] 欠席連絡を読み込めませんでした', e); return; }
+    }
+    updateBellBadges();
+    markAbsenceDays();
+  }
+
+  // カレンダーの日付に「欠」「遅」「早」を出す（表示中の選手の分）
+  function markAbsenceDays() {
+    document.querySelectorAll('.cal-abs').forEach(el => el.remove());
+    if (!absences) return;
+    absences.filter(a => a.uid === state.playerId).forEach(a => {
+      const cell = document.querySelector(`.cal-cell[data-date="${a.date}"]`);
+      if (!cell || cell.querySelector('.cal-abs')) return;
+      cell.insertAdjacentHTML('beforeend', `<span class="cal-abs">${ABS_MARK[a.type] || ''}</span>`);
+    });
+  }
+
+  function openNoticesScreen() {
+    const old = document.getElementById('notices-overlay');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'notices-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-title">お知らせ</div>
+        <div class="notice-tabs">
+          <button type="button" class="notice-tab" data-tab="team">チーム連絡</button>
+          <button type="button" class="notice-tab" data-tab="absence">欠席連絡</button>
+        </div>
+        <div id="notices-body"><div class="notice-empty">読み込み中…</div></div>
+        <div class="modal-actions"><button class="modal-btn modal-btn-cancel" id="notices-close">閉じる</button></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#notices-close').onclick = () => overlay.remove();
+    overlay.querySelectorAll('.notice-tab').forEach(t => { t.onclick = () => { noticeTab = t.dataset.tab; renderNoticesBody(false); }; });
+    renderNoticesBody(true);
+  }
+
+  async function renderNoticesBody(reload) {
+    const body = document.getElementById('notices-body');
+    if (!body) return;
+    document.querySelectorAll('#notices-overlay .notice-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === noticeTab));
+    if (noticeTab === 'team') {
+      body.innerHTML = `<div class="notice-empty">チームからの連絡は、<br>ここに届くようになります。<br>（もうすぐ使えるようになります）</div>`;
+      return;
+    }
+    if (reload || !absences) {
+      body.innerHTML = '<div class="notice-empty">読み込み中…</div>';
+      try { await loadAbsences(); } catch (e) {
+        console.error('[notices] 欠席連絡を読み込めませんでした', e);
+        body.innerHTML = '<div class="notice-empty">読み込めませんでした。<br>電波の良い場所で、<br>もう一度開いてください。</div>';
+        return;
+      }
+      updateBellBadges();
+      markAbsenceDays();
+    }
+    if (isCoach) renderCoachAbsences(body); else renderStudentAbsences(body);
+  }
+
+  function absMetaHtml(a) {
+    let timeLine = '';
+    if (a.type === 'late' && a.time) timeLine = `${escapeHtml(a.time)}ごろに来ます<br>`;
+    if (a.type === 'early' && a.time) timeLine = `${escapeHtml(a.time)}ごろに帰ります<br>`;
+    return `<div class="abs-meta">${timeLine}理由：${ABS_REASONS[a.reason] || 'その他'}</div>
+      ${a.comment ? `<div class="abs-comment">${escapeHtml(a.comment)}</div>` : ''}`;
+  }
+  // 先の連絡は日付の早い順、過去の連絡は新しい順
+  function splitAbsences(list, pastDays) {
+    const tk = todayKey();
+    const cutoff = addDaysKey(tk, -pastDays);
+    const byDate = (a, b) => a.date.localeCompare(b.date) || ((a.createdAt && a.createdAt.seconds) || 0) - ((b.createdAt && b.createdAt.seconds) || 0);
+    const upcoming = list.filter(a => a.date >= tk).sort(byDate);
+    const past = list.filter(a => a.date < tk && a.date >= cutoff).sort((a, b) => byDate(b, a));
+    return { upcoming, past };
+  }
+
+  // ── 選手：送った連絡の一覧 ──
+  function renderStudentAbsences(body) {
+    const { upcoming, past } = splitAbsences(absences, 60);
+    const item = (a) => {
+      const isNew = a.confirmedAt && !a.seenByPlayerAt;
+      const coachName = COACH_NAME_BY_UID[a.confirmedBy] || '';
+      return `
+        <div class="abs-item">
+          <div class="abs-item-top"><span class="abs-type ${a.type}">${ABS_TYPES[a.type] || ''}</span><span class="abs-name">${formatAbsDate(a.date)}</span>${isNew ? '<span class="abs-new-dot" aria-label="新しい"></span>' : ''}</div>
+          ${absMetaHtml(a)}
+          <div class="abs-foot">
+            ${a.confirmedAt
+              ? `<span class="abs-status done">✓ ${coachName ? escapeHtml(coachName) + 'コーチが' : 'コーチが'}確認しました</span>`
+              : `<span class="abs-status">コーチの確認待ち</span><button type="button" class="abs-btn ghost" data-abs-cancel="${a.id}">取り消す</button>`}
+          </div>
+        </div>`;
+    };
+    body.innerHTML = `
+      <button type="button" class="abs-new-btn" id="abs-new">＋ 欠席・遅刻・早退を連絡する</button>
+      ${upcoming.length ? `<div class="abs-section">これからの連絡</div>${upcoming.map(item).join('')}` : ''}
+      ${past.length ? `<div class="abs-section">過去の連絡</div>${past.map(item).join('')}` : ''}
+      ${!upcoming.length && !past.length ? '<div class="notice-empty">まだ連絡はありません。<br>休むときや遅れるときは、<br>上のボタンからコーチに知らせよう。</div>' : ''}
+    `;
+    body.querySelector('#abs-new').onclick = () => openAbsenceForm();
+    body.querySelectorAll('[data-abs-cancel]').forEach(btn => { btn.onclick = () => cancelAbsence(btn.dataset.absCancel, btn); });
+    markAbsencesSeen();
+  }
+
+  // コーチが確認した連絡を「見た」にする（ベルの数字を減らす）
+  async function markAbsencesSeen() {
+    const unseen = (absences || []).filter(a => a.confirmedAt && !a.seenByPlayerAt);
+    if (!unseen.length) return;
+    try {
+      const batch = writeBatch(db);
+      unseen.forEach(a => batch.set(doc(db, 'absences', a.id), { seenByPlayerAt: serverTimestamp() }, { merge: true }));
+      await batch.commit();
+      unseen.forEach(a => { a.seenByPlayerAt = true; });
+      updateBellBadges();
+    } catch (e) {
+      console.warn('[notices] 既読にできませんでした', e);
+    }
+  }
+
+  async function cancelAbsence(id, btn) {
+    const a = (absences || []).find(x => x.id === id);
+    if (!a) return;
+    if (!confirm(`${formatAbsDate(a.date)}の${ABS_TYPES[a.type] || ''}の連絡を、取り消しますか？`)) return;
+    btn.disabled = true;
+    try {
+      await deleteDoc(doc(db, 'absences', id));
+      absences = absences.filter(x => x.id !== id);
+    } catch (e) {
+      console.error('[notices] 取り消しに失敗', e);
+      alert('取り消せませんでした。\nコーチがもう確認したかもしれません。');
+      await refreshBell(true);
+    }
+    updateBellBadges();
+    markAbsenceDays();
+    renderNoticesBody(false);
+  }
+
+  // ── 選手：欠席・遅刻・早退の連絡を書く ──
+  function openAbsenceForm() {
+    const tk = todayKey();
+    const minKey = addDaysKey(tk, -7);
+    const maxKey = addDaysKey(tk, 60);
+    const f = { type: null, dates: new Set(), reason: null };
+    const t0 = todayParts();
+    let vy = t0.y, vm = t0.m;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'absence-form-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-title">欠席・遅刻・早退の連絡</div>
+        <div class="modal-sub">チームのコーチに届きます。</div>
+        <div class="modal-field">
+          <div class="modal-label">どれですか？</div>
+          <div class="abs-opts" id="absf-type">${Object.keys(ABS_TYPES).map(k => `<button type="button" class="abs-opt" data-v="${k}">${ABS_TYPES[k]}</button>`).join('')}</div>
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">日にち（いくつでも選べます）</div>
+          <div id="absf-cal"></div>
+          <div class="abs-picked" id="absf-picked"></div>
+        </div>
+        <div class="modal-field" id="absf-time-field" style="display:none;">
+          <div class="modal-label" id="absf-time-label">何時ごろ？</div>
+          <input type="time" class="modal-select" id="absf-time" step="300">
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">理由</div>
+          <div class="abs-opts" id="absf-reason">${Object.keys(ABS_REASONS).map(k => `<button type="button" class="abs-opt" data-v="${k}">${ABS_REASONS[k]}</button>`).join('')}</div>
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">ひとこと（なくてもOK）</div>
+          <textarea class="modal-textarea" id="absf-comment" maxlength="200" placeholder="例）熱が出たので休みます"></textarea>
+        </div>
+        <div class="modal-status error" id="absf-msg" style="display:none;"></div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" id="absf-cancel">やめる</button>
+          <button class="modal-btn modal-btn-send" id="absf-send">コーチに送る</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#absf-cancel').onclick = () => overlay.remove();
+
+    const msg = overlay.querySelector('#absf-msg');
+    const showMsg = (text) => { msg.textContent = text; msg.style.display = text ? 'block' : 'none'; };
+
+    overlay.querySelectorAll('#absf-type .abs-opt').forEach(b => {
+      b.onclick = () => {
+        f.type = b.dataset.v;
+        overlay.querySelectorAll('#absf-type .abs-opt').forEach(x => x.classList.toggle('active', x === b));
+        const needTime = f.type === 'late' || f.type === 'early';
+        overlay.querySelector('#absf-time-field').style.display = needTime ? '' : 'none';
+        overlay.querySelector('#absf-time-label').textContent = f.type === 'late' ? '何時ごろに来ますか？' : '何時ごろに帰りますか？';
+        showMsg('');
+      };
+    });
+    overlay.querySelectorAll('#absf-reason .abs-opt').forEach(b => {
+      b.onclick = () => {
+        f.reason = b.dataset.v;
+        overlay.querySelectorAll('#absf-reason .abs-opt').forEach(x => x.classList.toggle('active', x === b));
+        showMsg('');
+      };
+    });
+
+    function drawCal() {
+      const first = new Date(vy, vm, 1);
+      const startDow = first.getDay();
+      const daysInMonth = new Date(vy, vm + 1, 0).getDate();
+      const firstKey = dateKey(vy, vm, 1);
+      const lastKey = dateKey(vy, vm, daysInMonth);
+      let cells = ['日', '月', '火', '水', '木', '金', '土'].map(d => `<div class="abs-cal-dow">${d}</div>`).join('');
+      for (let i = 0; i < startDow; i++) cells += '<div></div>';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key = dateKey(vy, vm, d);
+        const disabled = key < minKey || key > maxKey;
+        cells += `<button type="button" class="abs-cal-day ${key === tk ? 'today' : ''} ${f.dates.has(key) ? 'sel' : ''}" data-d="${key}" ${disabled ? 'disabled' : ''}>${d}</button>`;
+      }
+      const box = overlay.querySelector('#absf-cal');
+      box.innerHTML = `
+        <div class="abs-cal-head">
+          <button type="button" id="absf-prev" aria-label="前の月" ${firstKey <= minKey ? 'disabled' : ''}>‹</button>
+          <div class="abs-cal-title">${vy}年 ${vm + 1}月</div>
+          <button type="button" id="absf-next" aria-label="次の月" ${lastKey >= maxKey ? 'disabled' : ''}>›</button>
+        </div>
+        <div class="abs-cal-grid">${cells}</div>
+      `;
+      box.querySelector('#absf-prev').onclick = () => { vm--; if (vm < 0) { vm = 11; vy--; } drawCal(); };
+      box.querySelector('#absf-next').onclick = () => { vm++; if (vm > 11) { vm = 0; vy++; } drawCal(); };
+      box.querySelectorAll('.abs-cal-day[data-d]').forEach(b => {
+        b.onclick = () => {
+          const k = b.dataset.d;
+          if (f.dates.has(k)) f.dates.delete(k); else f.dates.add(k);
+          drawCal();
+          showMsg('');
+        };
+      });
+      const picked = [...f.dates].sort();
+      overlay.querySelector('#absf-picked').textContent = picked.length ? '選んだ日：' + picked.map(formatAbsDate).join('、') : '';
+    }
+    drawCal();
+
+    overlay.querySelector('#absf-send').onclick = async () => {
+      const sendBtn = overlay.querySelector('#absf-send');
+      const time = overlay.querySelector('#absf-time').value || '';
+      const comment = overlay.querySelector('#absf-comment').value.trim().slice(0, 200);
+      const needTime = f.type === 'late' || f.type === 'early';
+      if (!f.type) { showMsg('欠席・遅刻・早退の、どれかを選んでください'); return; }
+      if (!f.dates.size) { showMsg('日にちを選んでください'); return; }
+      if (needTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) { showMsg(f.type === 'late' ? '何時ごろに来るかを入れてください' : '何時ごろに帰るかを入れてください'); return; }
+      if (!f.reason) { showMsg('理由を選んでください'); return; }
+      const dates = [...f.dates].sort();
+      const dup = dates.filter(d => (absences || []).some(a => a.date === d));
+      if (dup.length) { showMsg(`${dup.map(formatAbsDate).join('、')}は、もう連絡しています。前の連絡を取り消してから、送り直してください。`); return; }
+
+      sendBtn.disabled = true;
+      sendBtn.textContent = '送っています…';
+      try {
+        const batch = writeBatch(db);
+        dates.forEach(date => {
+          batch.set(doc(collection(db, 'absences')), {
+            teamCode: profile.teamCode,
+            uid: user.uid,
+            type: f.type,
+            date,
+            time: needTime ? time : '',
+            reason: f.reason,
+            comment,
+            createdAt: serverTimestamp()
+          });
+        });
+        await batch.commit();
+        overlay.remove();
+        await refreshBell(true);
+        noticeTab = 'absence';
+        renderNoticesBody(false);
+      } catch (e) {
+        console.error('[notices] 欠席連絡を送れませんでした', e);
+        showMsg('送れませんでした。電波の良い場所で、もう一度お試しください。');
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'コーチに送る';
+      }
+    };
+  }
+
+  // ── コーチ：チームの連絡を日付ごとに見て「確認」を押す ──
+  function renderCoachAbsences(body) {
+    const { upcoming, past } = splitAbsences(absences, 30);
+    const nameOf = (uid) => { const m = TEAM.find(r => r.uid === uid); return m ? m.name : 'チームを外れた選手'; };
+    const item = (a) => {
+      const by = COACH_NAME_BY_UID[a.confirmedBy] || '';
+      return `
+        <div class="abs-item">
+          <div class="abs-item-top"><span class="abs-type ${a.type}">${ABS_TYPES[a.type] || ''}</span><span class="abs-name">${escapeHtml(nameOf(a.uid))}</span></div>
+          ${absMetaHtml(a)}
+          <div class="abs-foot">
+            ${a.confirmedAt
+              ? `<span class="abs-status done">✓ 確認しました${by ? `（${escapeHtml(by)}）` : ''}</span>`
+              : `<span class="abs-status">まだ確認していません</span><button type="button" class="abs-btn" data-abs-confirm="${a.id}">確認</button>`}
+          </div>
+        </div>`;
+    };
+    const grouped = (list) => {
+      let html = '';
+      let last = '';
+      list.forEach(a => {
+        if (a.date !== last) { html += `<div class="abs-date-head">${formatAbsDate(a.date)}</div>`; last = a.date; }
+        html += item(a);
+      });
+      return html;
+    };
+    body.innerHTML = `
+      ${upcoming.length ? `<div class="abs-section">これからの連絡</div>${grouped(upcoming)}` : ''}
+      ${past.length ? `<div class="abs-section">過去30日の連絡</div>${grouped(past)}` : ''}
+      ${!upcoming.length && !past.length ? '<div class="notice-empty">選手からの欠席・遅刻・早退の連絡は、<br>ここに届きます。<br>今は、まだありません。</div>' : ''}
+    `;
+    body.querySelectorAll('[data-abs-confirm]').forEach(btn => { btn.onclick = () => confirmAbsence(btn.dataset.absConfirm, btn); });
+  }
+
+  async function confirmAbsence(id, btn) {
+    const a = (absences || []).find(x => x.id === id);
+    if (!a) return;
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      await setDoc(doc(db, 'absences', id), { confirmedBy: user.uid, confirmedAt: serverTimestamp() }, { merge: true });
+      a.confirmedBy = user.uid;
+      a.confirmedAt = true;
+    } catch (e) {
+      console.error('[notices] 確認に失敗', e);
+      alert('確認できませんでした。\nほかのコーチがもう確認したか、選手が取り消したかもしれません。');
+      await refreshBell(true);
+    }
+    updateBellBadges();
+    renderNoticesBody(false);
+  }
+
   renderLauncher();
 
   // ── トップ画面（Netflix風）：日替わり名言と、2つの入り口 ──
@@ -2725,7 +3180,7 @@ async function boot(user, profile) {
     const qd = todaysQuote();
     app.innerHTML = `
       <div class="launcher">
-        <div class="launcher-top"><span class="brand-badge">Self+</span><span class="launcher-hello">${escapeHtml(profile.displayName || '')}さん、今日も積み重ねよう</span></div>
+        <div class="launcher-top"><span class="brand-badge">Self+</span><span class="launcher-hello">${escapeHtml(profile.displayName || '')}さん、今日も積み重ねよう</span>${bellHtml()}</div>
         <div class="launcher-main">
         ${qd ? `
         <div class="quote-card">
@@ -2759,6 +3214,7 @@ async function boot(user, profile) {
     document.getElementById('launch-settings').onclick = () => { render().then(() => openSettingsModal()); };
     document.getElementById('launch-logout').onclick = () => appSignOut();
     wireLegalLinks(app);
+    wireBells();
   }
 
   async function render() {
@@ -2771,7 +3227,10 @@ async function boot(user, profile) {
           <div class="head-eyebrow"><span class="brand-badge" id="brand-to-top" role="button" aria-label="トップへ" style="cursor:pointer;">Self+</span>${escapeHtml(profile.sport || '')}</div>
           <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + `<span class="head-name">${escapeHtml(player.name)}さん</span>` : ''}</div>
         </div>
-        ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く"><img class="head-cal-img" src="${HEAD_CAL_ICON}" alt=""></button>` : ''}
+        <div class="head-btns">
+          ${bellHtml()}
+          ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く"><img class="head-cal-img" src="${HEAD_CAL_ICON}" alt=""></button>` : ''}
+        </div>
       </div>
       <div class="wrap">
         ${isCoach ? `<input class="ptab-search" id="ptab-search" placeholder="選手を検索">` : ''}
@@ -2801,6 +3260,7 @@ async function boot(user, profile) {
     const brandToTop = document.getElementById('brand-to-top');
     if (brandToTop) brandToTop.onclick = () => renderLauncher();
     wireLegalLinks(app);
+    wireBells();
     const calBtn = document.getElementById('head-cal-btn');
     if (calBtn) calBtn.onclick = () => { state.calExpanded = !state.calExpanded; renderCalendar(); };
     const titleEl = document.getElementById('head-title');
@@ -2989,6 +3449,7 @@ async function boot(user, profile) {
         homeMode ? openDate(c.dataset.date) : selectDate(c.dataset.date);
       };
     });
+    markAbsenceDays();
     const loadingEl = document.getElementById('cal-loading');
     const cacheKey = `${state.playerId}:${y}-${pad(m + 1)}`;
     const cached = state.calCache[cacheKey];
