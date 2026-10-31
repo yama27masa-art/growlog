@@ -771,6 +771,14 @@ const CONTACT_ENDPOINT = 'https://script.google.com/macros/s/AKfycby4gOfFg08Fnsj
 const BUNNY_PROXY_ENDPOINT = 'https://script.google.com/macros/s/AKfycbygtEXFvIyYJJIlyuf055ktTFB7Tzk_rUaKNw76hHuL_tfslMinjWWJ4ouTPTAuxOCFDA/exec';
 const CLAUDE_PROXY_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzok6_ynNpXfB1NsStSBejirLR_NwTfmGvrXwyvBvX5HrItS3IBqg2_LMi8R6SIsX4efQ/exec';
 // ▲▲ ここまで ▲▲
+// 動画の中継役（Apps Script）に頼むときは、ログイン中の証明（ID トークン）を付けて送る
+async function bunnyProxyFetch(payload) {
+  const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+  return fetch(BUNNY_PROXY_ENDPOINT, {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, idToken })
+  });
+}
 
 // ▼▼ 利用規約・プライバシーポリシーの公開URL ▼▼
 // terms.html / privacy.html を置いている公開フォルダのURL（末尾の / まで）に差し替えてください。
@@ -4098,10 +4106,7 @@ async function boot(user, profile) {
         scheduleAutoSave();
         // Bunny Stream側の実ファイルも削除（失敗しても記録上は既に消えているので、ベストエフォート）
         if (removed && removed.videoId) {
-          fetch(BUNNY_PROXY_ENDPOINT, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'deleteVideo', videoId: removed.videoId })
-          }).then(res => {
+          bunnyProxyFetch({ action: 'deleteVideo', videoId: removed.videoId }).then(res => {
             if (!res.ok) console.error('[video-delete] Bunny側の削除に失敗しました（記録上は削除済み）:', removed.videoId, res.status);
           }).catch(err => {
             console.error('[video-delete] Bunny側の削除リクエスト自体が失敗しました（記録上は削除済み）:', removed.videoId, err);
@@ -4279,18 +4284,12 @@ async function boot(user, profile) {
     if (!prep) return;
     prep.then(init => {
       if (init && init.ok && init.videoId) {
-        fetch(BUNNY_PROXY_ENDPOINT, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'deleteVideo', videoId: init.videoId })
-        }).catch(() => {});
+        bunnyProxyFetch({ action: 'deleteVideo', videoId: init.videoId }).catch(() => {});
       }
     }).catch(() => {});
   }
   function requestUploadInit(file) {
-    return fetch(BUNNY_PROXY_ENDPOINT, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'createUpload', title: file.name })
-    }).then(res => res.json());
+    return bunnyProxyFetch({ action: 'createUpload', title: file.name }).then(res => res.json());
   }
   let preparedUpload = null; // { file, promise }
 
