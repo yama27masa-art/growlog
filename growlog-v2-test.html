@@ -4899,7 +4899,10 @@ async function boot(user, profile) {
             endpoint: init.uploadEndpoint,
             retryDelays: [0, 3000, 5000, 10000, 20000],
             chunkSize: VIDEO_CHUNK_SIZE,
-            metadata: { filetype: file.type, title: file.name },
+            // title は中継役がくれた「上げた人の印」付きの名前を使う（ファイル名だと、Bunny が印を上書きしてしまう）
+            metadata: { filetype: file.type, title: init.title || file.name },
+            // 続きから上げ直すのは、同じ動画の枠のときだけ（消した動画の続きとして上げて止まるのを防ぐ）
+            fingerprint: (f) => Promise.resolve(['tus-br', f.name, f.type, f.size, f.lastModified, init.videoId].join('-')),
             headers: {
               AuthorizationSignature: init.authorizationSignature,
               AuthorizationExpire: String(init.authorizationExpire),
