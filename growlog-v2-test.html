@@ -709,6 +709,17 @@ html[data-theme="architectural-beige"] .section-title { font-family: var(--font-
 .tn-ack-names { font-size: 12.5px; color: var(--text2); margin-top: 8px; line-height: 1.8; }
 .tn-ack-names b { color: var(--text); }
 .tn-count { font-size: 12.5px; color: var(--text2); margin-top: 8px; }
+.tn-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px; }
+.tn-photo { padding: 0; border: none; background: var(--surface); border-radius: 8px; overflow: hidden; aspect-ratio: 4 / 3; cursor: pointer; }
+.tn-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tnf-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.tnf-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--surface2); }
+.tnf-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tnf-thumb-del { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 12px; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 14px; line-height: 24px; padding: 0; cursor: pointer; }
+.tnf-add { aspect-ratio: 1; border-radius: 8px; border: 1px dashed var(--border2); background: var(--surface2); color: var(--text2); font-size: 12px; font-weight: 700; cursor: pointer; line-height: 1.5; }
+.photo-viewer { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+.photo-viewer img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.photo-viewer-close { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 20px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 20px; cursor: pointer; }
 .cal-abs { position: absolute; top: 2px; left: 3px; font-size: 9.5px; font-weight: 700; line-height: 1; color: #FF5252; pointer-events: none; z-index: 2; font-family: var(--font-body); }
 .cal-cell.selected .cal-abs { color: #fff; }
 </style>
@@ -731,6 +742,9 @@ import {
 import {
   getFunctions, httpsCallable
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js";
+import {
+  getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import {
   initializeAppCheck, ReCaptchaEnterpriseProvider
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
@@ -760,6 +774,7 @@ const auth = isNativeApp
   : getAuth(fbApp);
 const db = getFirestore(fbApp);
 const functions = getFunctions(fbApp, 'us-central1');
+const storage = getStorage(fbApp);
 const PRICE_IDS = {
   student: 'price_1UAKbrBAZvKHyOEKfPuJriMp',
   coach: 'price_1UAKcYBAZvKHyOEKu6JQAQMx'
@@ -1036,6 +1051,25 @@ function resizeImageToDataUrl(file, size = 160) {
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
+  });
+}
+
+// 写真を、長い辺 maxSide px・JPEG（画質 quality）に小さくする（チーム連絡の写真用）
+function resizePhotoToBlob(file, maxSide = 1600, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
+    };
+    img.src = url;
   });
 }
 
@@ -3205,6 +3239,32 @@ async function boot(user, profile) {
     };
   }
 
+  // ── チーム連絡の写真：見られる人だけが、写真の場所（URL）をもらって表示する ──
+  const photoUrlCache = {};
+  function fillNoticePhotos(root) {
+    root.querySelectorAll('[data-photo-path]').forEach(async (btn) => {
+      const path = btn.dataset.photoPath;
+      try {
+        if (!photoUrlCache[path]) photoUrlCache[path] = await getDownloadURL(storageRef(storage, path));
+        const img = btn.querySelector('img');
+        if (img) img.src = photoUrlCache[path];
+        btn.onclick = () => openPhotoViewer(photoUrlCache[path]);
+      } catch (e) {
+        console.warn('[notices] 写真を読み込めませんでした', path, e);
+        btn.textContent = '写真を読み込めませんでした';
+        btn.style.fontSize = '11px';
+        btn.style.color = 'var(--text3)';
+      }
+    });
+  }
+  function openPhotoViewer(url) {
+    const v = document.createElement('div');
+    v.className = 'photo-viewer';
+    v.innerHTML = `<img src="${escapeHtml(url)}" alt="写真"><button type="button" class="photo-viewer-close" aria-label="閉じる">×</button>`;
+    v.onclick = () => v.remove();
+    document.body.appendChild(v);
+  }
+
   // ── チーム連絡：1件の見た目（選手・コーチ共通） ──
   function noticeCardHtml(n, footHtml, extraHtml) {
     const level = n.importance === 'urgent' || n.importance === 'important' ? n.importance : 'normal';
@@ -3218,6 +3278,7 @@ async function boot(user, profile) {
         </div>
         <div class="tn-meta">${formatNoticeTime(n.createdAt)}${sender ? `　${escapeHtml(sender)}コーチ` : ''}</div>
         ${n.body ? `<div class="tn-body">${escapeHtml(n.body)}</div>` : ''}
+        ${(n.photos || []).length ? `<div class="tn-photos">${n.photos.map((path, i) => `<button type="button" class="tn-photo" data-photo-path="${escapeHtml(path)}" aria-label="写真${i + 1}を大きく見る"><img alt=""></button>`).join('')}</div>` : ''}
         ${level === 'urgent' ? `<div class="tn-119">${NOTICE_119}</div>` : ''}
         <div class="tn-foot">${footHtml}</div>
         ${extraHtml || ''}
@@ -3236,6 +3297,7 @@ async function boot(user, profile) {
         : `<span class="abs-status"><span class="abs-new-dot"></span> まだ確認していません</span><button type="button" class="abs-btn" data-tn-ack="${n.id}">確認しました</button>`
     )).join('');
     body.querySelectorAll('[data-tn-ack]').forEach(btn => { btn.onclick = () => ackNotice(btn.dataset.tnAck, btn); });
+    fillNoticePhotos(body);
   }
   async function ackNotice(id, btn) {
     btn.disabled = true;
@@ -3264,6 +3326,7 @@ async function boot(user, profile) {
         : '<div class="notice-empty">送ったチーム連絡は、<br>ここに並びます。</div>'}
     `;
     body.querySelector('#tn-new').onclick = () => openNoticeForm();
+    fillNoticePhotos(body);
     body.querySelectorAll('[data-tn-del]').forEach(btn => { btn.onclick = () => deleteNotice(btn.dataset.tnDel, btn); });
     body.querySelectorAll('[data-tn-sum]').forEach(btn => {
       btn.onclick = () => {
@@ -3304,6 +3367,8 @@ async function boot(user, profile) {
       batch.delete(doc(db, 'notices', id));
       await batch.commit();
       notices = notices.filter(x => x.id !== id);
+      // 写真も消す（失敗しても連絡そのものは消えているので、そのまま進む）
+      await Promise.all((n.photos || []).map(path => deleteObject(storageRef(storage, path)).catch(e => console.warn('[notices] 写真を消せませんでした', path, e))));
     } catch (e) {
       console.error('[notices] 削除に失敗', e);
       alert('削除できませんでした。\n電波の良い場所で、もう一度お試しください。');
@@ -3314,7 +3379,8 @@ async function boot(user, profile) {
   // ── コーチ：チーム連絡を書いて送る ──
   function openNoticeForm() {
     const students = TEAM.filter(r => r.uid !== user.uid);
-    const f = { level: 'normal', mode: 'all', one: null, uids: [], categoryIds: [] };
+    const f = { level: 'normal', mode: 'all', one: null, uids: [], categoryIds: [], photos: [] }; // photos: [{ blob, url }]
+    const MAX_PHOTOS = 4;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.id = 'notice-form-overlay';
@@ -3334,6 +3400,11 @@ async function boot(user, profile) {
         <div class="modal-field">
           <div class="modal-label">本文（なくてもOK）</div>
           <textarea class="modal-textarea" id="tnf-body" maxlength="2000" placeholder="くわしい内容を書いてください"></textarea>
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">写真（4枚まで・なくてもOK）</div>
+          <div class="tnf-photos" id="tnf-photos"></div>
+          <input type="file" accept="image/*" multiple id="tnf-file" style="display:none;">
         </div>
         <div class="modal-field">
           <div class="send-target" style="margin-top:0;">
@@ -3356,8 +3427,9 @@ async function boot(user, profile) {
       </div>
     `;
     document.body.appendChild(overlay);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#tnf-cancel').onclick = () => overlay.remove();
+    const closeForm = () => { f.photos.forEach(p => URL.revokeObjectURL(p.url)); overlay.remove(); };
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeForm(); });
+    overlay.querySelector('#tnf-cancel').onclick = () => closeForm();
     const msg = overlay.querySelector('#tnf-msg');
     const showMsg = (text) => { msg.textContent = text; msg.style.display = text ? 'block' : 'none'; };
 
@@ -3368,6 +3440,35 @@ async function boot(user, profile) {
         overlay.querySelector('#tnf-119').style.display = f.level === 'urgent' ? '' : 'none';
       };
     });
+
+    // 写真：選んだら小さくして、送る前に一覧で見せる
+    const fileInput = overlay.querySelector('#tnf-file');
+    function drawPhotos() {
+      const box = overlay.querySelector('#tnf-photos');
+      box.innerHTML = f.photos.map((p, i) => `<div class="tnf-thumb"><img src="${p.url}" alt=""><button type="button" class="tnf-thumb-del" data-i="${i}" aria-label="この写真を外す">×</button></div>`).join('')
+        + (f.photos.length < MAX_PHOTOS ? '<button type="button" class="tnf-add" id="tnf-add">＋<br>写真</button>' : '');
+      box.querySelectorAll('.tnf-thumb-del').forEach(b => {
+        b.onclick = () => { const [p] = f.photos.splice(Number(b.dataset.i), 1); if (p) URL.revokeObjectURL(p.url); drawPhotos(); };
+      });
+      const add = box.querySelector('#tnf-add');
+      if (add) add.onclick = () => fileInput.click();
+    }
+    fileInput.onchange = async () => {
+      const files = [...fileInput.files].slice(0, MAX_PHOTOS - f.photos.length);
+      fileInput.value = '';
+      showMsg('');
+      for (const file of files) {
+        try {
+          const blob = await resizePhotoToBlob(file);
+          f.photos.push({ blob, url: URL.createObjectURL(blob) });
+        } catch (e) {
+          console.warn('[notices] 写真を読み込めませんでした', e);
+          showMsg('読み込めない写真がありました。ほかの写真を選んでください。');
+        }
+      }
+      drawPhotos();
+    };
+    drawPhotos();
 
     function resolveUids() {
       const ids = new Set(students.map(r => r.uid));
@@ -3437,22 +3538,33 @@ async function boot(user, profile) {
       if (!title) { showMsg('タイトルを入れてください'); return; }
       if (!targetUids.length) { showMsg('送り先の選手を選んでください'); return; }
       sendBtn.disabled = true;
-      sendBtn.textContent = '送っています…';
+      sendBtn.textContent = f.photos.length ? '写真を送っています…' : '送っています…';
+      // 先に連絡の番号を決めて、写真を notices/{チーム}/{連絡の番号}/ に上げてから、連絡を保存する
+      const noticeRef = doc(collection(db, 'notices'));
+      const uploaded = [];
       try {
-        await addDoc(collection(db, 'notices'), {
+        for (let i = 0; i < f.photos.length; i++) {
+          const path = `notices/${profile.teamCode}/${noticeRef.id}/${i + 1}.jpg`;
+          await uploadBytes(storageRef(storage, path), f.photos[i].blob, { contentType: 'image/jpeg' });
+          uploaded.push(path);
+        }
+        sendBtn.textContent = '送っています…';
+        await setDoc(noticeRef, {
           teamCode: profile.teamCode,
           title,
           body: text,
-          photos: [],
+          photos: uploaded,
           importance: f.level,
           targetUids,
           createdBy: user.uid,
           createdAt: serverTimestamp()
         });
-        overlay.remove();
+        closeForm();
         noticeTab = 'team';
         renderNoticesBody(true);
       } catch (e) {
+        // 途中まで上げた写真は片付ける
+        uploaded.forEach(path => deleteObject(storageRef(storage, path)).catch(() => {}));
         console.error('[notices] チーム連絡を送れませんでした', e);
         showMsg('送れませんでした。電波の良い場所で、もう一度お試しください。');
         sendBtn.disabled = false;
@@ -3630,12 +3742,40 @@ async function boot(user, profile) {
     }
   }
 
+  // アプリを開いたまま日付が変わったとき：「今日」を見ていたなら、新しい「今日」に移す
+  // （前の日の画面のまま書いて、前の月の目標を書きかえてしまうのを防ぐ）
+  let lastTodayKey = dateKey(today.y, today.m, today.d);
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    const t = todayParts();
+    const tk = dateKey(t.y, t.m, t.d);
+    if (tk === lastTodayKey) return;
+    const prev = lastTodayKey;
+    lastTodayKey = tk;
+    if (state.selected !== prev) return; // ほかの日をわざと見ているときは、そのまま
+    try {
+      if (!document.getElementById('cal')) {
+        // トップ画面などにいるときは、次に日記を開いたときに今日が出るようにしておく
+        state.selected = tk; state.year = t.y; state.month = t.m;
+        return;
+      }
+      if (!isCoach && state.view === 'home') {
+        state.selected = tk; state.year = t.y; state.month = t.m;
+        await render();
+      } else {
+        await selectDate(tk);
+      }
+    } catch (e) { console.warn('[today] 今日の画面に移れませんでした', e); }
+  });
+
   async function goHome() {
+    await flushGoalSave();
     state.view = 'home';
     await render();
   }
 
   async function openDate(dateStr) {
+    await flushGoalSave();
     state.selected = dateStr;
     const dt = dateStr.split('-');
     state.year = parseInt(dt[0]); state.month = parseInt(dt[1]) - 1;
@@ -3644,6 +3784,7 @@ async function boot(user, profile) {
   }
 
   async function selectDate(dateStr) {
+    await flushGoalSave();
     state.selected = dateStr;
     const dt = dateStr.split('-');
     state.year = parseInt(dt[0]); state.month = parseInt(dt[1]) - 1;
@@ -3697,6 +3838,7 @@ async function boot(user, profile) {
     wrap.innerHTML = TEAM.map(r => `<button class="ptab ${r.uid === state.playerId ? 'active' : ''}" data-id="${r.uid}">${r.name}</button>`).join('');
     wrap.querySelectorAll('.ptab').forEach(btn => {
       btn.onclick = async () => {
+        await flushGoalSave();
         state.playerId = btn.dataset.id;
         const titleEl = document.getElementById('head-title');
         if (titleEl) { const pl = TEAM.find(r => r.uid === state.playerId); titleEl.innerHTML = avatarHtml(pl.photo, pl.name) + `<span class="head-name">${escapeHtml(pl.name)}さん</span>`; }
@@ -4065,7 +4207,7 @@ async function boot(user, profile) {
         </div>`;
     }
     box.innerHTML = `
-      <div class="goal-label">🎯 月間目標</div>
+      <div class="goal-label">🎯 ${Number(state.selected.slice(5, 7))}月の月間目標</div>
       <input class="goal-input" id="goal-text" placeholder="目標を書こう" value="${escapeAttr(state.goal.goal)}">
       <div class="goal-tasks-label">そのためにやること<button type="button" class="goal-ai-btn" id="ai-goal-tasks-btn">🤖 AIでタスクを自動作成</button></div>
       <div class="goal-tasks" id="goal-tasks">
@@ -4140,7 +4282,15 @@ async function boot(user, profile) {
     const status = document.getElementById('goal-save-status');
     if (status) status.textContent = '';
     clearTimeout(goalSaveTimer);
-    goalSaveTimer = setTimeout(saveGoal, 700);
+    goalSaveTimer = setTimeout(() => { goalSaveTimer = null; saveGoal(); }, 700);
+  }
+  // 書きかけの月間目標があれば、日付や選手を切り替える前に、今の月の分として保存しておく
+  // （切り替えたあとに保存すると、書いた内容が別の月に入ってしまうため）
+  async function flushGoalSave() {
+    if (!goalSaveTimer) return;
+    clearTimeout(goalSaveTimer);
+    goalSaveTimer = null;
+    await saveGoal();
   }
   async function saveGoal() {
     const goalText = document.getElementById('goal-text');
