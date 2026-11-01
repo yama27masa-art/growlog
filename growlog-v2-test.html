@@ -303,6 +303,14 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .thread-input textarea { min-height: 40px; flex: 1; min-width: 0; }
 .thread-input button { flex-shrink: 0; white-space: nowrap; align-self: flex-end; background: var(--stitch); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .new-badge { display: inline-block; background: var(--stitch); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
+.thread-scroll { position: relative; max-height: 460px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.thread-day { text-align: center; margin: 14px 0 10px; }
+.thread-day span { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 3px 10px; cursor: pointer; }
+.thread-day.current span { color: #fff; background: var(--navy); border-color: var(--navy); cursor: default; }
+.thread-more { display: block; margin: 2px auto 6px; background: none; border: 1px solid var(--border2); color: var(--text2); border-radius: 14px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.thread-more:disabled { opacity: 0.5; cursor: default; }
+.thread-loading { text-align: center; font-size: 12px; color: var(--text3); padding: 6px 0; }
+.thread-send-to { font-size: 11.5px; color: var(--text3); margin-top: 6px; }
 .thread-notice { background: var(--rust-light); color: var(--stitch); font-size: 12.5px; font-weight: 700; border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 8px; }
 .send-target { margin-top: 12px; }
 .send-target-label { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 6px; }
@@ -4946,6 +4954,7 @@ async function boot(user, profile) {
   function renderPanel() {
     const panel = document.getElementById('panel');
     const e = state.entry;
+    rememberThreadScroll();
     panel.innerHTML = `
       ${isCoach ? `
         <div class="practice-end-block">
@@ -5004,8 +5013,14 @@ async function boot(user, profile) {
       <div class="thread-card">
         <div class="thread-title">メッセージ</div>
         ${threadNoticeHtml(e)}
-        <div class="thread" id="thread">${e.thread.length ? e.thread.map((m, i) => threadMsgHtml(m, i)).join('') : '<div class="thread-empty">まだメッセージはありません</div>'}</div>
+        <div class="thread-scroll" id="thread-scroll">
+          <div id="thread-older"></div>
+          <div class="thread-day current" id="thread-current"><span>${formatSelectedLabel(state.selected)}</span></div>
+          <div class="thread" id="thread">${e.thread.length ? e.thread.map((m, i) => threadMsgHtml(m, i)).join('') : '<div class="thread-empty">この日のメッセージは、まだありません</div>'}</div>
+          <div id="thread-newer"></div>
+        </div>
         <div class="thread-input"><textarea id="t-input" aria-label="メッセージ"></textarea><button id="t-send">送信</button></div>
+        <div class="thread-send-to">${formatSelectedLabel(state.selected)}の日記に送ります</div>
       </div>
     `;
     document.getElementById('v-add').onclick = async () => {
@@ -5159,6 +5174,7 @@ async function boot(user, profile) {
       el.addEventListener('input', () => { autosizeTextarea(el); scheduleAutoSave(); });
     });
     document.getElementById('t-send').onclick = () => sendThread();
+    fillThreadHistory();
     document.querySelectorAll('[data-msg-del]').forEach(btn => {
       btn.onclick = () => {
         const m = state.entry.thread[Number(btn.dataset.msgDel)];
@@ -5338,7 +5354,8 @@ async function boot(user, profile) {
           url: uploaded.embedUrl,
           hlsUrl: uploaded.hlsUrl,
           videoId: uploaded.videoId,
-          uploadedAt: Date.now()
+          uploadedAt: Date.now(),
+          uploadedBy: user.uid // 上げた人（動画が届いたことを、相手に通知で知らせるため）
         });
         videoUp.active = false; videoUp.ctx = null;
         showVideoUpBanner('動画を追加しました！（変換処理中のため、少し待ってから開いてください）', 100);
@@ -5423,6 +5440,137 @@ async function boot(user, profile) {
     }
   }
 
+  // ── メッセージ：前後の日のやりとりも、続けて見られるようにする ──
+  // 選んだ日のやりとりを真ん中に置き、上に前の日、下に後の日（今日まで）を並べる。
+  // 送信・取り消しは、今までどおり選んだ日だけ。ほかの日は見るだけ（日付を押すと、その日を開く）
+  const threadView = { key: '', olderMonths: 0, scrollTop: null, olderHtml: '', newerHtml: '', loaded: false };
+  function threadViewKey() { return `${state.playerId}:${state.selected}`; }
+  function rememberThreadScroll() {
+    const box = document.getElementById('thread-scroll');
+    if (box && threadView.key === threadViewKey()) threadView.scrollTop = box.scrollTop;
+  }
+  // その月の日記をまとめて読む（カレンダーで読み込んだ分は、そのまま使う）
+  // 今月の分は、1分間だけ覚えておく（日付を切り替えるたびに読み直さないように）
+  const threadMonthCache = {};
+  async function getMonthEntries(playerId, y, m) {
+    const cacheKey = `${playerId}:${y}-${pad(m + 1)}`;
+    if (state.monthKey === cacheKey && state.monthEntries) return state.monthEntries;
+    if (state.calCache[cacheKey]) return state.calCache[cacheKey].entryCache;
+    const recent = threadMonthCache[cacheKey];
+    if (recent && Date.now() - recent.at < 60000) return recent.entries;
+    const days = new Date(y, m + 1, 0).getDate();
+    const entries = {};
+    await Promise.all(Array.from({ length: days }, (_, i) => i + 1).map(async (d) => {
+      const ds = dateKey(y, m, d);
+      try {
+        const r = await kvGet(`entry:${playerId}:${ds}`);
+        if (r && r.value) entries[ds] = JSON.parse(r.value);
+      } catch (e) {}
+    }));
+    const t = todayParts();
+    if (!(t.y === y && t.m === m)) {
+      state.calCache[cacheKey] = { dateStrs: Object.keys(entries).filter(k => hasEntryContent(entries[k])), entryCache: entries };
+    } else {
+      threadMonthCache[cacheKey] = { at: Date.now(), entries };
+    }
+    return entries;
+  }
+  function placeThreadScroll(box) {
+    const cur = document.getElementById('thread-current');
+    if (threadView.scrollTop != null) box.scrollTop = threadView.scrollTop;
+    else if (cur) box.scrollTop = Math.max(0, cur.offsetTop - 4);
+  }
+  function wireThreadHistory() {
+    document.querySelectorAll('[data-thread-open]').forEach(el => {
+      el.onclick = () => selectDate(el.dataset.threadOpen);
+    });
+    const more = document.getElementById('thread-more');
+    if (more) more.onclick = async () => {
+      more.disabled = true;
+      more.textContent = '読み込み中…';
+      const box = document.getElementById('thread-scroll');
+      const fromBottom = box ? box.scrollHeight - box.scrollTop : 0;
+      threadView.olderMonths++;
+      await loadThreadHistory();
+      const box2 = document.getElementById('thread-scroll');
+      if (box2) { box2.scrollTop = box2.scrollHeight - fromBottom; threadView.scrollTop = box2.scrollTop; }
+    };
+  }
+  function fillThreadHistory() {
+    const box = document.getElementById('thread-scroll');
+    if (!box) return;
+    box.onscroll = () => { if (threadView.key === threadViewKey()) threadView.scrollTop = box.scrollTop; };
+    if (threadView.key === threadViewKey() && threadView.loaded) {
+      // 同じ日の描き直し（入力や送信のあと）：前に読み込んだ分をそのまま出して、位置も戻す
+      document.getElementById('thread-older').innerHTML = threadView.olderHtml;
+      document.getElementById('thread-newer').innerHTML = threadView.newerHtml;
+      wireThreadHistory();
+      placeThreadScroll(box);
+      return;
+    }
+    threadView.key = threadViewKey();
+    threadView.olderMonths = 0;
+    threadView.scrollTop = null;
+    threadView.loaded = false;
+    placeThreadScroll(box);
+    loadThreadHistory();
+  }
+  async function loadThreadHistory() {
+    const playerId = state.playerId;
+    const selected = state.selected;
+    const key = threadViewKey();
+    const initial = !threadView.loaded;
+    const olderBox = document.getElementById('thread-older');
+    if (olderBox && !threadView.loaded) olderBox.innerHTML = '<div class="thread-loading">前後のやりとりを読み込み中…</div>';
+    const sy = Number(selected.slice(0, 4));
+    const sm = Number(selected.slice(5, 7)) - 1;
+    const t = todayParts();
+    // 読む月：選んだ月から olderMonths か月前 ～ 今月（選んだ日が未来なら、その月まで）
+    const months = [];
+    let y = sy, m = sm - threadView.olderMonths;
+    while (m < 0) { m += 12; y--; }
+    const endY = (sy > t.y || (sy === t.y && sm > t.m)) ? sy : t.y;
+    const endM = (sy > t.y || (sy === t.y && sm > t.m)) ? sm : t.m;
+    while ((y < endY || (y === endY && m <= endM)) && months.length < 36) {
+      months.push([y, m]);
+      m++; if (m > 11) { m = 0; y++; }
+    }
+    const all = {};
+    try {
+      const lists = await Promise.all(months.map(([yy, mm]) => getMonthEntries(playerId, yy, mm)));
+      lists.forEach(l => Object.assign(all, l));
+    } catch (e) {
+      console.warn('[thread] 前後のやりとりを読み込めませんでした', e);
+    }
+    // 読み込んでいる間に、別の日や選手に移っていたら何もしない
+    if (key !== threadViewKey() || !document.getElementById('thread-scroll')) return;
+    const days = Object.keys(all)
+      .filter(d => d !== selected && all[d] && Array.isArray(all[d].thread) && all[d].thread.length)
+      .sort();
+    const dayHtml = (d) => `<div class="thread-day"><span data-thread-open="${d}" role="button">${formatSelectedLabel(d)}</span></div>`
+      + all[d].thread.map(msg => threadMsgHtml(msg, undefined, true)).join('');
+    const oldestShown = dateKey(months[0][0], months[0][1], 1);
+    threadView.olderHtml = `<button type="button" class="thread-more" id="thread-more">▲ もっと前のやりとりを見る</button>`
+      + (days.some(d => d < selected) ? '' : `<div class="thread-loading">${Number(oldestShown.slice(5, 7))}月${Number(oldestShown.slice(0, 4)) !== t.y ? `（${oldestShown.slice(0, 4)}年）` : ''}からのやりとりはありません</div>`)
+      + days.filter(d => d < selected).map(dayHtml).join('');
+    threadView.newerHtml = days.filter(d => d > selected).map(dayHtml).join('');
+    threadView.loaded = true;
+    const box = document.getElementById('thread-scroll');
+    document.getElementById('thread-older').innerHTML = threadView.olderHtml;
+    document.getElementById('thread-newer').innerHTML = threadView.newerHtml;
+    wireThreadHistory();
+    // 初めて読み込んだときは、選んだ日のところを一番上に合わせる
+    if (initial) { threadView.scrollTop = null; placeThreadScroll(box); }
+  }
+  // 送ったメッセージ（選んだ日のやりとりの一番下）が見えるようにする
+  function scrollThreadToCurrentEnd() {
+    const box = document.getElementById('thread-scroll');
+    const cur = document.getElementById('thread');
+    if (!box || !cur) return;
+    box.scrollTop = Math.max(0, cur.offsetTop + cur.offsetHeight - box.clientHeight + 8);
+    threadView.scrollTop = box.scrollTop;
+  }
+
   function threadNoticeHtml(e) {
     if (!e.thread || !e.thread.length) return '';
     const last = e.thread[e.thread.length - 1];
@@ -5440,11 +5588,11 @@ async function boot(user, profile) {
   function sameMessage(a, b) {
     return a.tsRaw === b.tsRaw && a.author === b.author && a.text === b.text && (a.authorUid || '') === (b.authorUid || '');
   }
-  function threadMsgHtml(m, idx) {
+  function threadMsgHtml(m, idx, otherDay) {
     const mine = m.author === state.role;
     const canDelete = isOwnMessage(m) && typeof idx === 'number';
     const label = m.authorName || (m.author === 'coach' ? 'コーチ' : '本人');
-    const isNew = !mine && m.tsRaw && m.tsRaw > (state.lastReadEpoch || 0);
+    const isNew = !otherDay && !mine && m.tsRaw && m.tsRaw > (state.lastReadEpoch || 0);
     const photo = m.author === 'coach'
       ? ((m.authorUid && PHOTO_BY_UID[m.authorUid]) || COACH_PHOTO_BY_NAME[m.authorName] || null)
       : (PHOTO_BY_UID[state.playerId] || null);
@@ -5555,6 +5703,7 @@ async function boot(user, profile) {
     await saveEntry();
     await setLastRead(state.playerId, state.selected, state.role);
     renderPanel();
+    scrollThreadToCurrentEnd();
   }
   function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function escapeAttr(s) { return escapeHtml(s); }
