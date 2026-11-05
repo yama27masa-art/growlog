@@ -345,6 +345,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .record-card .submit-row { margin: 14px 0 0; }
 .record-card .menu-send-row { margin-top: 14px; flex-direction: column; align-items: stretch; }
 .ptab { position: relative; }
+.ptab.ptab-none { opacity: 0.45; }
 .ptab-unread { position: absolute; top: 2px; right: 3px; width: 10px; height: 10px; border-radius: 50%; background: #E53935; border: 2px solid var(--surface); }
 .seen-picker { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border2); display: flex; flex-wrap: wrap; gap: 6px; }
 .seen-picker-label { width: 100%; font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 2px; }
@@ -3858,6 +3859,8 @@ async function boot(user, profile) {
     state.tabUnreadDate = date;
     if (!state.tabUnread) state.tabUnread = {};
     const tabUnread = state.tabUnread;
+    if (!state.tabWrote) state.tabWrote = {};
+    const tabWrote = state.tabWrote;
     await Promise.all(TEAM.map(async (r) => {
       try {
         const [entryRes, viewRes] = await Promise.all([
@@ -3871,13 +3874,14 @@ async function boot(user, profile) {
         }
         const viewedAt = viewRes && viewRes.value ? (parseInt(viewRes.value, 10) || 0) : 0;
         tabUnread[r.uid] = wroteAt > viewedAt;
-      } catch (e) { tabUnread[r.uid] = false; }
+        tabWrote[r.uid] = wroteAt > 0;
+      } catch (e) { tabUnread[r.uid] = false; tabWrote[r.uid] = true; }
     }));
     if (state.tabUnreadDate === date && document.getElementById('ptabs')) renderTabs();
   }
   function renderTabs() {
     const wrap = document.getElementById('ptabs');
-    wrap.innerHTML = TEAM.map(r => `<button class="ptab ${r.uid === state.playerId ? 'active' : ''}" data-id="${r.uid}">${r.name}${state.tabUnread && state.tabUnread[r.uid] && r.uid !== state.playerId ? '<span class="ptab-unread" aria-label="未読"></span>' : ''}</button>`).join('');
+    wrap.innerHTML = TEAM.map(r => `<button class="ptab ${r.uid === state.playerId ? 'active' : ''} ${state.tabWrote && state.tabWrote[r.uid] === false && state.tabUnreadDate === state.selected && r.uid !== state.playerId ? 'ptab-none' : ''}" data-id="${r.uid}">${r.name}${state.tabUnread && state.tabUnread[r.uid] && r.uid !== state.playerId ? '<span class="ptab-unread" aria-label="未読"></span>' : ''}</button>`).join('');
     const ptabQ = (document.getElementById('ptab-search') || {}).value;
     if (ptabQ && ptabQ.trim()) wrap.querySelectorAll('.ptab').forEach(btn => { btn.style.display = btn.textContent.includes(ptabQ.trim()) ? '' : 'none'; });
     wrap.querySelectorAll('.ptab').forEach(btn => {
