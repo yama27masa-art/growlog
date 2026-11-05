@@ -338,6 +338,36 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .seen-coach-item { font-size: 11.5px; color: var(--text3); font-weight: 700; white-space: nowrap; }
 .seen-coach-item.seen { color: var(--green); }
 .seen-toggle-btn { flex-shrink: 0; padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; }
+.seen-toggle-btn.done { background: var(--primary-grad); border-color: transparent; color: var(--on-primary); box-shadow: 0 0 0 3px var(--navy-light), 0 0 14px var(--navy-light); }
+.field-saved { font-size: 11px; font-weight: 500; color: var(--text3); margin-left: 6px; white-space: nowrap; opacity: 0; transition: opacity .4s ease; }
+.field-saved.show { opacity: 1; }
+.field-saved.err { color: var(--red); opacity: 1; }
+.record-card .submit-row { margin: 14px 0 0; }
+.record-card .menu-send-row { margin-top: 14px; flex-direction: column; align-items: stretch; }
+.ptab { position: relative; }
+.team-switch { position: relative; display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 5px 12px; border-radius: 16px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; max-width: 100%; }
+.launcher-team { width: 100%; max-width: 520px; margin-top: 4px; }
+.team-switch-caret { color: var(--navy); font-size: 11px; }
+.team-switch-dot, .team-sheet-dot { width: 9px; height: 9px; border-radius: 50%; background: #E53935; display: none; }
+.team-switch-dot { position: absolute; top: -2px; right: -2px; border: 2px solid var(--surface); }
+.team-switch-dot.on, .team-sheet-dot.on { display: inline-block; }
+.team-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity .2s ease; }
+.team-sheet-overlay.show { opacity: 1; }
+.team-sheet { width: 100%; max-width: 520px; background: var(--surface); border-radius: 16px 16px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); transform: translateY(20px); transition: transform .2s ease; }
+.team-sheet-overlay.show .team-sheet { transform: translateY(0); }
+.team-sheet-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--border2); margin: 0 auto 12px; }
+.team-sheet-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.team-sheet-item { width: 100%; display: flex; align-items: center; gap: 8px; padding: 14px 12px; margin-bottom: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.team-sheet-item.active { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy-light); }
+.team-sheet-name { font-weight: 700; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.team-sheet-code { font-size: 11px; color: var(--text3); font-family: var(--font-num); }
+.team-sheet-check { color: var(--navy); font-weight: 700; }
+.team-sheet-hint { font-size: 11.5px; color: var(--text3); text-align: center; margin-top: 4px; }
+.team-list-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.team-list-item .team-list-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.team-list-item .team-list-code { font-size: 11px; color: var(--text3); font-family: var(--font-num); }
+.ptab.ptab-none { opacity: 0.45; }
+.ptab-unread { position: absolute; top: 2px; right: 3px; width: 10px; height: 10px; border-radius: 50%; background: #E53935; border: 2px solid var(--surface); }
 .seen-picker { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border2); display: flex; flex-wrap: wrap; gap: 6px; }
 .seen-picker-label { width: 100%; font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 2px; }
 .seen-picker-opt { padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); font-size: 12.5px; font-weight: 700; color: var(--text2); cursor: pointer; }
@@ -918,7 +948,11 @@ async function rcGetMonthlyPackage(uid) {
 }
 function rcPriceText(pkg) {
   const p = pkg && pkg.product && pkg.product.priceString;
-  return p ? `月額${p}（税込）` : '';
+  if (!p) return '';
+  // 日本円のときだけ「税込」と書く（ドルなど他の通貨は、国によって税の扱いが違うため付けない）
+  const code = pkg.product.currencyCode;
+  const isYen = code ? code === 'JPY' : /[¥￥円]/.test(p);
+  return isYen ? `月額${p}（税込）` : `月額${p}`;
 }
 function rcIsCancelled(e) {
   return !!(e && (e.userCancelled || String(e.code) === '1' || /cancel/i.test(e.message || '')));
@@ -1552,13 +1586,13 @@ function renderAuth() {
               <div class="role-opt ${authCoachMode==='join'?'active':''}" data-coachmode="join">既存チームに参加する</div>
             </div>
             ${authCoachMode === 'new' ? `
-              <label>招待コード</label>
+              <label>選手招待コード</label>
               <input id="a-newcode" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例）BASEBALL2026">
               <div class="auth-hint">選手がチームに参加するときに入力するコードです。<br>半角の英字と数字で、4〜16文字で決めてください。</div>
             ` : `
               <label>コーチ用コード</label>
               <input id="a-coachkey" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例）ABCDE-FGHJK">
-              <div class="auth-hint">同じチームのコーチから教えてもらった<br>「コーチ用コード」（10文字）を入力してください。<br>選手用の招待コードでは参加できません。</div>
+              <div class="auth-hint">同じチームのコーチから教えてもらった<br>「コーチ用コード」（10文字）を入力してください。<br>選手招待コードでは参加できません。</div>
             `}
           ` : `
             ${!IAP_ENABLED ? '' : `
@@ -1569,9 +1603,9 @@ function renderAuth() {
             </div>
             `}
             ${(!IAP_ENABLED || authStudentMode === 'team') ? `
-            <label>招待コード</label>
+            <label>選手招待コード</label>
             <input id="a-team" type="text" autocapitalize="characters" autocomplete="off" placeholder="コーチから教えてもらったコード">
-            <div class="auth-hint">担当コーチから教えてもらった招待コードを入力してください。</div>
+            <div class="auth-hint">担当コーチから教えてもらった選手招待コードを入力してください。</div>
             ` : `
             <div class="auth-hint">${IAP_ENABLED
               ? '個人アカウントは、チームに入らずに自分の記録をつけられる有料プラン（月額・自動更新）です。登録してログインした後に、App Storeでのお申し込みがあります。'
@@ -1716,7 +1750,7 @@ async function handleSignup() {
   } else {
     teamCode = (document.getElementById('a-newcode').value || '').trim().toUpperCase();
     if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
-    if (!/^[A-Z0-9]{4,16}$/.test(teamCode)) { showAuthMsg('招待コードは、半角の英字と数字で4〜16文字にしてください', 'err'); return; }
+    if (!/^[A-Z0-9]{4,16}$/.test(teamCode)) { showAuthMsg('選手招待コードは、半角の英字と数字で4〜16文字にしてください', 'err'); return; }
   }
 
   let birthdate = null;
@@ -1752,8 +1786,8 @@ async function handleSignup() {
         signupInProgress = false;
         showAuthMsg(
           rolledBack
-            ? 'その招待コードに一致するコーチが見つかりませんでした。コードを確認してください。'
-            : 'その招待コードに一致するコーチが見つかりませんでした。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
+            ? 'その選手招待コードに一致するコーチが見つかりませんでした。コードを確認してください。'
+            : 'その選手招待コードに一致するコーチが見つかりませんでした。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
           'err'
         );
         submitBtn.disabled = false;
@@ -1786,8 +1820,8 @@ async function handleSignup() {
         const rolledBack = await rollbackSignupAccount(cred);
         showAuthMsg(
           rolledBack
-            ? 'この招待コードは、すでに他のチームで使われています。別のコードにしてください。'
-            : 'この招待コードは、すでに他のチームで使われています。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
+            ? 'この選手招待コードは、すでに他のチームで使われています。別のコードにしてください。'
+            : 'この選手招待コードは、すでに他のチームで使われています。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
           'err'
         );
         submitBtn.disabled = false;
@@ -1809,7 +1843,7 @@ async function handleSignup() {
     // ごくまれに他のコーチと同時に同じコードで登録された場合は、登録を取り消して選び直してもらう
     if (authRole === 'coach' && authCoachMode === 'new' && await isTeamCodeTaken(teamCode, cred.user.uid)) {
       await rollbackSignupAccount(cred);
-      showAuthMsg('この招待コードは、すでに他のチームで使われています。別のコードにしてもう一度登録してください。', 'err');
+      showAuthMsg('この選手招待コードは、すでに他のチームで使われています。別のコードにしてもう一度登録してください。', 'err');
       submitBtn.disabled = false;
       return;
     }
@@ -1822,7 +1856,7 @@ async function handleSignup() {
     }
     await sendEmailVerification(cred.user);
     if (authRole === 'coach' && authCoachMode === 'new') {
-      showAuthMsg(`仮登録できました。あなたの招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。`, 'ok');
+      showAuthMsg(`仮登録できました。あなたの選手招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。`, 'ok');
     } else if (authRole === 'coach') {
       showAuthMsg('仮登録できました。チームに参加しました。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。', 'ok');
     } else if (isIndividualSignup) {
@@ -1996,10 +2030,13 @@ async function routeStudent(user, profile) {
   }
   // 生徒本人は課金せず、担当コーチの契約状況で判定する
   // （同じチームのコーチの誰か1人でも有効な契約/freeAccessがあればOK）
-  const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
-  const coachSnaps = await getDocs(coachQ);
+  // ★10：2つ目・3つ目のチームがあるときは、どれか1つのチームが有効ならOK（止まったチームのコーチだけ見られなくなる）
+  const studentTeams = [profile.teamCode, ...(profile.extraTeamCodes || [])].filter(Boolean);
+  const coachSnapList = await Promise.all(studentTeams.map(code =>
+    getDocs(query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach')))));
+  const coachSnaps = { empty: coachSnapList.every(sn => sn.empty), docs: coachSnapList.flatMap(sn => sn.docs) };
   if (coachSnaps.empty) {
-    app.innerHTML = `<div class="err-screen">担当コーチが見つかりませんでした。招待コードをコーチに確認してください。</div>`;
+    app.innerHTML = `<div class="err-screen">担当コーチが見つかりませんでした。選手招待コードをコーチに確認してください。</div>`;
     return;
   }
   let coachActive = false;
@@ -2024,10 +2061,10 @@ async function routeStudent(user, profile) {
 // 成功すると自分の teamCode を書き換える。呼び出し側で再判定（routeStudent等）すること。
 async function joinTeamByCode(uid, rawCode) {
   const code = (rawCode || '').trim().toUpperCase();
-  if (!code) return { ok: false, message: '招待コードを入力してください' };
+  if (!code) return { ok: false, message: '選手招待コードを入力してください' };
   const coachQ = query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach'));
   const coachSnaps = await getDocs(coachQ);
-  if (coachSnaps.empty) return { ok: false, message: 'その招待コードに一致するチームが見つかりませんでした。コードを確認してください。' };
+  if (coachSnaps.empty) return { ok: false, message: 'その選手招待コードに一致するチームが見つかりませんでした。コードを確認してください。' };
   try {
     await setDoc(doc(db, 'users', uid), { teamCode: code }, { merge: true });
     return { ok: true };
@@ -2084,6 +2121,13 @@ function renderWaitingForCoach(profile) {
 // mode: 'removed' … チームから外れた選手（個人プランで記入を再開できる）
 //       'individual' … 個人アカウントで登録した選手（個人プランで記録を始める）
 //       'coachInactive' … チームには所属しているが、コーチの契約が止まっている選手（閲覧のみ）
+// コーチコメントは1つにまとめた。前の「よかった点」「改善点」のコメントは、2つをつなげて見せる
+// （日記画面と、チームなしになった選手の「前の記録」画面の両方で使う）
+function mergedOldComment(data) {
+  const g = (data.goodComment || '').trim(), i = (data.issueComment || '').trim();
+  if (g && i) return `◎ よかった点：${g}\n\n△ 改善点：${i}`;
+  return g || i || '';
+}
 async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   const isCoachInactive = mode === 'coachInactive';
   const isIndividual = mode === 'individual';
@@ -2147,12 +2191,12 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       <div class="removed-banner">
         <div class="removed-banner-title">新しいチームに参加する</div>
         <div class="removed-banner-text">${IAP_ENABLED
-          ? `新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（App Storeで加入している場合は、${IAP_CANCEL_HOWTO}からご自身で解約してください）。`
+          ? `新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（App Storeで加入している場合は、${IAP_CANCEL_HOWTO}からご自身で解約してください）。`
           : isNativeApp
-          ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
-          : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
+          ? '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。'
+          : '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
         <div class="removed-join-row">
-          <input class="modal-select" id="removed-join-code" placeholder="招待コード">
+          <input class="modal-select" id="removed-join-code" placeholder="選手招待コード">
           <button class="menu-send-btn" id="removed-join-btn">参加する</button>
         </div>
         <div id="removed-join-msg"></div>
@@ -2395,6 +2439,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
     } catch (e) { console.error('[removed-calendar] renderCal failed:', e); }
   }
 
+  const removedCoachNames = {};
   async function renderDetail() {
     const box = document.getElementById('removed-detail');
     if (!box) return;
@@ -2404,6 +2449,26 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       const res = await kvGet(`entry:${user.uid}:${rState.selected}`);
       if (res && res.value) data = JSON.parse(res.value);
     } catch (e) {}
+    // ★10：チームごとの置き場所に移した選手は、入っていた（今も入っている）チームごとのやりとりも出す
+    const teamParts = [];
+    if (profile.teamDataSplit) {
+      const codes = [...new Set([profile.teamCode, ...(profile.extraTeamCodes || []), ...(profile.pastTeamCodes || [])].filter(Boolean))];
+      await Promise.all(codes.map(async (code) => {
+        try {
+          const r = await kvGet(`tday:${user.uid}:${code}:${rState.selected}`);
+          if (!r || !r.value) return;
+          const t = JSON.parse(r.value);
+          if (!removedCoachNames[code]) {
+            try {
+              const cs = await getDocs(query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach')));
+              removedCoachNames[code] = cs.docs.map(d => d.data().displayName || '').filter(Boolean);
+            } catch (e) { removedCoachNames[code] = []; }
+          }
+          teamParts.push({ code, t });
+        } catch (e) {}
+      }));
+    }
+    if (!data && teamParts.length) data = {};
     if (!data) {
       box.innerHTML = `<div class="removed-date-label">${formatSelectedLabel(rState.selected)}</div><div class="card"><div class="empty-hint">この日の記録はありません</div></div>`;
       return;
@@ -2426,11 +2491,23 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
           </div>
         </div>
         ${data.menu ? `<div class="card"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span></div><div class="removed-readonly-text">${escapeHtml(data.menu)}</div></div>` : ''}
-        ${data.good ? `<div class="card good"><div class="card-label">◎ よかった点</div><div class="removed-readonly-text">${escapeHtml(data.good)}</div>${data.goodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.goodComment)}</div>` : ''}</div>` : ''}
-        ${data.issue ? `<div class="card issue"><div class="card-label">△ 改善点</div><div class="removed-readonly-text">${escapeHtml(data.issue)}</div>${data.issueComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.issueComment)}</div>` : ''}</div>` : ''}
+        ${data.good ? `<div class="card good"><div class="card-label">◎ よかった点</div><div class="removed-readonly-text">${escapeHtml(data.good)}</div></div>` : ''}
+        ${data.issue ? `<div class="card issue"><div class="card-label">△ 改善点</div><div class="removed-readonly-text">${escapeHtml(data.issue)}</div></div>` : ''}
+        ${(() => { const c = data.coachComment !== undefined ? data.coachComment : mergedOldComment(data); return c ? `<div class="card"><div class="card-label">💬 コーチコメント</div><div class="removed-readonly-text">${escapeHtml(c)}</div></div>` : ''; })()}
         ${data.gameGood ? `<div class="card good"><div class="card-label">◎ 試合でよかった点</div><div class="removed-readonly-text">${escapeHtml(data.gameGood)}</div>${data.gameGoodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameGoodComment)}</div>` : ''}</div>` : ''}
         ${data.gameIssue ? `<div class="card issue"><div class="card-label">△ 試合の改善点</div><div class="removed-readonly-text">${escapeHtml(data.gameIssue)}</div>${data.gameIssueComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameIssueComment)}</div>` : ''}</div>` : ''}
         ${data.thread && data.thread.length ? `<div class="card"><div class="card-label">メッセージ</div>${data.thread.map(m => `<div class="removed-readonly-text"><strong>${escapeHtml(m.authorName || (m.author === 'coach' ? 'コーチ' : '本人'))}：</strong>${escapeHtml(m.text)}</div>`).join('')}</div>` : ''}
+        ${teamParts.map(({ code, t }) => {
+          const names = removedCoachNames[code] || [];
+          const label = names.length ? `コーチ：${names.join('・')}` : `チーム ${code}`;
+          const c = t.coachComment !== undefined ? t.coachComment : mergedOldComment(t);
+          const th = Array.isArray(t.thread) ? t.thread : [];
+          if (!c && !th.length) return '';
+          return `<div class="card"><div class="card-label">${escapeHtml(label)}</div>
+            ${c ? `<div class="removed-coach-comment">💬 ${escapeHtml(c)}</div>` : ''}
+            ${th.map(m => `<div class="removed-readonly-text"><strong>${escapeHtml(m.authorName || (m.author === 'coach' ? 'コーチ' : '本人'))}：</strong>${escapeHtml(m.text)}</div>`).join('')}
+          </div>`;
+        }).join('')}
       `;
     } catch (e) {
       box.innerHTML = `<div class="removed-date-label">${formatSelectedLabel(rState.selected)}</div><div class="card"><div class="empty-hint">表示に失敗しました</div></div>`;
@@ -2673,7 +2750,13 @@ async function boot(user, profile) {
     const q = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'student'));
     const snaps = await getDocs(q);
     const members = [];
-    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null, loginType: d.data().loginType || 'email', loginId: d.data().loginId || '' }));
+    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null, loginType: d.data().loginType || 'email', loginId: d.data().loginId || '', split: !!d.data().teamDataSplit }));
+    // ★10：このチームを2つ目・3つ目のチームにしている選手も、選手一覧に入れる
+    try {
+      const xq = query(collection(db, 'users'), where('extraTeamCodes', 'array-contains', profile.teamCode), where('role', '==', 'student'));
+      const xs = await getDocs(xq);
+      xs.forEach(d => { if (!members.some(m => m.uid === d.id)) members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null, loginType: d.data().loginType || 'email', loginId: d.data().loginId || '', split: !!d.data().teamDataSplit, extraMember: true }); });
+    } catch (e) { console.warn('[team] 2つ目・3つ目のチームの選手を読めませんでした', e); }
     if (members.length) TEAM = members;
 
     const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
@@ -2696,15 +2779,163 @@ async function boot(user, profile) {
   COACHES.forEach(c => { PHOTO_BY_UID[c.uid] = c.photo || null; });
   const COACH_PHOTO_BY_NAME = {};
   COACHES.forEach(c => { if (c.name) COACH_PHOTO_BY_NAME[c.name] = c.photo || null; });
+  const COACH_NAME_BY_UID = {};
+  COACHES.forEach(c => { COACH_NAME_BY_UID[c.uid] = c.name || ''; });
   if (!isCoach && profile.teamCode) {
     try {
       const cq = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
       const cs = await getDocs(cq);
       cs.forEach(d => {
         PHOTO_BY_UID[d.id] = d.data().photo || null;
+        COACH_NAME_BY_UID[d.id] = d.data().displayName || '';
         if (d.data().displayName) COACH_PHOTO_BY_NAME[d.data().displayName] = d.data().photo || null;
       });
     } catch (e) {}
+  }
+
+  // ===== ★10：複数チーム（選手は最大3つ）=====
+  // チームごとに分けるもの（メッセージ・コーチコメント・コーチの動画・見たよ・書いてね・既読）は、
+  // 前のやりとりを移し終えた選手（teamDataSplit）だけ、チームごとの置き場所（tday など）を使う
+  const MY_TEAMS = isCoach ? [profile.teamCode].filter(Boolean) : [profile.teamCode, ...(profile.extraTeamCodes || [])].filter(Boolean);
+  const SPLIT_BY_UID = { [user.uid]: !!profile.teamDataSplit };
+  TEAM.forEach(m => { if (m.split) SPLIT_BY_UID[m.uid] = true; });
+  const CUR_TEAM_KEY = `selfplus.curTeam.${user.uid}`;
+  let CUR_TEAM = profile.teamCode || null; // 今見ているチーム（コーチは自分のチーム）
+  if (!isCoach) {
+    try { const saved = localStorage.getItem(CUR_TEAM_KEY); if (saved && MY_TEAMS.includes(saved)) CUR_TEAM = saved; } catch (e) {}
+  }
+  const TEAM_COACHES = {}; // チーム → そのチームのコーチ [{ uid, name }]
+  if (!isCoach) {
+    await Promise.all(MY_TEAMS.map(async (code) => {
+      try {
+        const cs = await getDocs(query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach')));
+        TEAM_COACHES[code] = cs.docs.map(d => ({ uid: d.id, name: d.data().displayName || '' }));
+        cs.forEach(d => {
+          PHOTO_BY_UID[d.id] = d.data().photo || null;
+          COACH_NAME_BY_UID[d.id] = d.data().displayName || '';
+          if (d.data().displayName) COACH_PHOTO_BY_NAME[d.data().displayName] = d.data().photo || null;
+        });
+      } catch (e) { TEAM_COACHES[code] = []; }
+    }));
+  }
+  function isSplitFor(uid) { return !!SPLIT_BY_UID[uid]; }
+  function coachUidsOfCurTeam() { return isCoach ? COACHES.map(c => c.uid) : (TEAM_COACHES[CUR_TEAM] || []).map(c => c.uid); }
+  function teamLabel(code) {
+    const names = (TEAM_COACHES[code] || []).map(c => c.name).filter(Boolean);
+    return names.length ? `コーチ：${names.join('・')}` : `チーム ${code}`;
+  }
+  function seenKeyFor(uid, date, coachUid) { return isSplitFor(uid) ? `tseen:${uid}:${CUR_TEAM}:${date}:${coachUid}` : `seen:${uid}:${date}:coach:${coachUid}`; }
+  function remindKeyFor(uid, date) { return isSplitFor(uid) ? `tremind:${uid}:${CUR_TEAM}:${date}` : `remind:${uid}:${date}`; }
+  function lastreadKeyFor(uid, date, role) { return isSplitFor(uid) ? `tlastread:${uid}:${CUR_TEAM}:${date}:${role}` : `lastread:${uid}:${date}:${role}`; }
+  const TEAM_FIELDS = ['thread', 'coachComment', 'goodComment', 'issueComment', 'gameGoodComment', 'gameIssueComment'];
+  // チームごとに分ける動画：コーチが上げた動画（上げた人が選手本人でない動画）
+  function isTeamVideo(uid, v) { return !!(v && (v._team || (v.uploadedBy && v.uploadedBy !== uid))); }
+  const teamPartCache = {}; // tday のキー → 読んだときの中身（変わっていなければ書かない）
+  function cleanVideo(v) { const { _team, ...rest } = v || {}; return rest; }
+  // 日記を読む。チームごとの置き場所を使う選手は、今のチームの分（tday）を重ねて返す
+  async function readEntry(uid, date) {
+    const r = await kvGet(`entry:${uid}:${date}`);
+    let data = null;
+    if (r && r.value) { try { data = JSON.parse(r.value); } catch (e) { data = null; } }
+    if (!isSplitFor(uid)) return data;
+    const tKey = `tday:${uid}:${CUR_TEAM}:${date}`;
+    const t = await kvGet(tKey).catch(() => null);
+    let team = null;
+    if (t && t.value) { try { team = JSON.parse(t.value); } catch (e) { team = null; } }
+    teamPartCache[tKey] = (t && t.value) || '';
+    if (!data && !team) return null;
+    data = data || emptyEntry();
+    TEAM_FIELDS.forEach(f => {
+      if (team && team[f] !== undefined) data[f] = team[f];
+      else if (f === 'thread') data[f] = [];
+      else if (f === 'coachComment') delete data[f];
+      else data[f] = '';
+    });
+    data.videos = [...(data.videos || []).filter(v => !isTeamVideo(uid, v)), ...((team && team.videos) || []).map(v => ({ ...v, _team: true }))];
+    return data;
+  }
+  // 日記を書く。チームごとの置き場所を使う選手は、チームの分を tday に分けて書く
+  async function writeEntry(uid, date, data) {
+    const videos = data.videos || [];
+    if (!isSplitFor(uid)) {
+      await kvSet(`entry:${uid}:${date}`, JSON.stringify({ ...data, videos: videos.map(cleanVideo) }));
+      return;
+    }
+    const shared = { ...data };
+    const team = {};
+    TEAM_FIELDS.forEach(f => { if (data[f] !== undefined) team[f] = data[f]; delete shared[f]; });
+    shared.thread = [];
+    team.videos = videos.filter(v => isTeamVideo(uid, v)).map(cleanVideo);
+    shared.videos = videos.filter(v => !isTeamVideo(uid, v)).map(cleanVideo);
+    const tKey = `tday:${uid}:${CUR_TEAM}:${date}`;
+    const tJson = JSON.stringify(team);
+    const hasTeamData = (team.thread || []).length || team.coachComment || team.videos.length
+      || ['goodComment', 'issueComment', 'gameGoodComment', 'gameIssueComment'].some(f => team[f]);
+    const writes = [kvSet(`entry:${uid}:${date}`, JSON.stringify(shared))];
+    if (teamPartCache[tKey] !== tJson && (hasTeamData || teamPartCache[tKey])) {
+      writes.push(kvSet(tKey, tJson).then(() => { teamPartCache[tKey] = tJson; }));
+    }
+    await Promise.all(writes);
+  }
+  // 選手：ほかのチームに、今日の新しいメッセージがあるか
+  async function otherTeamsWithNew() {
+    if (isCoach || MY_TEAMS.length < 2 || !isSplitFor(user.uid)) return [];
+    const t = todayParts();
+    const date = dateKey(t.y, t.m, t.d);
+    const found = [];
+    await Promise.all(MY_TEAMS.filter(c => c !== CUR_TEAM).map(async (code) => {
+      try {
+        const [tr, lr] = await Promise.all([
+          kvGet(`tday:${user.uid}:${code}:${date}`).catch(() => null),
+          kvGet(`tlastread:${user.uid}:${code}:${date}:player`).catch(() => null),
+        ]);
+        const team = tr && tr.value ? JSON.parse(tr.value) : null;
+        const last = team && Array.isArray(team.thread) && team.thread.length ? team.thread[team.thread.length - 1] : null;
+        const readAt = lr && lr.value ? (parseInt(lr.value, 10) || 0) : 0;
+        if (last && last.author === 'coach' && (last.tsRaw || 0) > readAt) found.push(code);
+      } catch (e) {}
+    }));
+    return found;
+  }
+  function switchTeam(code) {
+    try { localStorage.setItem(CUR_TEAM_KEY, code); } catch (e) {}
+    location.reload();
+  }
+  function openTeamSwitcher() {
+    const overlay = document.createElement('div');
+    overlay.className = 'team-sheet-overlay';
+    overlay.innerHTML = `
+      <div class="team-sheet" role="dialog" aria-label="チームを切り替える">
+        <div class="team-sheet-grip"></div>
+        <div class="team-sheet-title">チームを切り替える</div>
+        ${MY_TEAMS.map(code => `
+          <button type="button" class="team-sheet-item ${code === CUR_TEAM ? 'active' : ''}" data-team="${escapeAttr(code)}">
+            <span class="team-sheet-name">${escapeHtml(teamLabel(code))}</span>
+            <span class="team-sheet-code">${escapeHtml(code)}</span>
+            ${code === CUR_TEAM ? '<span class="team-sheet-check">✓</span>' : `<span class="team-sheet-dot" data-dot-team="${escapeAttr(code)}"></span>`}
+          </button>`).join('')}
+        <div class="team-sheet-hint">チームの追加・抜けるは「設定」からできます</div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('show'));
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
+    overlay.querySelectorAll('.team-sheet-item').forEach(btn => {
+      btn.onclick = () => { const code = btn.dataset.team; if (code === CUR_TEAM) { overlay.remove(); return; } switchTeam(code); };
+    });
+    otherTeamsWithNew().then(list => list.forEach(code => {
+      const dot = overlay.querySelector(`[data-dot-team="${code}"]`);
+      if (dot) dot.classList.add('on');
+    }));
+  }
+  function teamSwitchHtml() {
+    if (isCoach || MY_TEAMS.length < 2) return '';
+    return `<button type="button" class="team-switch" id="team-switch">${escapeHtml(teamLabel(CUR_TEAM))}<span class="team-switch-caret">▾</span><span class="team-switch-dot" id="team-switch-dot"></span></button>`;
+  }
+  function wireTeamSwitch() {
+    const btn = document.getElementById('team-switch');
+    if (!btn) return;
+    btn.onclick = () => openTeamSwitcher();
+    otherTeamsWithNew().then(list => { const dot = document.getElementById('team-switch-dot'); if (dot) dot.classList.toggle('on', list.length > 0); });
   }
 
   const today = todayParts();
@@ -2730,6 +2961,7 @@ async function boot(user, profile) {
     app.innerHTML = `
       <div class="launcher">
         <div class="launcher-top"><span class="brand-badge">Self+</span><span class="launcher-hello">${escapeHtml(profile.displayName || '')}さん、今日も積み重ねよう</span></div>
+        ${teamSwitchHtml() ? `<div class="launcher-team">${teamSwitchHtml()}</div>` : ''}
         <div class="launcher-main">
         ${qd ? `
         <div class="quote-card">
@@ -2763,6 +2995,7 @@ async function boot(user, profile) {
     document.getElementById('launch-settings').onclick = () => { render().then(() => openSettingsModal()); };
     document.getElementById('launch-logout').onclick = () => appSignOut();
     wireLegalLinks(app);
+    wireTeamSwitch();
   }
 
   async function render() {
@@ -2774,6 +3007,7 @@ async function boot(user, profile) {
         <div class="head-text">
           <div class="head-eyebrow"><span class="brand-badge" id="brand-to-top" role="button" aria-label="トップへ" style="cursor:pointer;">Self+</span>${escapeHtml(profile.sport || '')}</div>
           <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + `<span class="head-name">${escapeHtml(player.name)}さん</span>` : ''}</div>
+          ${teamSwitchHtml()}
         </div>
         ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く"><img class="head-cal-img" src="${HEAD_CAL_ICON}" alt=""></button>` : ''}
       </div>
@@ -2805,6 +3039,7 @@ async function boot(user, profile) {
     const brandToTop = document.getElementById('brand-to-top');
     if (brandToTop) brandToTop.onclick = () => renderLauncher();
     wireLegalLinks(app);
+    wireTeamSwitch();
     const calBtn = document.getElementById('head-cal-btn');
     if (calBtn) calBtn.onclick = () => { state.calExpanded = !state.calExpanded; renderCalendar(); };
     const titleEl = document.getElementById('head-title');
@@ -2925,9 +3160,39 @@ async function boot(user, profile) {
     } catch (e) { if (status) status.textContent = '保存に失敗しました'; }
   }
 
+  // 選手タブの赤い丸：選んでいる日に選手が書いた（直した）のに、このコーチがまだ開いていない
+  // 開いたかどうかは、コーチごとに coachview:選手:日付:コーチ に残す
+  async function refreshTabUnread() {
+    if (!isCoach) return;
+    const date = state.selected;
+    state.tabUnreadDate = date;
+    if (!state.tabUnread) state.tabUnread = {};
+    const tabUnread = state.tabUnread;
+    if (!state.tabWrote) state.tabWrote = {};
+    const tabWrote = state.tabWrote;
+    await Promise.all(TEAM.map(async (r) => {
+      try {
+        const [entryRes, viewRes] = await Promise.all([
+          kvGet(`entry:${r.uid}:${date}`).catch(() => null),
+          kvGet(`coachview:${r.uid}:${date}:${user.uid}`).catch(() => null),
+        ]);
+        let wroteAt = 0;
+        if (entryRes && entryRes.value) {
+          const d = JSON.parse(entryRes.value);
+          wroteAt = Math.max(d.playerUpdatedAt || 0, d.submittedAt || 0);
+        }
+        const viewedAt = viewRes && viewRes.value ? (parseInt(viewRes.value, 10) || 0) : 0;
+        tabUnread[r.uid] = wroteAt > viewedAt;
+        tabWrote[r.uid] = wroteAt > 0;
+      } catch (e) { tabUnread[r.uid] = false; tabWrote[r.uid] = true; }
+    }));
+    if (state.tabUnreadDate === date && document.getElementById('ptabs')) renderTabs();
+  }
   function renderTabs() {
     const wrap = document.getElementById('ptabs');
-    wrap.innerHTML = TEAM.map(r => `<button class="ptab ${r.uid === state.playerId ? 'active' : ''}" data-id="${r.uid}">${r.name}</button>`).join('');
+    wrap.innerHTML = TEAM.map(r => `<button class="ptab ${r.uid === state.playerId ? 'active' : ''} ${state.tabWrote && state.tabWrote[r.uid] === false && state.tabUnreadDate === state.selected && r.uid !== state.playerId ? 'ptab-none' : ''}" data-id="${r.uid}">${r.name}${state.tabUnread && state.tabUnread[r.uid] && r.uid !== state.playerId ? '<span class="ptab-unread" aria-label="未読"></span>' : ''}</button>`).join('');
+    const ptabQ = (document.getElementById('ptab-search') || {}).value;
+    if (ptabQ && ptabQ.trim()) wrap.querySelectorAll('.ptab').forEach(btn => { btn.style.display = btn.textContent.includes(ptabQ.trim()) ? '' : 'none'; });
     wrap.querySelectorAll('.ptab').forEach(btn => {
       btn.onclick = async () => {
         await flushGoalSave();
@@ -3053,10 +3318,8 @@ async function boot(user, profile) {
       const results = await Promise.all(days.map(async (d) => {
         const dateStr = dateKey(y, m, d);
         try {
-          const r = await kvGet(`entry:${state.playerId}:${dateStr}`);
-          if (!r || !r.value) return null;
-          let parsed = null;
-          try { parsed = JSON.parse(r.value); } catch (e) { return null; }
+          const parsed = await readEntry(state.playerId, dateStr);
+          if (!parsed) return null;
           entryCache[dateStr] = parsed;
           return hasEntryContent(parsed) ? dateStr : null;
         } catch (e) { return null; }
@@ -3135,12 +3398,10 @@ async function boot(user, profile) {
     const status = document.querySelector(`[data-match-status="${dateStr}"]`);
     if (status) status.textContent = '保存中…';
     try {
-      const key = `entry:${state.playerId}:${dateStr}`;
-      const res = await kvGet(key);
-      const data = (res && res.value) ? JSON.parse(res.value) : emptyEntry();
+      const data = (await readEntry(state.playerId, dateStr)) || emptyEntry();
       data.matchName = name;
       data.important = true;
-      await kvSet(key, JSON.stringify(data));
+      await writeEntry(state.playerId, dateStr, data);
       updateMonthEntry(dateStr, data);
       if (state.selected === dateStr && state.entry) { state.entry.matchName = name; state.entry.important = true; }
       const st = document.querySelector(`[data-match-status="${dateStr}"]`);
@@ -3153,12 +3414,10 @@ async function boot(user, profile) {
 
   async function toggleCalendarImportant(dateStr, starEl) {
     try {
-      let data = null;
-      const res = await kvGet(`entry:${state.playerId}:${dateStr}`);
-      if (res && res.value) data = JSON.parse(res.value);
+      let data = await readEntry(state.playerId, dateStr);
       if (!data) data = emptyEntry();
       data.important = !data.important;
-      await kvSet(`entry:${state.playerId}:${dateStr}`, JSON.stringify(data));
+      await writeEntry(state.playerId, dateStr, data);
       updateMonthEntry(dateStr, data);
       renderMatchList();
       if (starEl) {
@@ -3186,7 +3445,7 @@ async function boot(user, profile) {
       try {
         const cached = entryCache && entryCache[dateStr];
         const [data, lastReadEpoch] = await Promise.all([
-          cached ? Promise.resolve(cached) : kvGet(`entry:${state.playerId}:${dateStr}`).then(r => (r && r.value) ? JSON.parse(r.value) : null),
+          cached ? Promise.resolve(cached) : readEntry(state.playerId, dateStr),
           getLastRead(state.playerId, dateStr, state.role),
         ]);
         if (!data) return;
@@ -3213,13 +3472,13 @@ async function boot(user, profile) {
   }
   async function getLastRead(playerId, date, role) {
     try {
-      const res = await kvGet(`lastread:${playerId}:${date}:${role}`);
+      const res = await kvGet(lastreadKeyFor(playerId, date, role));
       if (res && res.value) return parseInt(res.value, 10) || 0;
     } catch (e) {}
     return 0;
   }
   async function setLastRead(playerId, date, role) {
-    try { await kvSet(`lastread:${playerId}:${date}:${role}`, String(Date.now())); } catch (e) {}
+    try { await kvSet(lastreadKeyFor(playerId, date, role), String(Date.now())); } catch (e) {}
   }
 
   function goalKey(playerId, dateStr) {
@@ -3408,15 +3667,16 @@ async function boot(user, profile) {
     const panel = document.getElementById('panel');
     panel.innerHTML = `<div class="empty-hint">読み込み中…</div>`;
     const key = `entry:${state.playerId}:${state.selected}`;
-    const seenPrefix = `seen:${state.playerId}:${state.selected}:coach:`;
-    const [entryRes, lastReadEpoch, remindRes, seenListRes] = await Promise.all([
-      kvGet(key).catch(() => null),
+    // 「見たよ」は、コーチ一人ずつ読む（まとめて探す読み方は、ルールで断られて、いつも空になっていた）
+    const seenUids = coachUidsOfCurTeam().filter(u => u !== user.uid || isCoach);
+    const [entryData, lastReadEpoch, remindRes, seenListRes] = await Promise.all([
+      readEntry(state.playerId, state.selected).catch(() => null),
       getLastRead(state.playerId, state.selected, state.role),
-      !isCoach ? kvGet(`remind:${state.playerId}:${state.selected}`).catch(() => null) : Promise.resolve(null),
-      kvList(seenPrefix, true).catch(() => ({ docs: [] })),
+      !isCoach ? kvGet(remindKeyFor(state.playerId, state.selected)).catch(() => null) : Promise.resolve(null),
+      Promise.all(seenUids.map(uid => { const k = seenKeyFor(state.playerId, state.selected, uid); return kvGet(k).then(r => (r && r.value) ? { key: k, value: r.value } : null).catch(() => null); }))
+        .then(list => ({ docs: list.filter(Boolean) })),
     ]);
-    let data = null;
-    try { if (entryRes && entryRes.value) data = JSON.parse(entryRes.value); } catch (e) { data = null; }
+    let data = entryData;
     if (!data) data = emptyEntry();
     if (data.gameGood === undefined) data.gameGood = '';
     if (data.gameIssue === undefined) data.gameIssue = '';
@@ -3431,6 +3691,9 @@ async function boot(user, profile) {
     if (data.gameIssueComment === undefined) data.gameIssueComment = '';
     if (data.playerUpdatedAt === undefined) data.playerUpdatedAt = null;
     if (data.important === undefined) data.important = false;
+    // コーチコメントは1つにまとめた。前の「よかった点」「改善点」のコメントは消さずに残し、
+    // まだ1つのコメント（coachComment）がない日は、2つをつなげて見せる
+    if (data.coachComment === undefined) data.coachComment = mergedOldComment(data);
     state.entry = data;
     state.lastReadEpoch = lastReadEpoch;
     state.videoTarget = { mode: 'self', uids: [], categoryIds: [] };
@@ -3456,6 +3719,11 @@ async function boot(user, profile) {
     renderPanel();
     renderSeenRow();
     setLastRead(state.playerId, state.selected, state.role);
+    if (isCoach) {
+      kvSet(`coachview:${state.playerId}:${state.selected}:${user.uid}`, String(Date.now())).catch(() => {});
+      if (state.tabUnread) state.tabUnread[state.playerId] = false;
+      if (state.tabUnreadDate !== state.selected) refreshTabUnread();
+    }
   }
 
   function renderSeenRow() {
@@ -3478,56 +3746,43 @@ async function boot(user, profile) {
           <div class="seen-label">この記録を見たよ</div>
           <div class="seen-coach-list">${seenListHtml}</div>
         </div>
-        <button type="button" class="seen-toggle-btn" id="seen-toggle-btn">${state.seenPickerOpen ? '閉じる' : '見たよを記録'}</button>
+        <button type="button" class="seen-toggle-btn ${state.seenByCoach[user.uid] ? 'done' : ''}" id="seen-toggle-btn">${state.seenByCoach[user.uid] ? '✓ 見たよ' : '見たよを記録'}</button>
       </div>
-      ${state.seenPickerOpen ? `
-        <div class="seen-picker">
-          <div class="seen-picker-label">自分の名前を選んでね</div>
-          ${COACHES.map(c => `
-            <button type="button" class="seen-picker-opt ${state.seenByCoach[c.uid] ? 'active' : ''}" data-uid="${c.uid}">${state.seenByCoach[c.uid] ? '✓ ' : ''}${escapeHtml(c.name)}</button>
-          `).join('')}
-        </div>
-      ` : ''}
     `;
-    document.getElementById('seen-toggle-btn').onclick = () => {
-      state.seenPickerOpen = !state.seenPickerOpen;
+    // 押すと、ログインしている自分の「見たよ」をすぐ記録する（光ったままになる）。光っているときに押すと、取り消すか聞く
+    const seenBtn = document.getElementById('seen-toggle-btn');
+    seenBtn.onclick = async () => {
+      const uid = user.uid;
+      const already = !!state.seenByCoach[uid];
+      if (already && !confirm('「見たよ」を取り消しますか？')) return;
+      const seenKey = seenKeyFor(state.playerId, state.selected, uid);
+      seenBtn.disabled = true;
+      try {
+        if (already) {
+          await kvSet(seenKey, '');
+          delete state.seenByCoach[uid];
+        } else {
+          const entry = { ts: Date.now(), name: state.myName || profile.displayName || 'コーチ' };
+          await kvSet(seenKey, JSON.stringify(entry));
+          state.seenByCoach[uid] = entry;
+        }
+      } catch (e) {
+        alert('記録できませんでした。もう一度押してください。');
+      }
       renderSeenRow();
     };
-    row.querySelectorAll('.seen-picker-opt').forEach(btn => {
-      btn.onclick = async () => {
-        const uid = btn.dataset.uid;
-        const coach = COACHES.find(c => c.uid === uid);
-        const already = !!state.seenByCoach[uid];
-        const seenKey = `seen:${state.playerId}:${state.selected}:coach:${uid}`;
-        try {
-          if (already) {
-            await kvSet(seenKey, '');
-            delete state.seenByCoach[uid];
-          } else {
-            const entry = { ts: Date.now(), name: coach ? coach.name : 'コーチ' };
-            await kvSet(seenKey, JSON.stringify(entry));
-            state.seenByCoach[uid] = entry;
-          }
-        } catch (e) {}
-        renderSeenRow();
-      };
-    });
   }
 
   function emptyEntry() {
-    return { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [], condition: null, weather: null, mind: null, skill: null, body: null, goodComment: '', issueComment: '', gameGoodComment: '', gameIssueComment: '', playerUpdatedAt: null, important: false };
+    return { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [], condition: null, weather: null, mind: null, skill: null, body: null, goodComment: '', issueComment: '', coachComment: '', gameGoodComment: '', gameIssueComment: '', playerUpdatedAt: null, important: false };
   }
   async function mergeIntoOtherEntry(uid, mutateFn) {
-    const key = `entry:${uid}:${state.selected}`;
     let data = null;
-    try {
-      const res = await kvGet(key);
-      if (res && res.value) data = JSON.parse(res.value);
-    } catch (e) { data = null; }
+    try { data = await readEntry(uid, state.selected); } catch (e) { data = null; }
     if (!data) data = emptyEntry();
     if (!data.videos) data.videos = [];
     mutateFn(data);
-    await kvSet(key, JSON.stringify(data));
+    await writeEntry(uid, state.selected, data);
     const dt = state.selected.split('-');
     delete state.calCache[`${uid}:${dt[0]}-${dt[1]}`]; // 送信先のキャッシュも古くなるため無効化
   }
@@ -3558,7 +3813,7 @@ async function boot(user, profile) {
     const now = String(Date.now());
     const uids = resolveTargetUids(target);
     for (const uid of uids) {
-      await kvSet(`remind:${uid}:${state.selected}`, now);
+      await kvSet(remindKeyFor(uid, state.selected), now);
     }
   }
 
@@ -3570,9 +3825,23 @@ async function boot(user, profile) {
   }
   function coachCommentHtml(id, value) {
     const isCoach = state.role === 'coach';
-    return `<div class="coach-comment"><div class="coach-comment-label">💬 コーチコメント</div>
+    return `<div class="coach-comment"><div class="coach-comment-label">💬 コーチコメント${isCoach ? savedMarkHtml(id) : ''}</div>
       <textarea id="${id}" placeholder="${isCoach ? 'コメントを書こう' : 'コーチからのコメントがここに表示されます'}" ${isCoach ? '' : 'readonly'}>${escapeHtml(value)}</textarea>
     </div>`;
+  }
+  // 書いている欄の近くに出す「保存しました」
+  function savedMarkHtml(fieldId) {
+    return `<span class="field-saved" data-saved-for="${fieldId}"></span>`;
+  }
+  const savedMarkTimers = {};
+  function showSavedMark(fieldId, ok) {
+    const el = document.querySelector(`[data-saved-for="${fieldId}"]`);
+    if (!el) return;
+    clearTimeout(savedMarkTimers[fieldId]);
+    el.textContent = ok ? '保存しました' : '保存に失敗しました';
+    el.classList.toggle('err', !ok);
+    el.classList.add('show');
+    if (ok) savedMarkTimers[fieldId] = setTimeout(() => el.classList.remove('show'), 2500);
   }
   function targetPickerHtml(prefix, target) {
     const others = TEAM.filter(r => r.uid !== state.playerId);
@@ -3702,14 +3971,32 @@ async function boot(user, profile) {
             <span class="menu-send-status" id="set-name-status"></span>
           </div>
         </div>
+        ${!isCoach && profile.teamCode ? `
+          <div class="modal-field">
+            <div class="modal-label">所属チーム（${MY_TEAMS.length}／3）</div>
+            ${MY_TEAMS.map(code => `
+              <div class="team-list-item">
+                <span class="team-list-name">${escapeHtml(teamLabel(code))}${code === CUR_TEAM ? '（今見ているチーム）' : ''}</span>
+                <span class="team-list-code">${escapeHtml(code)}</span>
+                <button class="menu-send-btn" type="button" data-leave-team="${escapeAttr(code)}">抜ける</button>
+              </div>`).join('')}
+            ${MY_TEAMS.length < 3 ? `
+              <div class="auth-hint" style="margin:10px 0 8px;">ほかのチームの選手招待コードを入れると、<br>そのチームにも入れます（3つまで）。</div>
+              <div class="removed-join-row">
+                <input class="modal-select" id="settings-add-team-code" placeholder="選手招待コード" autocapitalize="characters" autocomplete="off" spellcheck="false">
+                <button class="menu-send-btn" id="settings-add-team-btn">チームを追加</button>
+              </div>` : '<div class="auth-hint" style="margin-top:8px;">入れるチームは3つまでです。</div>'}
+            <div id="settings-team-msg"></div>
+          </div>
+        ` : ''}
         ${!isCoach && !profile.teamCode ? `
           <div class="modal-field">
             <div class="modal-label">チームに参加する</div>
             <div class="auth-hint" style="margin-bottom:8px;">${isNativeApp
-              ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
-              : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。'}</div>
+              ? '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。'
+              : '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。'}</div>
             <div class="removed-join-row">
-              <input class="modal-select" id="settings-join-code" placeholder="招待コード">
+              <input class="modal-select" id="settings-join-code" placeholder="選手招待コード">
               <button class="menu-send-btn" id="settings-join-btn">参加する</button>
             </div>
             <div id="settings-join-msg"></div>
@@ -3717,11 +4004,11 @@ async function boot(user, profile) {
         ` : ''}
         ${isCoach ? `
           <div class="modal-field">
-            <div class="modal-label">招待コード</div>
-            <div class="invite-bar" style="margin:0;">招待コード：<span class="invite-code">${profile.teamCode}</span><button id="set-invite-copy">コピー</button></div>
+            <div class="modal-label">選手招待コード</div>
+            <div class="invite-bar" style="margin:0;">選手招待コード：<span class="invite-code">${profile.teamCode}</span><button id="set-invite-copy">コピー</button></div>
             <div class="auth-hint">選手がチームに参加するときに入力するコードです。</div>
             <div class="custom-code-row">
-              <input class="modal-select" id="set-custom-code" placeholder="新しい招待コード（例：BASEBALL2026）" autocapitalize="characters" autocomplete="off" spellcheck="false">
+              <input class="modal-select" id="set-custom-code" placeholder="新しい選手招待コード（例：BASEBALL2026）" autocapitalize="characters" autocomplete="off" spellcheck="false">
               <button class="menu-send-btn" id="set-custom-code-btn">このコードにする</button>
             </div>
             <div class="auth-hint">半角の英大文字と数字で4〜16文字。選手や他のコーチがまだいないチームだけ変更できます。</div>
@@ -3868,17 +4155,57 @@ async function boot(user, profile) {
           }
         };
       }
+      // ★10：チームの追加（2つ目・3つ目）と、チームを抜ける
+      const teamMsg = (html) => { const el = document.getElementById('settings-team-msg'); if (el) el.innerHTML = html; };
+      const addTeamBtn = document.getElementById('settings-add-team-btn');
+      if (addTeamBtn) {
+        addTeamBtn.onclick = async () => {
+          const input = document.getElementById('settings-add-team-code');
+          const code = (input ? input.value : '').trim().toUpperCase();
+          if (!code) { teamMsg('<div class="pay-msg err">選手招待コードを入力してください</div>'); return; }
+          addTeamBtn.disabled = true;
+          addTeamBtn.textContent = '準備中…';
+          teamMsg('<div class="auth-hint">チームに入る準備をしています。<br>初めてのときは、少し時間がかかります。</div>');
+          try {
+            await httpsCallable(functions, 'joinExtraTeam')({ code });
+            try { localStorage.setItem(CUR_TEAM_KEY, code); } catch (e) {}
+            location.reload();
+          } catch (e) {
+            addTeamBtn.disabled = false;
+            addTeamBtn.textContent = 'チームを追加';
+            teamMsg(`<div class="pay-msg err">${escapeHtml(e.message || '追加できませんでした。もう一度お試しください。')}</div>`);
+          }
+        };
+      }
+      document.querySelectorAll('[data-leave-team]').forEach(btn => {
+        btn.onclick = async () => {
+          const code = btn.dataset.leaveTeam;
+          const last = MY_TEAMS.length === 1;
+          if (!confirm(`「${teamLabel(code)}」のチームを抜けますか？\n\n日記は消えません。\nこのチームのコーチは、あなたの記録を見られなくなります。${last ? '\n\nほかに入っているチームがないので、チームなしになります。' : ''}`)) return;
+          btn.disabled = true;
+          btn.textContent = '抜けています…';
+          try {
+            await httpsCallable(functions, 'leaveTeam')({ code });
+            try { if (code === CUR_TEAM) localStorage.removeItem(CUR_TEAM_KEY); } catch (e) {}
+            location.reload();
+          } catch (e) {
+            btn.disabled = false;
+            btn.textContent = '抜ける';
+            teamMsg(`<div class="pay-msg err">${escapeHtml(e.message || '抜けられませんでした。もう一度お試しください。')}</div>`);
+          }
+        };
+      });
       const customCodeBtn = document.getElementById('set-custom-code-btn');
       if (customCodeBtn) {
         customCodeBtn.onclick = async () => {
           const msgEl = document.getElementById('set-custom-code-msg');
           const showMsg = (text, isErr) => { msgEl.innerHTML = `<div class="custom-code-msg ${isErr ? 'err' : 'ok'}">${escapeHtml(text)}</div>`; };
           const code = (document.getElementById('set-custom-code').value || '').trim().toUpperCase();
-          if (!/^[A-Z0-9]{4,16}$/.test(code)) { showMsg('招待コードは、半角の英大文字と数字で4〜16文字にしてください。', true); return; }
-          if (code === profile.teamCode) { showMsg('今の招待コードと同じです。', true); return; }
+          if (!/^[A-Z0-9]{4,16}$/.test(code)) { showMsg('選手招待コードは、半角の英大文字と数字で4〜16文字にしてください。', true); return; }
+          if (code === profile.teamCode) { showMsg('今の選手招待コードと同じです。', true); return; }
           const hasStudents = TEAM.some(r => r.uid !== auth.currentUser.uid);
           if (hasStudents || coachMates.length > 1) {
-            showMsg('選手や他のコーチがいるチームでは、招待コードを変更できません（変更すると全員のつながりが切れるため）。必要な場合はお問い合わせください。', true);
+            showMsg('選手や他のコーチがいるチームでは、選手招待コードを変更できません（変更すると全員のつながりが切れるため）。必要な場合はお問い合わせください。', true);
             return;
           }
           customCodeBtn.disabled = true;
@@ -3901,7 +4228,7 @@ async function boot(user, profile) {
             profile.teamCode = code;
             const codeEl = document.querySelector('.invite-code');
             if (codeEl) codeEl.textContent = code;
-            showMsg(`招待コードを「${code}」に変更しました。`, false);
+            showMsg(`選手招待コードを「${code}」に変更しました。`, false);
           } catch (e) {
             showMsg('変更できませんでした。時間をおいてもう一度お試しください。', true);
           }
@@ -4012,7 +4339,8 @@ async function boot(user, profile) {
           btn.disabled = true;
           btn.textContent = '削除中…';
           try {
-            await setDoc(doc(db, 'users', studentUid), { teamCode: null, removedAt: Date.now() }, { merge: true });
+            // ★10：チームから外すのはサーバーで行う（2つ目・3つ目のチームとして入っている選手も、このチームからだけ外れる）
+            await httpsCallable(functions, 'leaveTeam')({ code: profile.teamCode, studentUid });
             TEAM = TEAM.filter(r => r.uid !== studentUid);
             if (row) row.remove();
             if (state.playerId === studentUid && TEAM.length) {
@@ -4042,7 +4370,7 @@ async function boot(user, profile) {
       ${isCoach ? `
         <div class="practice-end-block">
           ${targetPickerHtml('remind', state.remindTarget)}
-          <button class="practice-end-btn" id="practice-end-btn">📣 「書いてね」を送る</button>
+          <button class="practice-end-btn" id="practice-end-btn">📣 書いてねの通知を送る</button>
         </div>
       ` : ''}
       ${isCoach && (e.playerUpdatedAt || e.submittedAt) ? `<div class="record-time-badge">${e.playerUpdatedAt ? `🕐 選手の入力：${formatDateTime(e.playerUpdatedAt)}` : ''}${e.playerUpdatedAt && e.submittedAt ? '　' : ''}${e.submittedAt ? `✓ 登録：${formatDateTime(e.submittedAt)}` : ''}</div>` : ''}
@@ -4055,15 +4383,19 @@ async function boot(user, profile) {
         <div class="tri-group"><div class="tri-group-label">体<span class="tri-sub">（ボディ面）</span></div>${triSelectHtml('body', e.body, CONDITION_OPTS)}</div>
       </div>
       <div class="card record-card">
-        <div class="rec-block"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span></div>
+        <div class="rec-block"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span>${savedMarkHtml('f-menu')}</div>
           <textarea id="f-menu" placeholder="今日やった練習内容を書こう">${escapeHtml(e.menu)}</textarea>
-          ${isCoach ? `${targetPickerHtml('menu', state.menuTarget)}<div class="menu-send-row"><button class="menu-send-btn" id="menu-send-btn">保存</button><span class="menu-send-status" id="menu-send-status"></span></div>` : ''}</div>
-        <div class="rec-block good"><div class="card-label">◎ よかった点 <span class="save-status" id="save-status"></span></div>
-          <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea>
-          ${coachCommentHtml('f-good-comment', e.goodComment)}</div>
-        <div class="rec-block issue"><div class="card-label">△ 改善点</div>
+          ${isCoach ? targetPickerHtml('menu', state.menuTarget) : ''}</div>
+        <div class="rec-block good"><div class="card-label">◎ よかった点${savedMarkHtml('f-good')}</div>
+          <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea></div>
+        <div class="rec-block issue"><div class="card-label">△ 改善点${savedMarkHtml('f-issue')}</div>
           <textarea id="f-issue" placeholder="難しかったこと、次に直したいこと">${escapeHtml(e.issue)}</textarea>
-          ${coachCommentHtml('f-issue-comment', e.issueComment)}</div>
+          ${coachCommentHtml('f-coach-comment', e.coachComment)}</div>
+        ${isCoach ? `<div class="menu-send-row"><button class="submit-btn" id="menu-send-btn">登録</button><span class="menu-send-status" id="menu-send-status"></span></div>` : `
+        <div class="submit-row">
+          <button type="button" class="submit-btn ${e.submittedAt ? 'done' : ''}" id="submit-btn">${e.submittedAt ? '✓ 登録済み（もう一度登録する）' : '登録'}</button>
+          ${e.submittedAt ? `<div class="submit-note">最終登録：${formatDateTime(e.submittedAt)}</div>` : ''}
+        </div>`}
       </div>
       <div class="card"><div class="card-label">動画</div>
         <div class="video-list" id="video-list">
@@ -4088,11 +4420,6 @@ async function boot(user, profile) {
         <div class="video-err" id="v-err"></div>
         ${isCoach ? targetPickerHtml('video', state.videoTarget) : ''}
       </div>
-      ${!isCoach ? `
-      <div class="submit-row">
-        <button type="button" class="submit-btn ${e.submittedAt ? 'done' : ''}" id="submit-btn">${e.submittedAt ? '✓ 登録済み（もう一度登録する）' : '登録'}</button>
-        ${e.submittedAt ? `<div class="submit-note">最終登録：${formatDateTime(e.submittedAt)}</div>` : ''}
-      </div>` : ''}
       <div class="thread-card">
         <div class="thread-title">メッセージ</div>
         ${threadNoticeHtml(e)}
@@ -4110,7 +4437,7 @@ async function boot(user, profile) {
       const title = document.getElementById('v-title').value.trim();
       const url = document.getElementById('v-url').value.trim();
       if (!url) return;
-      await distributeVideo({ title, url });
+      await distributeVideo({ title, url, uploadedBy: user.uid });
       renderPanel();
     };
     setupVideoUpload();
@@ -4192,6 +4519,8 @@ async function boot(user, profile) {
     const menuSendBtn = document.getElementById('menu-send-btn');
     if (menuSendBtn) {
       menuSendBtn.onclick = async () => {
+        clearTimeout(autoSaveTimer);
+        autoSaveFields = new Set();
         const text = document.getElementById('f-menu').value;
         state.entry.menu = text;
         const status = document.getElementById('menu-send-status');
@@ -4249,12 +4578,12 @@ async function boot(user, profile) {
         });
       };
     });
-    ['f-menu', 'f-good', 'f-good-comment', 'f-issue', 'f-issue-comment', 'f-game-good', 'f-game-good-comment', 'f-game-issue', 'f-game-issue-comment'].forEach(id => {
+    ['f-menu', 'f-good', 'f-issue', 'f-coach-comment'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       autosizeTextarea(el);
       if (el.readOnly) return;
-      el.addEventListener('input', () => { autosizeTextarea(el); scheduleAutoSave(); });
+      el.addEventListener('input', () => { autosizeTextarea(el); scheduleAutoSave(id); });
     });
     document.getElementById('t-send').onclick = () => sendThread();
     fillThreadHistory();
@@ -4268,11 +4597,16 @@ async function boot(user, profile) {
 
   function autosizeTextarea(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
   let autoSaveTimer = null;
-  function scheduleAutoSave() {
-    const status = document.getElementById('save-status');
-    if (status) status.textContent = '';
+  let autoSaveFields = new Set(); // 前の保存のあとに書きかえた欄（保存できたら、その近くに「保存しました」を出す）
+  function scheduleAutoSave(fieldId) {
+    if (fieldId) autoSaveFields.add(fieldId);
     clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(() => { saveEntry(); }, 700);
+    autoSaveTimer = setTimeout(async () => {
+      const fields = [...autoSaveFields];
+      autoSaveFields = new Set();
+      const ok = await saveEntry();
+      fields.forEach(f => showSavedMark(f, ok !== false));
+    }, 800);
   }
   // ── 動画アップロード（アップ中でも他の画面に移れるよう、進み具合は画面の外で管理する）──
   const videoUp = { active: false, pct: 0, ctx: null };
@@ -4305,16 +4639,12 @@ async function boot(user, profile) {
   });
   // 指定した選手・日付の日記に、直接書き足す
   async function mergeEntryAt(uid, dateStr, mutateFn) {
-    const key = `entry:${uid}:${dateStr}`;
     let data = null;
-    try {
-      const res = await kvGet(key);
-      if (res && res.value) data = JSON.parse(res.value);
-    } catch (e) { data = null; }
+    try { data = await readEntry(uid, dateStr); } catch (e) { data = null; }
     if (!data) data = emptyEntry();
     if (!data.videos) data.videos = [];
     mutateFn(data);
-    await kvSet(key, JSON.stringify(data));
+    await writeEntry(uid, dateStr, data);
     const dt = dateStr.split('-');
     delete state.calCache[`${uid}:${dt[0]}-${dt[1]}`];
   }
@@ -4546,8 +4876,8 @@ async function boot(user, profile) {
     await Promise.all(Array.from({ length: days }, (_, i) => i + 1).map(async (d) => {
       const ds = dateKey(y, m, d);
       try {
-        const r = await kvGet(`entry:${playerId}:${ds}`);
-        if (r && r.value) entries[ds] = JSON.parse(r.value);
+        const d = await readEntry(playerId, ds);
+        if (d) entries[ds] = d;
       } catch (e) {}
     }));
     const t = todayParts();
@@ -4682,7 +5012,7 @@ async function boot(user, profile) {
     return `<div class="msg ${mine ? 'mine' : ''}"><div class="msg-meta">${avatarHtml(photo, label)}${escapeHtml(label)} ・ ${m.ts} ${isNew ? '<span class="new-badge">NEW</span>' : ''}${canDelete ? `<button type="button" class="msg-del" data-msg-del="${idx}">取り消す</button>` : ''}</div><div class="msg-bubble">${escapeHtml(m.text)}</div></div>`;
   }
   async function saveEntry() {
-    if (!isCoach) state.entry.menu = document.getElementById('f-menu').value; // コーチのメニューは「保存」ボタンで保存
+    state.entry.menu = document.getElementById('f-menu').value; // コーチは、ほかの選手への共有だけ「登録」ボタンで行う
     state.entry.good = document.getElementById('f-good').value;
     state.entry.issue = document.getElementById('f-issue').value;
     const gameGoodEl = document.getElementById('f-game-good');
@@ -4690,8 +5020,8 @@ async function boot(user, profile) {
     if (gameGoodEl) state.entry.gameGood = gameGoodEl.value;
     if (gameIssueEl) state.entry.gameIssue = gameIssueEl.value;
     if (state.role === 'coach') {
-      state.entry.goodComment = document.getElementById('f-good-comment').value;
-      state.entry.issueComment = document.getElementById('f-issue-comment').value;
+      const commentEl = document.getElementById('f-coach-comment');
+      if (commentEl) state.entry.coachComment = commentEl.value;
       const gameGoodCommentEl = document.getElementById('f-game-good-comment');
       const gameIssueCommentEl = document.getElementById('f-game-issue-comment');
       if (gameGoodCommentEl) state.entry.gameGoodComment = gameGoodCommentEl.value;
@@ -4700,12 +5030,8 @@ async function boot(user, profile) {
     if (!isCoach) {
       state.entry.playerUpdatedAt = Date.now();
     }
-    const key = `entry:${state.playerId}:${state.selected}`;
-    const status = document.getElementById('save-status');
-    if (status) status.textContent = '';
     try {
-      await kvSet(key, JSON.stringify(state.entry));
-      if (status) status.textContent = '';
+      await writeEntry(state.playerId, state.selected, state.entry);
       const dt = state.selected.split('-');
       const cacheKey = `${state.playerId}:${dt[0]}-${dt[1]}`;
       delete state.calCache[cacheKey]; // 保存内容が古いキャッシュに埋もれないようにする
@@ -4717,12 +5043,12 @@ async function boot(user, profile) {
       }
       if (!isCoach && state.remindActive) {
         state.remindActive = false;
-        kvSet(`remind:${state.playerId}:${state.selected}`, '').catch(() => {});
+        kvSet(remindKeyFor(state.playerId, state.selected), '').catch(() => {});
         const banner = document.querySelector('.remind-banner');
         if (banner) banner.remove();
       }
       return true;
-    } catch (e) { if (status) status.textContent = '保存に失敗しました'; return false; }
+    } catch (e) { return false; }
   }
   // メッセージの取り消し：確認 → 最新のデータを読み直して該当メッセージだけを除いて保存
   // （相手が直前に書いたメッセージを消してしまわないよう、画面上の古いデータではなく最新データから削除する）
@@ -4761,14 +5087,12 @@ async function boot(user, profile) {
   }
   async function deleteThreadMessage(m) {
     if (!isOwnMessage(m)) return; // 念のため：他人のメッセージは消さない
-    const key = `entry:${state.playerId}:${state.selected}`;
-    const res = await kvGet(key);
-    const latest = (res && res.value) ? JSON.parse(res.value) : null;
+    const latest = await readEntry(state.playerId, state.selected);
     if (!latest) return;
     const latestThread = Array.isArray(latest.thread) ? latest.thread : [];
     const filtered = latestThread.filter(x => !sameMessage(x, m));
     latest.thread = filtered;
-    await kvSet(key, JSON.stringify(latest));
+    await writeEntry(state.playerId, state.selected, latest);
     // 画面側のデータも最新のやり取りに合わせる（この後の自動保存で消したメッセージが復活しないように）
     state.entry.thread = filtered;
     const dt = state.selected.split('-');
@@ -4797,14 +5121,24 @@ async function boot(user, profile) {
         if (!data.playerId || !TEAM.some(r => r.uid === data.playerId)) return;
         state.playerId = data.playerId;
       }
+      // ★10：ほかのチームから来た通知なら、そのチームに切り替えてから開く（切り替えると読み込み直すので、開く日を覚えておく）
+      if (!isCoach && data.teamCode && data.teamCode !== CUR_TEAM && MY_TEAMS.includes(data.teamCode)) {
+        try { sessionStorage.setItem('selfplus.pushAfterSwitch', JSON.stringify({ date: data.date, playerId: data.playerId })); } catch (e) {}
+        switchTeam(data.teamCode);
+        return;
+      }
       await openDate(data.date);
     } catch (e) { console.warn('[push] 日記を開けませんでした', e); }
   };
   registerPush(user.uid);
+  let afterSwitch = null;
+  try { afterSwitch = JSON.parse(sessionStorage.getItem('selfplus.pushAfterSwitch') || 'null'); sessionStorage.removeItem('selfplus.pushAfterSwitch'); } catch (e) {}
   if (pendingPushOpen) {
     const d = pendingPushOpen;
     pendingPushOpen = null;
     window.__selfplusPushOpen(d);
+  } else if (afterSwitch && afterSwitch.date) {
+    window.__selfplusPushOpen(afterSwitch);
   }
 }
 </script>
