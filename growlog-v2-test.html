@@ -345,6 +345,27 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .record-card .submit-row { margin: 14px 0 0; }
 .record-card .menu-send-row { margin-top: 14px; flex-direction: column; align-items: stretch; }
 .ptab { position: relative; }
+.team-switch { position: relative; display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 5px 12px; border-radius: 16px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; max-width: 100%; }
+.launcher-team { width: 100%; max-width: 520px; margin-top: 4px; }
+.team-switch-caret { color: var(--navy); font-size: 11px; }
+.team-switch-dot, .team-sheet-dot { width: 9px; height: 9px; border-radius: 50%; background: #E53935; display: none; }
+.team-switch-dot { position: absolute; top: -2px; right: -2px; border: 2px solid var(--surface); }
+.team-switch-dot.on, .team-sheet-dot.on { display: inline-block; }
+.team-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity .2s ease; }
+.team-sheet-overlay.show { opacity: 1; }
+.team-sheet { width: 100%; max-width: 520px; background: var(--surface); border-radius: 16px 16px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); transform: translateY(20px); transition: transform .2s ease; }
+.team-sheet-overlay.show .team-sheet { transform: translateY(0); }
+.team-sheet-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--border2); margin: 0 auto 12px; }
+.team-sheet-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.team-sheet-item { width: 100%; display: flex; align-items: center; gap: 8px; padding: 14px 12px; margin-bottom: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.team-sheet-item.active { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy-light); }
+.team-sheet-name { font-weight: 700; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.team-sheet-code { font-size: 11px; color: var(--text3); font-family: var(--font-num); }
+.team-sheet-check { color: var(--navy); font-weight: 700; }
+.team-sheet-hint { font-size: 11.5px; color: var(--text3); text-align: center; margin-top: 4px; }
+.team-list-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.team-list-item .team-list-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.team-list-item .team-list-code { font-size: 11px; color: var(--text3); font-family: var(--font-num); }
 .ptab.ptab-none { opacity: 0.45; }
 .ptab-unread { position: absolute; top: 2px; right: 3px; width: 10px; height: 10px; border-radius: 50%; background: #E53935; border: 2px solid var(--surface); }
 .seen-picker { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border2); display: flex; flex-wrap: wrap; gap: 6px; }
@@ -2105,8 +2126,11 @@ async function routeStudent(user, profile) {
   }
   // 生徒本人は課金せず、担当コーチの契約状況で判定する
   // （同じチームのコーチの誰か1人でも有効な契約/freeAccessがあればOK）
-  const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
-  const coachSnaps = await getDocs(coachQ);
+  // ★10：2つ目・3つ目のチームがあるときは、どれか1つのチームが有効ならOK（止まったチームのコーチだけ見られなくなる）
+  const studentTeams = [profile.teamCode, ...(profile.extraTeamCodes || [])].filter(Boolean);
+  const coachSnapList = await Promise.all(studentTeams.map(code =>
+    getDocs(query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach')))));
+  const coachSnaps = { empty: coachSnapList.every(sn => sn.empty), docs: coachSnapList.flatMap(sn => sn.docs) };
   if (coachSnaps.empty) {
     app.innerHTML = `<div class="err-screen">担当コーチが見つかりませんでした。選手招待コードをコーチに確認してください。</div>`;
     return;
@@ -2783,7 +2807,13 @@ async function boot(user, profile) {
     const q = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'student'));
     const snaps = await getDocs(q);
     const members = [];
-    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null, loginType: d.data().loginType || 'email', loginId: d.data().loginId || '' }));
+    snaps.forEach(d => members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null, loginType: d.data().loginType || 'email', loginId: d.data().loginId || '', split: !!d.data().teamDataSplit }));
+    // ★10：このチームを2つ目・3つ目のチームにしている選手も、選手一覧に入れる
+    try {
+      const xq = query(collection(db, 'users'), where('extraTeamCodes', 'array-contains', profile.teamCode), where('role', '==', 'student'));
+      const xs = await getDocs(xq);
+      xs.forEach(d => { if (!members.some(m => m.uid === d.id)) members.push({ uid: d.id, name: d.data().displayName, photo: d.data().photo || null, loginType: d.data().loginType || 'email', loginId: d.data().loginId || '', split: !!d.data().teamDataSplit, extraMember: true }); });
+    } catch (e) { console.warn('[team] 2つ目・3つ目のチームの選手を読めませんでした', e); }
     if (members.length) TEAM = members;
 
     const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
@@ -2818,6 +2848,151 @@ async function boot(user, profile) {
         if (d.data().displayName) COACH_PHOTO_BY_NAME[d.data().displayName] = d.data().photo || null;
       });
     } catch (e) {}
+  }
+
+  // ===== ★10：複数チーム（選手は最大3つ）=====
+  // チームごとに分けるもの（メッセージ・コーチコメント・コーチの動画・見たよ・書いてね・既読）は、
+  // 前のやりとりを移し終えた選手（teamDataSplit）だけ、チームごとの置き場所（tday など）を使う
+  const MY_TEAMS = isCoach ? [profile.teamCode].filter(Boolean) : [profile.teamCode, ...(profile.extraTeamCodes || [])].filter(Boolean);
+  const SPLIT_BY_UID = { [user.uid]: !!profile.teamDataSplit };
+  TEAM.forEach(m => { if (m.split) SPLIT_BY_UID[m.uid] = true; });
+  const CUR_TEAM_KEY = `selfplus.curTeam.${user.uid}`;
+  let CUR_TEAM = profile.teamCode || null; // 今見ているチーム（コーチは自分のチーム）
+  if (!isCoach) {
+    try { const saved = localStorage.getItem(CUR_TEAM_KEY); if (saved && MY_TEAMS.includes(saved)) CUR_TEAM = saved; } catch (e) {}
+  }
+  const TEAM_COACHES = {}; // チーム → そのチームのコーチ [{ uid, name }]
+  if (!isCoach) {
+    await Promise.all(MY_TEAMS.map(async (code) => {
+      try {
+        const cs = await getDocs(query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach')));
+        TEAM_COACHES[code] = cs.docs.map(d => ({ uid: d.id, name: d.data().displayName || '' }));
+        cs.forEach(d => {
+          PHOTO_BY_UID[d.id] = d.data().photo || null;
+          COACH_NAME_BY_UID[d.id] = d.data().displayName || '';
+          if (d.data().displayName) COACH_PHOTO_BY_NAME[d.data().displayName] = d.data().photo || null;
+        });
+      } catch (e) { TEAM_COACHES[code] = []; }
+    }));
+  }
+  function isSplitFor(uid) { return !!SPLIT_BY_UID[uid]; }
+  function coachUidsOfCurTeam() { return isCoach ? COACHES.map(c => c.uid) : (TEAM_COACHES[CUR_TEAM] || []).map(c => c.uid); }
+  function teamLabel(code) {
+    const names = (TEAM_COACHES[code] || []).map(c => c.name).filter(Boolean);
+    return names.length ? `コーチ：${names.join('・')}` : `チーム ${code}`;
+  }
+  function seenKeyFor(uid, date, coachUid) { return isSplitFor(uid) ? `tseen:${uid}:${CUR_TEAM}:${date}:${coachUid}` : `seen:${uid}:${date}:coach:${coachUid}`; }
+  function remindKeyFor(uid, date) { return isSplitFor(uid) ? `tremind:${uid}:${CUR_TEAM}:${date}` : `remind:${uid}:${date}`; }
+  function lastreadKeyFor(uid, date, role) { return isSplitFor(uid) ? `tlastread:${uid}:${CUR_TEAM}:${date}:${role}` : `lastread:${uid}:${date}:${role}`; }
+  const TEAM_FIELDS = ['thread', 'coachComment', 'goodComment', 'issueComment', 'gameGoodComment', 'gameIssueComment'];
+  // チームごとに分ける動画：コーチが上げた動画（上げた人が選手本人でない動画）
+  function isTeamVideo(uid, v) { return !!(v && (v._team || (v.uploadedBy && v.uploadedBy !== uid))); }
+  const teamPartCache = {}; // tday のキー → 読んだときの中身（変わっていなければ書かない）
+  function cleanVideo(v) { const { _team, ...rest } = v || {}; return rest; }
+  // 日記を読む。チームごとの置き場所を使う選手は、今のチームの分（tday）を重ねて返す
+  async function readEntry(uid, date) {
+    const r = await kvGet(`entry:${uid}:${date}`);
+    let data = null;
+    if (r && r.value) { try { data = JSON.parse(r.value); } catch (e) { data = null; } }
+    if (!isSplitFor(uid)) return data;
+    const tKey = `tday:${uid}:${CUR_TEAM}:${date}`;
+    const t = await kvGet(tKey).catch(() => null);
+    let team = null;
+    if (t && t.value) { try { team = JSON.parse(t.value); } catch (e) { team = null; } }
+    teamPartCache[tKey] = (t && t.value) || '';
+    if (!data && !team) return null;
+    data = data || emptyEntry();
+    TEAM_FIELDS.forEach(f => {
+      if (team && team[f] !== undefined) data[f] = team[f];
+      else if (f === 'thread') data[f] = [];
+      else if (f === 'coachComment') delete data[f];
+      else data[f] = '';
+    });
+    data.videos = [...(data.videos || []).filter(v => !isTeamVideo(uid, v)), ...((team && team.videos) || []).map(v => ({ ...v, _team: true }))];
+    return data;
+  }
+  // 日記を書く。チームごとの置き場所を使う選手は、チームの分を tday に分けて書く
+  async function writeEntry(uid, date, data) {
+    const videos = data.videos || [];
+    if (!isSplitFor(uid)) {
+      await kvSet(`entry:${uid}:${date}`, JSON.stringify({ ...data, videos: videos.map(cleanVideo) }));
+      return;
+    }
+    const shared = { ...data };
+    const team = {};
+    TEAM_FIELDS.forEach(f => { if (data[f] !== undefined) team[f] = data[f]; delete shared[f]; });
+    shared.thread = [];
+    team.videos = videos.filter(v => isTeamVideo(uid, v)).map(cleanVideo);
+    shared.videos = videos.filter(v => !isTeamVideo(uid, v)).map(cleanVideo);
+    const tKey = `tday:${uid}:${CUR_TEAM}:${date}`;
+    const tJson = JSON.stringify(team);
+    const hasTeamData = (team.thread || []).length || team.coachComment || team.videos.length
+      || ['goodComment', 'issueComment', 'gameGoodComment', 'gameIssueComment'].some(f => team[f]);
+    const writes = [kvSet(`entry:${uid}:${date}`, JSON.stringify(shared))];
+    if (teamPartCache[tKey] !== tJson && (hasTeamData || teamPartCache[tKey])) {
+      writes.push(kvSet(tKey, tJson).then(() => { teamPartCache[tKey] = tJson; }));
+    }
+    await Promise.all(writes);
+  }
+  // 選手：ほかのチームに、今日の新しいメッセージがあるか
+  async function otherTeamsWithNew() {
+    if (isCoach || MY_TEAMS.length < 2 || !isSplitFor(user.uid)) return [];
+    const t = todayParts();
+    const date = dateKey(t.y, t.m, t.d);
+    const found = [];
+    await Promise.all(MY_TEAMS.filter(c => c !== CUR_TEAM).map(async (code) => {
+      try {
+        const [tr, lr] = await Promise.all([
+          kvGet(`tday:${user.uid}:${code}:${date}`).catch(() => null),
+          kvGet(`tlastread:${user.uid}:${code}:${date}:player`).catch(() => null),
+        ]);
+        const team = tr && tr.value ? JSON.parse(tr.value) : null;
+        const last = team && Array.isArray(team.thread) && team.thread.length ? team.thread[team.thread.length - 1] : null;
+        const readAt = lr && lr.value ? (parseInt(lr.value, 10) || 0) : 0;
+        if (last && last.author === 'coach' && (last.tsRaw || 0) > readAt) found.push(code);
+      } catch (e) {}
+    }));
+    return found;
+  }
+  function switchTeam(code) {
+    try { localStorage.setItem(CUR_TEAM_KEY, code); } catch (e) {}
+    location.reload();
+  }
+  function openTeamSwitcher() {
+    const overlay = document.createElement('div');
+    overlay.className = 'team-sheet-overlay';
+    overlay.innerHTML = `
+      <div class="team-sheet" role="dialog" aria-label="チームを切り替える">
+        <div class="team-sheet-grip"></div>
+        <div class="team-sheet-title">チームを切り替える</div>
+        ${MY_TEAMS.map(code => `
+          <button type="button" class="team-sheet-item ${code === CUR_TEAM ? 'active' : ''}" data-team="${escapeAttr(code)}">
+            <span class="team-sheet-name">${escapeHtml(teamLabel(code))}</span>
+            <span class="team-sheet-code">${escapeHtml(code)}</span>
+            ${code === CUR_TEAM ? '<span class="team-sheet-check">✓</span>' : `<span class="team-sheet-dot" data-dot-team="${escapeAttr(code)}"></span>`}
+          </button>`).join('')}
+        <div class="team-sheet-hint">チームの追加・抜けるは「設定」からできます</div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('show'));
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
+    overlay.querySelectorAll('.team-sheet-item').forEach(btn => {
+      btn.onclick = () => { const code = btn.dataset.team; if (code === CUR_TEAM) { overlay.remove(); return; } switchTeam(code); };
+    });
+    otherTeamsWithNew().then(list => list.forEach(code => {
+      const dot = overlay.querySelector(`[data-dot-team="${code}"]`);
+      if (dot) dot.classList.add('on');
+    }));
+  }
+  function teamSwitchHtml() {
+    if (isCoach || MY_TEAMS.length < 2) return '';
+    return `<button type="button" class="team-switch" id="team-switch">${escapeHtml(teamLabel(CUR_TEAM))}<span class="team-switch-caret">▾</span><span class="team-switch-dot" id="team-switch-dot"></span></button>`;
+  }
+  function wireTeamSwitch() {
+    const btn = document.getElementById('team-switch');
+    if (!btn) return;
+    btn.onclick = () => openTeamSwitcher();
+    otherTeamsWithNew().then(list => { const dot = document.getElementById('team-switch-dot'); if (dot) dot.classList.toggle('on', list.length > 0); });
   }
 
   const today = todayParts();
@@ -2877,7 +3052,7 @@ async function boot(user, profile) {
       ? query(collection(db, 'absences'), where('teamCode', '==', profile.teamCode))
       : query(collection(db, 'absences'), where('uid', '==', user.uid));
     const snaps = await getDocs(q);
-    absences = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
+    absences = snaps.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => isCoach || a.teamCode === CUR_TEAM);
     absLoadedAt = Date.now();
     return absences;
   }
@@ -2891,7 +3066,7 @@ async function boot(user, profile) {
     const snaps = await getDocs(q);
     const cutoff = Date.now() - 60 * 86400000;
     const list = snaps.docs.map(d => ({ id: d.id, ...d.data() }))
-      .filter(n => n.teamCode === profile.teamCode && tsMillis(n.createdAt) >= cutoff)
+      .filter(n => n.teamCode === CUR_TEAM && tsMillis(n.createdAt) >= cutoff)
       .sort((a, b) => tsMillis(b.createdAt) - tsMillis(a.createdAt));
     if (!isCoach) {
       const acked = await Promise.all(list.map(n =>
@@ -3233,7 +3408,7 @@ async function boot(user, profile) {
         const batch = writeBatch(db);
         dates.forEach(date => {
           batch.set(doc(collection(db, 'absences')), {
-            teamCode: profile.teamCode,
+            teamCode: CUR_TEAM,
             uid: user.uid,
             type: f.type,
             date,
@@ -3651,6 +3826,7 @@ async function boot(user, profile) {
     app.innerHTML = `
       <div class="launcher">
         <div class="launcher-top"><span class="brand-badge">Self+</span><span class="launcher-hello">${escapeHtml(profile.displayName || '')}さん、今日も積み重ねよう</span>${bellHtml()}</div>
+        ${teamSwitchHtml() ? `<div class="launcher-team">${teamSwitchHtml()}</div>` : ''}
         <div class="launcher-main">
         ${qd ? `
         <div class="quote-card">
@@ -3685,6 +3861,7 @@ async function boot(user, profile) {
     document.getElementById('launch-logout').onclick = () => appSignOut();
     wireLegalLinks(app);
     wireBells();
+    wireTeamSwitch();
   }
 
   async function render() {
@@ -3696,6 +3873,7 @@ async function boot(user, profile) {
         <div class="head-text">
           <div class="head-eyebrow"><span class="brand-badge" id="brand-to-top" role="button" aria-label="トップへ" style="cursor:pointer;">Self+</span>${escapeHtml(profile.sport || '')}</div>
           <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + `<span class="head-name">${escapeHtml(player.name)}さん</span>` : ''}</div>
+          ${teamSwitchHtml()}
         </div>
         <div class="head-btns">
           ${bellHtml()}
@@ -3731,6 +3909,7 @@ async function boot(user, profile) {
     if (brandToTop) brandToTop.onclick = () => renderLauncher();
     wireLegalLinks(app);
     wireBells();
+    wireTeamSwitch();
     const calBtn = document.getElementById('head-cal-btn');
     if (calBtn) calBtn.onclick = () => { state.calExpanded = !state.calExpanded; renderCalendar(); };
     const titleEl = document.getElementById('head-title');
@@ -4010,10 +4189,8 @@ async function boot(user, profile) {
       const results = await Promise.all(days.map(async (d) => {
         const dateStr = dateKey(y, m, d);
         try {
-          const r = await kvGet(`entry:${state.playerId}:${dateStr}`);
-          if (!r || !r.value) return null;
-          let parsed = null;
-          try { parsed = JSON.parse(r.value); } catch (e) { return null; }
+          const parsed = await readEntry(state.playerId, dateStr);
+          if (!parsed) return null;
           entryCache[dateStr] = parsed;
           return hasEntryContent(parsed) ? dateStr : null;
         } catch (e) { return null; }
@@ -4092,12 +4269,10 @@ async function boot(user, profile) {
     const status = document.querySelector(`[data-match-status="${dateStr}"]`);
     if (status) status.textContent = '保存中…';
     try {
-      const key = `entry:${state.playerId}:${dateStr}`;
-      const res = await kvGet(key);
-      const data = (res && res.value) ? JSON.parse(res.value) : emptyEntry();
+      const data = (await readEntry(state.playerId, dateStr)) || emptyEntry();
       data.matchName = name;
       data.important = true;
-      await kvSet(key, JSON.stringify(data));
+      await writeEntry(state.playerId, dateStr, data);
       updateMonthEntry(dateStr, data);
       if (state.selected === dateStr && state.entry) { state.entry.matchName = name; state.entry.important = true; }
       const st = document.querySelector(`[data-match-status="${dateStr}"]`);
@@ -4110,12 +4285,10 @@ async function boot(user, profile) {
 
   async function toggleCalendarImportant(dateStr, starEl) {
     try {
-      let data = null;
-      const res = await kvGet(`entry:${state.playerId}:${dateStr}`);
-      if (res && res.value) data = JSON.parse(res.value);
+      let data = await readEntry(state.playerId, dateStr);
       if (!data) data = emptyEntry();
       data.important = !data.important;
-      await kvSet(`entry:${state.playerId}:${dateStr}`, JSON.stringify(data));
+      await writeEntry(state.playerId, dateStr, data);
       updateMonthEntry(dateStr, data);
       renderMatchList();
       if (starEl) {
@@ -4143,7 +4316,7 @@ async function boot(user, profile) {
       try {
         const cached = entryCache && entryCache[dateStr];
         const [data, lastReadEpoch] = await Promise.all([
-          cached ? Promise.resolve(cached) : kvGet(`entry:${state.playerId}:${dateStr}`).then(r => (r && r.value) ? JSON.parse(r.value) : null),
+          cached ? Promise.resolve(cached) : readEntry(state.playerId, dateStr),
           getLastRead(state.playerId, dateStr, state.role),
         ]);
         if (!data) return;
@@ -4170,13 +4343,13 @@ async function boot(user, profile) {
   }
   async function getLastRead(playerId, date, role) {
     try {
-      const res = await kvGet(`lastread:${playerId}:${date}:${role}`);
+      const res = await kvGet(lastreadKeyFor(playerId, date, role));
       if (res && res.value) return parseInt(res.value, 10) || 0;
     } catch (e) {}
     return 0;
   }
   async function setLastRead(playerId, date, role) {
-    try { await kvSet(`lastread:${playerId}:${date}:${role}`, String(Date.now())); } catch (e) {}
+    try { await kvSet(lastreadKeyFor(playerId, date, role), String(Date.now())); } catch (e) {}
   }
 
   function goalKey(playerId, dateStr) {
@@ -4365,18 +4538,16 @@ async function boot(user, profile) {
     const panel = document.getElementById('panel');
     panel.innerHTML = `<div class="empty-hint">読み込み中…</div>`;
     const key = `entry:${state.playerId}:${state.selected}`;
-    const seenPrefix = `seen:${state.playerId}:${state.selected}:coach:`;
     // 「見たよ」は、コーチ一人ずつ読む（まとめて探す読み方は、ルールで断られて、いつも空になっていた）
-    const seenUids = isCoach ? COACHES.map(c => c.uid) : Object.keys(COACH_NAME_BY_UID).filter(u => u !== user.uid);
-    const [entryRes, lastReadEpoch, remindRes, seenListRes] = await Promise.all([
-      kvGet(key).catch(() => null),
+    const seenUids = coachUidsOfCurTeam().filter(u => u !== user.uid || isCoach);
+    const [entryData, lastReadEpoch, remindRes, seenListRes] = await Promise.all([
+      readEntry(state.playerId, state.selected).catch(() => null),
       getLastRead(state.playerId, state.selected, state.role),
-      !isCoach ? kvGet(`remind:${state.playerId}:${state.selected}`).catch(() => null) : Promise.resolve(null),
-      Promise.all(seenUids.map(uid => kvGet(seenPrefix + uid).then(r => (r && r.value) ? { key: seenPrefix + uid, value: r.value } : null).catch(() => null)))
+      !isCoach ? kvGet(remindKeyFor(state.playerId, state.selected)).catch(() => null) : Promise.resolve(null),
+      Promise.all(seenUids.map(uid => { const k = seenKeyFor(state.playerId, state.selected, uid); return kvGet(k).then(r => (r && r.value) ? { key: k, value: r.value } : null).catch(() => null); }))
         .then(list => ({ docs: list.filter(Boolean) })),
     ]);
-    let data = null;
-    try { if (entryRes && entryRes.value) data = JSON.parse(entryRes.value); } catch (e) { data = null; }
+    let data = entryData;
     if (!data) data = emptyEntry();
     if (data.gameGood === undefined) data.gameGood = '';
     if (data.gameIssue === undefined) data.gameIssue = '';
@@ -4455,7 +4626,7 @@ async function boot(user, profile) {
       const uid = user.uid;
       const already = !!state.seenByCoach[uid];
       if (already && !confirm('「見たよ」を取り消しますか？')) return;
-      const seenKey = `seen:${state.playerId}:${state.selected}:coach:${uid}`;
+      const seenKey = seenKeyFor(state.playerId, state.selected, uid);
       seenBtn.disabled = true;
       try {
         if (already) {
@@ -4482,16 +4653,12 @@ async function boot(user, profile) {
     return { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [], condition: null, weather: null, mind: null, skill: null, body: null, goodComment: '', issueComment: '', coachComment: '', gameGoodComment: '', gameIssueComment: '', playerUpdatedAt: null, important: false };
   }
   async function mergeIntoOtherEntry(uid, mutateFn) {
-    const key = `entry:${uid}:${state.selected}`;
     let data = null;
-    try {
-      const res = await kvGet(key);
-      if (res && res.value) data = JSON.parse(res.value);
-    } catch (e) { data = null; }
+    try { data = await readEntry(uid, state.selected); } catch (e) { data = null; }
     if (!data) data = emptyEntry();
     if (!data.videos) data.videos = [];
     mutateFn(data);
-    await kvSet(key, JSON.stringify(data));
+    await writeEntry(uid, state.selected, data);
     const dt = state.selected.split('-');
     delete state.calCache[`${uid}:${dt[0]}-${dt[1]}`]; // 送信先のキャッシュも古くなるため無効化
   }
@@ -4522,7 +4689,7 @@ async function boot(user, profile) {
     const now = String(Date.now());
     const uids = resolveTargetUids(target);
     for (const uid of uids) {
-      await kvSet(`remind:${uid}:${state.selected}`, now);
+      await kvSet(remindKeyFor(uid, state.selected), now);
     }
   }
 
@@ -4680,6 +4847,24 @@ async function boot(user, profile) {
             <span class="menu-send-status" id="set-name-status"></span>
           </div>
         </div>
+        ${!isCoach && profile.teamCode ? `
+          <div class="modal-field">
+            <div class="modal-label">所属チーム（${MY_TEAMS.length}／3）</div>
+            ${MY_TEAMS.map(code => `
+              <div class="team-list-item">
+                <span class="team-list-name">${escapeHtml(teamLabel(code))}${code === CUR_TEAM ? '（今見ているチーム）' : ''}</span>
+                <span class="team-list-code">${escapeHtml(code)}</span>
+                <button class="menu-send-btn" type="button" data-leave-team="${escapeAttr(code)}">抜ける</button>
+              </div>`).join('')}
+            ${MY_TEAMS.length < 3 ? `
+              <div class="auth-hint" style="margin:10px 0 8px;">ほかのチームの選手招待コードを入れると、<br>そのチームにも入れます（3つまで）。</div>
+              <div class="removed-join-row">
+                <input class="modal-select" id="settings-add-team-code" placeholder="選手招待コード" autocapitalize="characters" autocomplete="off" spellcheck="false">
+                <button class="menu-send-btn" id="settings-add-team-btn">チームを追加</button>
+              </div>` : '<div class="auth-hint" style="margin-top:8px;">入れるチームは3つまでです。</div>'}
+            <div id="settings-team-msg"></div>
+          </div>
+        ` : ''}
         ${!isCoach && !profile.teamCode ? `
           <div class="modal-field">
             <div class="modal-label">チームに参加する</div>
@@ -4846,6 +5031,46 @@ async function boot(user, profile) {
           }
         };
       }
+      // ★10：チームの追加（2つ目・3つ目）と、チームを抜ける
+      const teamMsg = (html) => { const el = document.getElementById('settings-team-msg'); if (el) el.innerHTML = html; };
+      const addTeamBtn = document.getElementById('settings-add-team-btn');
+      if (addTeamBtn) {
+        addTeamBtn.onclick = async () => {
+          const input = document.getElementById('settings-add-team-code');
+          const code = (input ? input.value : '').trim().toUpperCase();
+          if (!code) { teamMsg('<div class="pay-msg err">選手招待コードを入力してください</div>'); return; }
+          addTeamBtn.disabled = true;
+          addTeamBtn.textContent = '準備中…';
+          teamMsg('<div class="auth-hint">チームに入る準備をしています。<br>初めてのときは、少し時間がかかります。</div>');
+          try {
+            await httpsCallable(functions, 'joinExtraTeam')({ code });
+            try { localStorage.setItem(CUR_TEAM_KEY, code); } catch (e) {}
+            location.reload();
+          } catch (e) {
+            addTeamBtn.disabled = false;
+            addTeamBtn.textContent = 'チームを追加';
+            teamMsg(`<div class="pay-msg err">${escapeHtml(e.message || '追加できませんでした。もう一度お試しください。')}</div>`);
+          }
+        };
+      }
+      document.querySelectorAll('[data-leave-team]').forEach(btn => {
+        btn.onclick = async () => {
+          const code = btn.dataset.leaveTeam;
+          const last = MY_TEAMS.length === 1;
+          if (!confirm(`「${teamLabel(code)}」のチームを抜けますか？\n\n日記は消えません。\nこのチームのコーチは、あなたの記録を見られなくなります。${last ? '\n\nほかに入っているチームがないので、チームなしになります。' : ''}`)) return;
+          btn.disabled = true;
+          btn.textContent = '抜けています…';
+          try {
+            await httpsCallable(functions, 'leaveTeam')({ code });
+            try { if (code === CUR_TEAM) localStorage.removeItem(CUR_TEAM_KEY); } catch (e) {}
+            location.reload();
+          } catch (e) {
+            btn.disabled = false;
+            btn.textContent = '抜ける';
+            teamMsg(`<div class="pay-msg err">${escapeHtml(e.message || '抜けられませんでした。もう一度お試しください。')}</div>`);
+          }
+        };
+      });
       const customCodeBtn = document.getElementById('set-custom-code-btn');
       if (customCodeBtn) {
         customCodeBtn.onclick = async () => {
@@ -4990,7 +5215,8 @@ async function boot(user, profile) {
           btn.disabled = true;
           btn.textContent = '削除中…';
           try {
-            await setDoc(doc(db, 'users', studentUid), { teamCode: null, removedAt: Date.now() }, { merge: true });
+            // ★10：チームから外すのはサーバーで行う（2つ目・3つ目のチームとして入っている選手も、このチームからだけ外れる）
+            await httpsCallable(functions, 'leaveTeam')({ code: profile.teamCode, studentUid });
             TEAM = TEAM.filter(r => r.uid !== studentUid);
             if (row) row.remove();
             if (state.playerId === studentUid && TEAM.length) {
@@ -5087,7 +5313,7 @@ async function boot(user, profile) {
       const title = document.getElementById('v-title').value.trim();
       const url = document.getElementById('v-url').value.trim();
       if (!url) return;
-      await distributeVideo({ title, url });
+      await distributeVideo({ title, url, uploadedBy: user.uid });
       renderPanel();
     };
     setupVideoUpload();
@@ -5289,16 +5515,12 @@ async function boot(user, profile) {
   });
   // 指定した選手・日付の日記に、直接書き足す
   async function mergeEntryAt(uid, dateStr, mutateFn) {
-    const key = `entry:${uid}:${dateStr}`;
     let data = null;
-    try {
-      const res = await kvGet(key);
-      if (res && res.value) data = JSON.parse(res.value);
-    } catch (e) { data = null; }
+    try { data = await readEntry(uid, dateStr); } catch (e) { data = null; }
     if (!data) data = emptyEntry();
     if (!data.videos) data.videos = [];
     mutateFn(data);
-    await kvSet(key, JSON.stringify(data));
+    await writeEntry(uid, dateStr, data);
     const dt = dateStr.split('-');
     delete state.calCache[`${uid}:${dt[0]}-${dt[1]}`];
   }
@@ -5530,8 +5752,8 @@ async function boot(user, profile) {
     await Promise.all(Array.from({ length: days }, (_, i) => i + 1).map(async (d) => {
       const ds = dateKey(y, m, d);
       try {
-        const r = await kvGet(`entry:${playerId}:${ds}`);
-        if (r && r.value) entries[ds] = JSON.parse(r.value);
+        const d = await readEntry(playerId, ds);
+        if (d) entries[ds] = d;
       } catch (e) {}
     }));
     const t = todayParts();
@@ -5684,9 +5906,8 @@ async function boot(user, profile) {
     if (!isCoach) {
       state.entry.playerUpdatedAt = Date.now();
     }
-    const key = `entry:${state.playerId}:${state.selected}`;
     try {
-      await kvSet(key, JSON.stringify(state.entry));
+      await writeEntry(state.playerId, state.selected, state.entry);
       const dt = state.selected.split('-');
       const cacheKey = `${state.playerId}:${dt[0]}-${dt[1]}`;
       delete state.calCache[cacheKey]; // 保存内容が古いキャッシュに埋もれないようにする
@@ -5698,7 +5919,7 @@ async function boot(user, profile) {
       }
       if (!isCoach && state.remindActive) {
         state.remindActive = false;
-        kvSet(`remind:${state.playerId}:${state.selected}`, '').catch(() => {});
+        kvSet(remindKeyFor(state.playerId, state.selected), '').catch(() => {});
         const banner = document.querySelector('.remind-banner');
         if (banner) banner.remove();
       }
@@ -5742,14 +5963,12 @@ async function boot(user, profile) {
   }
   async function deleteThreadMessage(m) {
     if (!isOwnMessage(m)) return; // 念のため：他人のメッセージは消さない
-    const key = `entry:${state.playerId}:${state.selected}`;
-    const res = await kvGet(key);
-    const latest = (res && res.value) ? JSON.parse(res.value) : null;
+    const latest = await readEntry(state.playerId, state.selected);
     if (!latest) return;
     const latestThread = Array.isArray(latest.thread) ? latest.thread : [];
     const filtered = latestThread.filter(x => !sameMessage(x, m));
     latest.thread = filtered;
-    await kvSet(key, JSON.stringify(latest));
+    await writeEntry(state.playerId, state.selected, latest);
     // 画面側のデータも最新のやり取りに合わせる（この後の自動保存で消したメッセージが復活しないように）
     state.entry.thread = filtered;
     const dt = state.selected.split('-');
