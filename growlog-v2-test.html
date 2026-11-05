@@ -4439,40 +4439,31 @@ async function boot(user, profile) {
           <div class="seen-label">この記録を見たよ</div>
           <div class="seen-coach-list">${seenListHtml}</div>
         </div>
-        <button type="button" class="seen-toggle-btn ${state.seenByCoach[user.uid] ? 'done' : ''}" id="seen-toggle-btn">${state.seenPickerOpen ? '閉じる' : (state.seenByCoach[user.uid] ? '✓ 見たよ' : '見たよを記録')}</button>
+        <button type="button" class="seen-toggle-btn ${state.seenByCoach[user.uid] ? 'done' : ''}" id="seen-toggle-btn">${state.seenByCoach[user.uid] ? '✓ 見たよ' : '見たよを記録'}</button>
       </div>
-      ${state.seenPickerOpen ? `
-        <div class="seen-picker">
-          <div class="seen-picker-label">自分の名前を選んでね</div>
-          ${COACHES.map(c => `
-            <button type="button" class="seen-picker-opt ${state.seenByCoach[c.uid] ? 'active' : ''}" data-uid="${c.uid}">${state.seenByCoach[c.uid] ? '✓ ' : ''}${escapeHtml(c.name)}</button>
-          `).join('')}
-        </div>
-      ` : ''}
     `;
-    document.getElementById('seen-toggle-btn').onclick = () => {
-      state.seenPickerOpen = !state.seenPickerOpen;
+    // 押すと、ログインしている自分の「見たよ」をすぐ記録する（光ったままになる）。光っているときに押すと、取り消すか聞く
+    const seenBtn = document.getElementById('seen-toggle-btn');
+    seenBtn.onclick = async () => {
+      const uid = user.uid;
+      const already = !!state.seenByCoach[uid];
+      if (already && !confirm('「見たよ」を取り消しますか？')) return;
+      const seenKey = `seen:${state.playerId}:${state.selected}:coach:${uid}`;
+      seenBtn.disabled = true;
+      try {
+        if (already) {
+          await kvSet(seenKey, '');
+          delete state.seenByCoach[uid];
+        } else {
+          const entry = { ts: Date.now(), name: state.myName || profile.displayName || 'コーチ' };
+          await kvSet(seenKey, JSON.stringify(entry));
+          state.seenByCoach[uid] = entry;
+        }
+      } catch (e) {
+        alert('記録できませんでした。もう一度押してください。');
+      }
       renderSeenRow();
     };
-    row.querySelectorAll('.seen-picker-opt').forEach(btn => {
-      btn.onclick = async () => {
-        const uid = btn.dataset.uid;
-        const coach = COACHES.find(c => c.uid === uid);
-        const already = !!state.seenByCoach[uid];
-        const seenKey = `seen:${state.playerId}:${state.selected}:coach:${uid}`;
-        try {
-          if (already) {
-            await kvSet(seenKey, '');
-            delete state.seenByCoach[uid];
-          } else {
-            const entry = { ts: Date.now(), name: coach ? coach.name : 'コーチ' };
-            await kvSet(seenKey, JSON.stringify(entry));
-            state.seenByCoach[uid] = entry;
-          }
-        } catch (e) {}
-        renderSeenRow();
-      };
-    });
   }
 
   function mergedOldComment(data) {
