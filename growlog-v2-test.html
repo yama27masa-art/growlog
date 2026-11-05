@@ -687,79 +687,6 @@ html[data-theme="architectural-beige"] .section-title { font-family: var(--font-
 .v-up-banner { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(92vw, 420px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 10px 12px; z-index: 9999; display: none; }
 .v-up-banner.show { display: block; }
 .v-up-banner .v-up-text { font-size: 11.5px; color: var(--text2); margin-bottom: 6px; text-align: center; }
-/* ---- お知らせ（ベル・欠席連絡） ---- */
-.head-btns { display: flex; align-items: flex-end; gap: 8px; flex-shrink: 0; }
-.bell-btn { position: relative; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
-.bell-btn svg { width: 24px; height: 24px; }
-.head .bell-btn { width: 52px; height: 64px; border-radius: 16px; }
-.launcher-top .bell-btn { margin-left: auto; }
-.bell-badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #FF5722; color: #fff; font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center; font-family: var(--font-latin); box-shadow: 0 0 0 2px #121212; }
-.notice-tabs { display: flex; gap: 6px; margin: 6px 0 14px; }
-.notice-tab { flex: 1; padding: 11px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text2); font-size: 14px; font-weight: 700; cursor: pointer; }
-.notice-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
-.notice-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 26px 8px; line-height: 1.8; }
-.abs-new-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--primary-grad); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
-.abs-section { font-size: 12px; font-weight: 700; color: var(--text3); margin: 16px 0 8px; letter-spacing: 0.04em; }
-.abs-date-head { font-size: 14px; font-weight: 700; color: var(--text); margin: 12px 0 6px; }
-.abs-item { border: 1px solid var(--border); background: var(--surface2); border-radius: var(--radius-sm); padding: 11px 12px; margin-bottom: 8px; }
-.abs-item-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.abs-type { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; color: #fff; background: #D64545; }
-.abs-type.late { background: #D9921F; }
-.abs-type.early { background: #2F7FD6; }
-.abs-name { font-weight: 700; font-size: 14.5px; color: var(--text); }
-.abs-meta { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.6; }
-.abs-comment { font-size: 13px; color: var(--text); margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
-.abs-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
-.abs-status { font-size: 12.5px; color: var(--text3); }
-.abs-status.done { color: var(--green); font-weight: 700; }
-.abs-btn { flex-shrink: 0; border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-size: 14px; font-weight: 700; cursor: pointer; background: var(--navy); color: #fff; }
-.abs-btn.ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
-.abs-btn:disabled { opacity: 0.5; cursor: default; }
-.abs-new-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF5722; display: inline-block; }
-.abs-opts { display: flex; gap: 6px; flex-wrap: wrap; }
-.abs-opt { flex: 1 1 auto; min-width: 72px; padding: 11px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; }
-.abs-opt.active { background: var(--navy); border-color: var(--navy); color: #fff; }
-.abs-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.abs-cal-head button { background: none; border: 1px solid var(--border2); color: var(--text); border-radius: 8px; width: 38px; height: 32px; font-size: 16px; cursor: pointer; }
-.abs-cal-head button:disabled { opacity: 0.3; cursor: default; }
-.abs-cal-title { font-weight: 700; font-size: 14px; color: var(--text); }
-.abs-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-.abs-cal-dow { text-align: center; font-size: 11px; color: var(--text3); padding: 2px 0; }
-.abs-cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 14px; border: 1px solid transparent; background: none; color: var(--text); cursor: pointer; font-family: var(--font-num); padding: 0; }
-.abs-cal-day.today { border-color: var(--border2); }
-.abs-cal-day.sel { background: var(--navy); color: #fff; }
-.abs-cal-day:disabled { color: var(--text-faint); opacity: 0.35; cursor: default; }
-.abs-picked { font-size: 12.5px; color: var(--text2); margin-top: 8px; line-height: 1.6; }
-.notice-tab-count { display: inline-block; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: #FF5722; color: #fff; font-size: 11px; line-height: 18px; vertical-align: 1px; }
-.tn-item { border: 1px solid var(--border); background: var(--surface2); border-radius: var(--radius-sm); padding: 11px 12px; margin-bottom: 10px; overflow: hidden; }
-.tn-item.urgent { border-color: #D64545; }
-.tn-band { background: #D64545; color: #fff; font-weight: 700; font-size: 12.5px; padding: 5px 12px; margin: -11px -12px 10px; letter-spacing: 0.04em; }
-.tn-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.tn-level { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px; color: #fff; }
-.tn-level.urgent { background: #D64545; }
-.tn-level.important { background: #FF5722; }
-.tn-title { font-weight: 700; font-size: 15px; color: var(--text); word-break: break-word; }
-.tn-meta { font-size: 11.5px; color: var(--text3); margin-top: 4px; }
-.tn-body { font-size: 13.5px; color: var(--text); margin-top: 8px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
-.tn-119 { font-size: 12.5px; font-weight: 700; color: #FF5252; background: rgba(214,69,69,0.12); border-radius: 8px; padding: 8px 10px; margin-top: 10px; line-height: 1.6; }
-.tn-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.tn-ack-sum { background: none; border: 1px solid var(--border2); color: var(--text2); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
-.tn-ack-names { font-size: 12.5px; color: var(--text2); margin-top: 8px; line-height: 1.8; }
-.tn-ack-names b { color: var(--text); }
-.tn-count { font-size: 12.5px; color: var(--text2); margin-top: 8px; }
-.tn-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px; }
-.tn-photo { padding: 0; border: none; background: var(--surface); border-radius: 8px; overflow: hidden; aspect-ratio: 4 / 3; cursor: pointer; }
-.tn-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tnf-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.tnf-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--surface2); }
-.tnf-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tnf-thumb-del { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 12px; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 14px; line-height: 24px; padding: 0; cursor: pointer; }
-.tnf-add { aspect-ratio: 1; border-radius: 8px; border: 1px dashed var(--border2); background: var(--surface2); color: var(--text2); font-size: 12px; font-weight: 700; cursor: pointer; line-height: 1.5; }
-.photo-viewer { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
-.photo-viewer img { max-width: 100%; max-height: 100%; object-fit: contain; }
-.photo-viewer-close { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 20px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 20px; cursor: pointer; }
-.cal-abs { position: absolute; top: 2px; left: 3px; font-size: 9.5px; font-weight: 700; line-height: 1; color: #FF5252; pointer-events: none; z-index: 2; font-family: var(--font-body); }
-.cal-cell.selected .cal-abs { color: #fff; }
 </style>
 </head>
 <body>
@@ -775,14 +702,11 @@ import {
   EmailAuthProvider, reauthenticateWithCredential, deleteUser, verifyBeforeUpdateEmail
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId, serverTimestamp, writeBatch
+  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, addDoc, onSnapshot, documentId, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getFunctions, httpsCallable
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js";
-import {
-  getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import {
   initializeAppCheck, ReCaptchaEnterpriseProvider
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
@@ -812,7 +736,6 @@ const auth = isNativeApp
   : getAuth(fbApp);
 const db = getFirestore(fbApp);
 const functions = getFunctions(fbApp, 'us-central1');
-const storage = getStorage(fbApp);
 const PRICE_IDS = {
   student: 'price_1UAKbrBAZvKHyOEKfPuJriMp',
   coach: 'price_1UAKcYBAZvKHyOEKu6JQAQMx'
@@ -1089,25 +1012,6 @@ function resizeImageToDataUrl(file, size = 160) {
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
-  });
-}
-
-// 写真を、長い辺 maxSide px・JPEG（画質 quality）に小さくする（チーム連絡の写真用）
-function resizePhotoToBlob(file, maxSide = 1600, quality = 0.8) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
-    img.onload = () => {
-      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
-    };
-    img.src = url;
   });
 }
 
@@ -2217,6 +2121,13 @@ function renderWaitingForCoach(profile) {
 // mode: 'removed' … チームから外れた選手（個人プランで記入を再開できる）
 //       'individual' … 個人アカウントで登録した選手（個人プランで記録を始める）
 //       'coachInactive' … チームには所属しているが、コーチの契約が止まっている選手（閲覧のみ）
+// コーチコメントは1つにまとめた。前の「よかった点」「改善点」のコメントは、2つをつなげて見せる
+// （日記画面と、チームなしになった選手の「前の記録」画面の両方で使う）
+function mergedOldComment(data) {
+  const g = (data.goodComment || '').trim(), i = (data.issueComment || '').trim();
+  if (g && i) return `◎ よかった点：${g}\n\n△ 改善点：${i}`;
+  return g || i || '';
+}
 async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
   const isCoachInactive = mode === 'coachInactive';
   const isIndividual = mode === 'individual';
@@ -2528,6 +2439,7 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
     } catch (e) { console.error('[removed-calendar] renderCal failed:', e); }
   }
 
+  const removedCoachNames = {};
   async function renderDetail() {
     const box = document.getElementById('removed-detail');
     if (!box) return;
@@ -2537,6 +2449,26 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       const res = await kvGet(`entry:${user.uid}:${rState.selected}`);
       if (res && res.value) data = JSON.parse(res.value);
     } catch (e) {}
+    // ★10：チームごとの置き場所に移した選手は、入っていた（今も入っている）チームごとのやりとりも出す
+    const teamParts = [];
+    if (profile.teamDataSplit) {
+      const codes = [...new Set([profile.teamCode, ...(profile.extraTeamCodes || []), ...(profile.pastTeamCodes || [])].filter(Boolean))];
+      await Promise.all(codes.map(async (code) => {
+        try {
+          const r = await kvGet(`tday:${user.uid}:${code}:${rState.selected}`);
+          if (!r || !r.value) return;
+          const t = JSON.parse(r.value);
+          if (!removedCoachNames[code]) {
+            try {
+              const cs = await getDocs(query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach')));
+              removedCoachNames[code] = cs.docs.map(d => d.data().displayName || '').filter(Boolean);
+            } catch (e) { removedCoachNames[code] = []; }
+          }
+          teamParts.push({ code, t });
+        } catch (e) {}
+      }));
+    }
+    if (!data && teamParts.length) data = {};
     if (!data) {
       box.innerHTML = `<div class="removed-date-label">${formatSelectedLabel(rState.selected)}</div><div class="card"><div class="empty-hint">この日の記録はありません</div></div>`;
       return;
@@ -2565,6 +2497,17 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
         ${data.gameGood ? `<div class="card good"><div class="card-label">◎ 試合でよかった点</div><div class="removed-readonly-text">${escapeHtml(data.gameGood)}</div>${data.gameGoodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameGoodComment)}</div>` : ''}</div>` : ''}
         ${data.gameIssue ? `<div class="card issue"><div class="card-label">△ 試合の改善点</div><div class="removed-readonly-text">${escapeHtml(data.gameIssue)}</div>${data.gameIssueComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameIssueComment)}</div>` : ''}</div>` : ''}
         ${data.thread && data.thread.length ? `<div class="card"><div class="card-label">メッセージ</div>${data.thread.map(m => `<div class="removed-readonly-text"><strong>${escapeHtml(m.authorName || (m.author === 'coach' ? 'コーチ' : '本人'))}：</strong>${escapeHtml(m.text)}</div>`).join('')}</div>` : ''}
+        ${teamParts.map(({ code, t }) => {
+          const names = removedCoachNames[code] || [];
+          const label = names.length ? `コーチ：${names.join('・')}` : `チーム ${code}`;
+          const c = t.coachComment !== undefined ? t.coachComment : mergedOldComment(t);
+          const th = Array.isArray(t.thread) ? t.thread : [];
+          if (!c && !th.length) return '';
+          return `<div class="card"><div class="card-label">${escapeHtml(label)}</div>
+            ${c ? `<div class="removed-coach-comment">💬 ${escapeHtml(c)}</div>` : ''}
+            ${th.map(m => `<div class="removed-readonly-text"><strong>${escapeHtml(m.authorName || (m.author === 'coach' ? 'コーチ' : '本人'))}：</strong>${escapeHtml(m.text)}</div>`).join('')}
+          </div>`;
+        }).join('')}
       `;
     } catch (e) {
       box.innerHTML = `<div class="removed-date-label">${formatSelectedLabel(rState.selected)}</div><div class="card"><div class="empty-hint">表示に失敗しました</div></div>`;
@@ -3010,814 +2953,6 @@ async function boot(user, profile) {
     calCache: {}, // 月ごとの取得結果をメモリにキャッシュ（同じ月に戻った時の再取得を避ける）
   };
 
-  // ===== お知らせ（ベルのマーク・欠席連絡） =====
-  // 欠席連絡は absences/{id} に、1日ずつ1つの連絡として保存する。
-  // 選手：自分の連絡を見る・送る・（コーチが確認する前なら）取り消す
-  // コーチ：チームの連絡を日付ごとに見て「確認」を押す
-  const hasTeam = !!profile.teamCode && profile.accountType !== 'individual';
-  const ABS_TYPES = { absent: '欠席', late: '遅刻', early: '早退' };
-  const ABS_MARK = { absent: '欠', late: '遅', early: '早' };
-  const ABS_REASONS = { sick: '体調不良', injury: 'けが', school: '学校行事', family: '家庭の都合', other: 'その他' };
-  const BELL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
-  let absences = null; // 読み込んだ欠席連絡 [{ id, ...中身 }]
-  let absLoadedAt = 0;
-  let noticeTab = 'team';
-  // チーム連絡（コーチ → 選手）。notices/{id}、確認は notices/{id}/acks/{選手uid}
-  const NOTICE_LEVELS = { normal: '通常', important: '重要', urgent: '緊急' };
-  const NOTICE_119 = '命にかかわるときは、119番や保護者に<br>直接連絡してください。';
-  let notices = null; // 読み込んだチーム連絡（新しい順）
-  let myAcks = new Set(); // 選手：自分が「確認しました」を押した連絡の id
-  function tsMillis(ts) { return ts && ts.toMillis ? ts.toMillis() : (typeof ts === 'number' ? ts : Date.now()); }
-  function formatNoticeTime(ts) {
-    const d = new Date(tsMillis(ts));
-    const dow = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-    return `${d.getMonth() + 1}月${d.getDate()}日（${dow}）${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-
-  function todayKey() { const t = todayParts(); return dateKey(t.y, t.m, t.d); }
-  function addDaysKey(key, n) {
-    const [y, m, d] = key.split('-').map(Number);
-    const dt = new Date(y, m - 1, d + n);
-    return dateKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
-  }
-  function formatAbsDate(key) {
-    const [y, m, d] = key.split('-').map(Number);
-    const dow = ['日', '月', '火', '水', '木', '金', '土'][new Date(y, m - 1, d).getDay()];
-    return `${m}月${d}日（${dow}）`;
-  }
-
-  async function loadAbsences() {
-    if (!hasTeam) { absences = []; return absences; }
-    const q = isCoach
-      ? query(collection(db, 'absences'), where('teamCode', '==', profile.teamCode))
-      : query(collection(db, 'absences'), where('uid', '==', user.uid));
-    const snaps = await getDocs(q);
-    absences = snaps.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => isCoach || a.teamCode === CUR_TEAM);
-    absLoadedAt = Date.now();
-    return absences;
-  }
-
-  // チーム連絡を読み込む（60日前まで）。選手は、自分が確認したかどうかも読む
-  async function loadNotices() {
-    if (!hasTeam) { notices = []; return notices; }
-    const q = isCoach
-      ? query(collection(db, 'notices'), where('teamCode', '==', profile.teamCode))
-      : query(collection(db, 'notices'), where('targetUids', 'array-contains', user.uid));
-    const snaps = await getDocs(q);
-    const cutoff = Date.now() - 60 * 86400000;
-    const list = snaps.docs.map(d => ({ id: d.id, ...d.data() }))
-      .filter(n => n.teamCode === CUR_TEAM && tsMillis(n.createdAt) >= cutoff)
-      .sort((a, b) => tsMillis(b.createdAt) - tsMillis(a.createdAt));
-    if (!isCoach) {
-      const acked = await Promise.all(list.map(n =>
-        getDoc(doc(db, 'notices', n.id, 'acks', user.uid)).then(snap => snap.exists()).catch(() => false)
-      ));
-      myAcks = new Set(list.filter((n, i) => acked[i]).map(n => n.id));
-    }
-    notices = list;
-    return notices;
-  }
-
-  // ベルの数字：選手＝まだ確認していないチーム連絡＋コーチが確認して、まだ見ていない欠席連絡
-  //            コーチ＝まだ確認していない欠席連絡（30日前まで）
-  function absenceBellCount() {
-    if (!absences) return 0;
-    if (isCoach) {
-      const cutoff = addDaysKey(todayKey(), -30);
-      return absences.filter(a => !a.confirmedAt && a.date >= cutoff).length;
-    }
-    return absences.filter(a => a.confirmedAt && !a.seenByPlayerAt).length;
-  }
-  function noticeBellCount() {
-    if (isCoach || !notices) return 0;
-    return notices.filter(n => !myAcks.has(n.id)).length;
-  }
-  function bellCount() { return absenceBellCount() + noticeBellCount(); }
-  function bellHtml() {
-    if (!hasTeam) return '';
-    return `<button type="button" class="bell-btn" data-bell aria-label="お知らせ">${BELL_SVG}<span class="bell-badge" data-bell-badge style="display:none"></span></button>`;
-  }
-  function updateBellBadges() {
-    const n = bellCount();
-    document.querySelectorAll('[data-bell-badge]').forEach(el => {
-      el.textContent = n > 99 ? '99+' : String(n);
-      el.style.display = n > 0 ? '' : 'none';
-    });
-    updateNoticeTabs();
-  }
-  function wireBells() {
-    if (!hasTeam) return;
-    document.querySelectorAll('[data-bell]').forEach(b => { b.onclick = () => openNoticesScreen(); });
-    updateBellBadges();
-    refreshBell();
-  }
-  // 1分以内に読み込んでいれば、読み直さずに表示だけ更新する
-  async function refreshBell(force) {
-    if (!hasTeam) return;
-    if (force || !absences || Date.now() - absLoadedAt > 60000) {
-      const [a, n] = await Promise.allSettled([loadAbsences(), loadNotices()]);
-      if (a.status === 'rejected') console.warn('[notices] 欠席連絡を読み込めませんでした', a.reason);
-      if (n.status === 'rejected') console.warn('[notices] チーム連絡を読み込めませんでした', n.reason);
-    }
-    updateBellBadges();
-    markAbsenceDays();
-  }
-
-  // カレンダーの日付に「欠」「遅」「早」を出す（表示中の選手の分）
-  function markAbsenceDays() {
-    document.querySelectorAll('.cal-abs').forEach(el => el.remove());
-    if (!absences) return;
-    absences.filter(a => a.uid === state.playerId).forEach(a => {
-      const cell = document.querySelector(`.cal-cell[data-date="${a.date}"]`);
-      if (!cell || cell.querySelector('.cal-abs')) return;
-      cell.insertAdjacentHTML('beforeend', `<span class="cal-abs">${ABS_MARK[a.type] || ''}</span>`);
-    });
-  }
-
-  function openNoticesScreen() {
-    const old = document.getElementById('notices-overlay');
-    if (old) old.remove();
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'notices-overlay';
-    overlay.innerHTML = `
-      <div class="modal-card">
-        <div class="modal-title">お知らせ</div>
-        <div class="notice-tabs">
-          <button type="button" class="notice-tab" data-tab="team">チーム連絡</button>
-          <button type="button" class="notice-tab" data-tab="absence">欠席連絡</button>
-        </div>
-        <div id="notices-body"><div class="notice-empty">読み込み中…</div></div>
-        <div class="modal-actions"><button class="modal-btn modal-btn-cancel" id="notices-close">閉じる</button></div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#notices-close').onclick = () => overlay.remove();
-    overlay.querySelectorAll('.notice-tab').forEach(t => { t.onclick = () => { noticeTab = t.dataset.tab; renderNoticesBody(false); }; });
-    // 数字が付いているほうのタブから開く
-    if (isCoach) noticeTab = absenceBellCount() > 0 ? 'absence' : 'team';
-    else noticeTab = noticeBellCount() > 0 ? 'team' : (absenceBellCount() > 0 ? 'absence' : 'team');
-    renderNoticesBody(true);
-  }
-
-  async function renderNoticesBody(reload) {
-    const body = document.getElementById('notices-body');
-    if (!body) return;
-    updateNoticeTabs();
-    const failedHtml = '<div class="notice-empty">読み込めませんでした。<br>電波の良い場所で、<br>もう一度開いてください。</div>';
-    if (noticeTab === 'team') {
-      if (reload || !notices) {
-        body.innerHTML = '<div class="notice-empty">読み込み中…</div>';
-        try { await loadNotices(); } catch (e) {
-          console.error('[notices] チーム連絡を読み込めませんでした', e);
-          body.innerHTML = failedHtml;
-          return;
-        }
-        updateBellBadges();
-        updateNoticeTabs();
-      }
-      if (noticeTab !== 'team') return;
-      if (isCoach) renderCoachNotices(body); else renderStudentNotices(body);
-      return;
-    }
-    if (reload || !absences) {
-      body.innerHTML = '<div class="notice-empty">読み込み中…</div>';
-      try { await loadAbsences(); } catch (e) {
-        console.error('[notices] 欠席連絡を読み込めませんでした', e);
-        body.innerHTML = failedHtml;
-        return;
-      }
-      updateBellBadges();
-      updateNoticeTabs();
-      markAbsenceDays();
-    }
-    if (noticeTab !== 'absence') return;
-    if (isCoach) renderCoachAbsences(body); else renderStudentAbsences(body);
-  }
-  // タブの横に、まだのものの数を出す
-  function updateNoticeTabs() {
-    document.querySelectorAll('#notices-overlay .notice-tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.tab === noticeTab);
-      const n = t.dataset.tab === 'team' ? noticeBellCount() : absenceBellCount();
-      const label = t.dataset.tab === 'team' ? 'チーム連絡' : '欠席連絡';
-      t.innerHTML = label + (n > 0 ? `<span class="notice-tab-count">${n}</span>` : '');
-    });
-  }
-
-  function absMetaHtml(a) {
-    let timeLine = '';
-    if (a.type === 'late' && a.time) timeLine = `${escapeHtml(a.time)}ごろに来ます<br>`;
-    if (a.type === 'early' && a.time) timeLine = `${escapeHtml(a.time)}ごろに帰ります<br>`;
-    return `<div class="abs-meta">${timeLine}理由：${ABS_REASONS[a.reason] || 'その他'}</div>
-      ${a.comment ? `<div class="abs-comment">${escapeHtml(a.comment)}</div>` : ''}`;
-  }
-  // 先の連絡は日付の早い順、過去の連絡は新しい順
-  function splitAbsences(list, pastDays) {
-    const tk = todayKey();
-    const cutoff = addDaysKey(tk, -pastDays);
-    const byDate = (a, b) => a.date.localeCompare(b.date) || ((a.createdAt && a.createdAt.seconds) || 0) - ((b.createdAt && b.createdAt.seconds) || 0);
-    const upcoming = list.filter(a => a.date >= tk).sort(byDate);
-    const past = list.filter(a => a.date < tk && a.date >= cutoff).sort((a, b) => byDate(b, a));
-    return { upcoming, past };
-  }
-
-  // ── 選手：送った連絡の一覧 ──
-  function renderStudentAbsences(body) {
-    const { upcoming, past } = splitAbsences(absences, 60);
-    const item = (a) => {
-      const isNew = a.confirmedAt && !a.seenByPlayerAt;
-      const coachName = COACH_NAME_BY_UID[a.confirmedBy] || '';
-      return `
-        <div class="abs-item">
-          <div class="abs-item-top"><span class="abs-type ${a.type}">${ABS_TYPES[a.type] || ''}</span><span class="abs-name">${formatAbsDate(a.date)}</span>${isNew ? '<span class="abs-new-dot" aria-label="新しい"></span>' : ''}</div>
-          ${absMetaHtml(a)}
-          <div class="abs-foot">
-            ${a.confirmedAt
-              ? `<span class="abs-status done">✓ ${coachName ? escapeHtml(coachName) + 'コーチが' : 'コーチが'}確認しました</span>`
-              : `<span class="abs-status">コーチの確認待ち</span><button type="button" class="abs-btn ghost" data-abs-cancel="${a.id}">取り消す</button>`}
-          </div>
-        </div>`;
-    };
-    body.innerHTML = `
-      <button type="button" class="abs-new-btn" id="abs-new">＋ 欠席・遅刻・早退を連絡する</button>
-      ${upcoming.length ? `<div class="abs-section">これからの連絡</div>${upcoming.map(item).join('')}` : ''}
-      ${past.length ? `<div class="abs-section">過去の連絡</div>${past.map(item).join('')}` : ''}
-      ${!upcoming.length && !past.length ? '<div class="notice-empty">まだ連絡はありません。<br>休むときや遅れるときは、<br>上のボタンからコーチに知らせよう。</div>' : ''}
-    `;
-    body.querySelector('#abs-new').onclick = () => openAbsenceForm();
-    body.querySelectorAll('[data-abs-cancel]').forEach(btn => { btn.onclick = () => cancelAbsence(btn.dataset.absCancel, btn); });
-    markAbsencesSeen();
-  }
-
-  // コーチが確認した連絡を「見た」にする（ベルの数字を減らす）
-  async function markAbsencesSeen() {
-    const unseen = (absences || []).filter(a => a.confirmedAt && !a.seenByPlayerAt);
-    if (!unseen.length) return;
-    try {
-      const batch = writeBatch(db);
-      unseen.forEach(a => batch.set(doc(db, 'absences', a.id), { seenByPlayerAt: serverTimestamp() }, { merge: true }));
-      await batch.commit();
-      unseen.forEach(a => { a.seenByPlayerAt = true; });
-      updateBellBadges();
-    } catch (e) {
-      console.warn('[notices] 既読にできませんでした', e);
-    }
-  }
-
-  async function cancelAbsence(id, btn) {
-    const a = (absences || []).find(x => x.id === id);
-    if (!a) return;
-    if (!confirm(`${formatAbsDate(a.date)}の${ABS_TYPES[a.type] || ''}の連絡を、取り消しますか？`)) return;
-    btn.disabled = true;
-    try {
-      await deleteDoc(doc(db, 'absences', id));
-      absences = absences.filter(x => x.id !== id);
-    } catch (e) {
-      console.error('[notices] 取り消しに失敗', e);
-      alert('取り消せませんでした。\nコーチがもう確認したかもしれません。');
-      await refreshBell(true);
-    }
-    updateBellBadges();
-    markAbsenceDays();
-    renderNoticesBody(false);
-  }
-
-  // ── 選手：欠席・遅刻・早退の連絡を書く ──
-  function openAbsenceForm() {
-    const tk = todayKey();
-    const minKey = addDaysKey(tk, -7);
-    const maxKey = addDaysKey(tk, 60);
-    const f = { type: null, dates: new Set(), reason: null };
-    const t0 = todayParts();
-    let vy = t0.y, vm = t0.m;
-
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'absence-form-overlay';
-    overlay.innerHTML = `
-      <div class="modal-card">
-        <div class="modal-title">欠席・遅刻・早退の連絡</div>
-        <div class="modal-sub">チームのコーチに届きます。</div>
-        <div class="modal-field">
-          <div class="modal-label">どれですか？</div>
-          <div class="abs-opts" id="absf-type">${Object.keys(ABS_TYPES).map(k => `<button type="button" class="abs-opt" data-v="${k}">${ABS_TYPES[k]}</button>`).join('')}</div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-label">日にち（いくつでも選べます）</div>
-          <div id="absf-cal"></div>
-          <div class="abs-picked" id="absf-picked"></div>
-        </div>
-        <div class="modal-field" id="absf-time-field" style="display:none;">
-          <div class="modal-label" id="absf-time-label">何時ごろ？</div>
-          <input type="time" class="modal-select" id="absf-time" step="300">
-        </div>
-        <div class="modal-field">
-          <div class="modal-label">理由</div>
-          <div class="abs-opts" id="absf-reason">${Object.keys(ABS_REASONS).map(k => `<button type="button" class="abs-opt" data-v="${k}">${ABS_REASONS[k]}</button>`).join('')}</div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-label">ひとこと（なくてもOK）</div>
-          <textarea class="modal-textarea" id="absf-comment" maxlength="200" placeholder="例）熱が出たので休みます"></textarea>
-        </div>
-        <div class="modal-status error" id="absf-msg" style="display:none;"></div>
-        <div class="modal-actions">
-          <button class="modal-btn modal-btn-cancel" id="absf-cancel">やめる</button>
-          <button class="modal-btn modal-btn-send" id="absf-send">コーチに送る</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#absf-cancel').onclick = () => overlay.remove();
-
-    const msg = overlay.querySelector('#absf-msg');
-    const showMsg = (text) => { msg.textContent = text; msg.style.display = text ? 'block' : 'none'; };
-
-    overlay.querySelectorAll('#absf-type .abs-opt').forEach(b => {
-      b.onclick = () => {
-        f.type = b.dataset.v;
-        overlay.querySelectorAll('#absf-type .abs-opt').forEach(x => x.classList.toggle('active', x === b));
-        const needTime = f.type === 'late' || f.type === 'early';
-        overlay.querySelector('#absf-time-field').style.display = needTime ? '' : 'none';
-        overlay.querySelector('#absf-time-label').textContent = f.type === 'late' ? '何時ごろに来ますか？' : '何時ごろに帰りますか？';
-        showMsg('');
-      };
-    });
-    overlay.querySelectorAll('#absf-reason .abs-opt').forEach(b => {
-      b.onclick = () => {
-        f.reason = b.dataset.v;
-        overlay.querySelectorAll('#absf-reason .abs-opt').forEach(x => x.classList.toggle('active', x === b));
-        showMsg('');
-      };
-    });
-
-    function drawCal() {
-      const first = new Date(vy, vm, 1);
-      const startDow = first.getDay();
-      const daysInMonth = new Date(vy, vm + 1, 0).getDate();
-      const firstKey = dateKey(vy, vm, 1);
-      const lastKey = dateKey(vy, vm, daysInMonth);
-      let cells = ['日', '月', '火', '水', '木', '金', '土'].map(d => `<div class="abs-cal-dow">${d}</div>`).join('');
-      for (let i = 0; i < startDow; i++) cells += '<div></div>';
-      for (let d = 1; d <= daysInMonth; d++) {
-        const key = dateKey(vy, vm, d);
-        const disabled = key < minKey || key > maxKey;
-        cells += `<button type="button" class="abs-cal-day ${key === tk ? 'today' : ''} ${f.dates.has(key) ? 'sel' : ''}" data-d="${key}" ${disabled ? 'disabled' : ''}>${d}</button>`;
-      }
-      const box = overlay.querySelector('#absf-cal');
-      box.innerHTML = `
-        <div class="abs-cal-head">
-          <button type="button" id="absf-prev" aria-label="前の月" ${firstKey <= minKey ? 'disabled' : ''}>‹</button>
-          <div class="abs-cal-title">${vy}年 ${vm + 1}月</div>
-          <button type="button" id="absf-next" aria-label="次の月" ${lastKey >= maxKey ? 'disabled' : ''}>›</button>
-        </div>
-        <div class="abs-cal-grid">${cells}</div>
-      `;
-      box.querySelector('#absf-prev').onclick = () => { vm--; if (vm < 0) { vm = 11; vy--; } drawCal(); };
-      box.querySelector('#absf-next').onclick = () => { vm++; if (vm > 11) { vm = 0; vy++; } drawCal(); };
-      box.querySelectorAll('.abs-cal-day[data-d]').forEach(b => {
-        b.onclick = () => {
-          const k = b.dataset.d;
-          if (f.dates.has(k)) f.dates.delete(k); else f.dates.add(k);
-          drawCal();
-          showMsg('');
-        };
-      });
-      const picked = [...f.dates].sort();
-      overlay.querySelector('#absf-picked').textContent = picked.length ? '選んだ日：' + picked.map(formatAbsDate).join('、') : '';
-    }
-    drawCal();
-
-    overlay.querySelector('#absf-send').onclick = async () => {
-      const sendBtn = overlay.querySelector('#absf-send');
-      const time = overlay.querySelector('#absf-time').value || '';
-      const comment = overlay.querySelector('#absf-comment').value.trim().slice(0, 200);
-      const needTime = f.type === 'late' || f.type === 'early';
-      if (!f.type) { showMsg('欠席・遅刻・早退の、どれかを選んでください'); return; }
-      if (!f.dates.size) { showMsg('日にちを選んでください'); return; }
-      if (needTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) { showMsg(f.type === 'late' ? '何時ごろに来るかを入れてください' : '何時ごろに帰るかを入れてください'); return; }
-      if (!f.reason) { showMsg('理由を選んでください'); return; }
-      const dates = [...f.dates].sort();
-      const dup = dates.filter(d => (absences || []).some(a => a.date === d));
-      if (dup.length) { showMsg(`${dup.map(formatAbsDate).join('、')}は、もう連絡しています。前の連絡を取り消してから、送り直してください。`); return; }
-
-      sendBtn.disabled = true;
-      sendBtn.textContent = '送っています…';
-      try {
-        const batch = writeBatch(db);
-        dates.forEach(date => {
-          batch.set(doc(collection(db, 'absences')), {
-            teamCode: CUR_TEAM,
-            uid: user.uid,
-            type: f.type,
-            date,
-            time: needTime ? time : '',
-            reason: f.reason,
-            comment,
-            createdAt: serverTimestamp()
-          });
-        });
-        await batch.commit();
-        overlay.remove();
-        await refreshBell(true);
-        noticeTab = 'absence';
-        renderNoticesBody(false);
-      } catch (e) {
-        console.error('[notices] 欠席連絡を送れませんでした', e);
-        showMsg('送れませんでした。電波の良い場所で、もう一度お試しください。');
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'コーチに送る';
-      }
-    };
-  }
-
-  // ── チーム連絡の写真：見られる人だけが、写真の場所（URL）をもらって表示する ──
-  const photoUrlCache = {};
-  function fillNoticePhotos(root) {
-    root.querySelectorAll('[data-photo-path]').forEach(async (btn) => {
-      const path = btn.dataset.photoPath;
-      try {
-        if (!photoUrlCache[path]) photoUrlCache[path] = await getDownloadURL(storageRef(storage, path));
-        const img = btn.querySelector('img');
-        if (img) img.src = photoUrlCache[path];
-        btn.onclick = () => openPhotoViewer(photoUrlCache[path]);
-      } catch (e) {
-        console.warn('[notices] 写真を読み込めませんでした', path, e);
-        btn.textContent = '写真を読み込めませんでした';
-        btn.style.fontSize = '11px';
-        btn.style.color = 'var(--text3)';
-      }
-    });
-  }
-  function openPhotoViewer(url) {
-    const v = document.createElement('div');
-    v.className = 'photo-viewer';
-    v.innerHTML = `<img src="${escapeHtml(url)}" alt="写真"><button type="button" class="photo-viewer-close" aria-label="閉じる">×</button>`;
-    v.onclick = () => v.remove();
-    document.body.appendChild(v);
-  }
-
-  // ── チーム連絡：1件の見た目（選手・コーチ共通） ──
-  function noticeCardHtml(n, footHtml, extraHtml) {
-    const level = n.importance === 'urgent' || n.importance === 'important' ? n.importance : 'normal';
-    const sender = COACH_NAME_BY_UID[n.createdBy] || '';
-    return `
-      <div class="tn-item ${level === 'urgent' ? 'urgent' : ''}">
-        ${level === 'urgent' ? '<div class="tn-band">緊急の連絡</div>' : ''}
-        <div class="tn-top">
-          ${level !== 'normal' ? `<span class="tn-level ${level}">${NOTICE_LEVELS[level]}</span>` : ''}
-          <span class="tn-title">${escapeHtml(n.title || '')}</span>
-        </div>
-        <div class="tn-meta">${formatNoticeTime(n.createdAt)}${sender ? `　${escapeHtml(sender)}コーチ` : ''}</div>
-        ${n.body ? `<div class="tn-body">${escapeHtml(n.body)}</div>` : ''}
-        ${(n.photos || []).length ? `<div class="tn-photos">${n.photos.map((path, i) => `<button type="button" class="tn-photo" data-photo-path="${escapeHtml(path)}" aria-label="写真${i + 1}を大きく見る"><img alt=""></button>`).join('')}</div>` : ''}
-        ${level === 'urgent' ? `<div class="tn-119">${NOTICE_119}</div>` : ''}
-        <div class="tn-foot">${footHtml}</div>
-        ${extraHtml || ''}
-      </div>`;
-  }
-
-  // ── 選手：届いたチーム連絡。「確認しました」を押すだけ ──
-  function renderStudentNotices(body) {
-    if (!notices.length) {
-      body.innerHTML = '<div class="notice-empty">チームからの連絡は、<br>まだありません。</div>';
-      return;
-    }
-    body.innerHTML = notices.map(n => noticeCardHtml(n,
-      myAcks.has(n.id)
-        ? '<span class="abs-status done">✓ 確認しました</span>'
-        : `<span class="abs-status"><span class="abs-new-dot"></span> まだ確認していません</span><button type="button" class="abs-btn" data-tn-ack="${n.id}">確認しました</button>`
-    )).join('');
-    body.querySelectorAll('[data-tn-ack]').forEach(btn => { btn.onclick = () => ackNotice(btn.dataset.tnAck, btn); });
-    fillNoticePhotos(body);
-  }
-  async function ackNotice(id, btn) {
-    btn.disabled = true;
-    btn.textContent = '…';
-    try {
-      await setDoc(doc(db, 'notices', id, 'acks', user.uid), { at: serverTimestamp() });
-      myAcks.add(id);
-    } catch (e) {
-      console.error('[notices] 確認に失敗', e);
-      alert('確認できませんでした。\n電波の良い場所で、もう一度お試しください。');
-    }
-    updateBellBadges();
-    renderNoticesBody(false);
-  }
-
-  // ── コーチ：送ったチーム連絡と、確認した人数 ──
-  function renderCoachNotices(body) {
-    const nameOf = (uid) => { const m = TEAM.find(r => r.uid === uid); return m ? m.name : 'チームを外れた選手'; };
-    body.innerHTML = `
-      <button type="button" class="abs-new-btn" id="tn-new">＋ チームに連絡する</button>
-      ${notices.length
-        ? notices.map(n => noticeCardHtml(n,
-            `<button type="button" class="tn-ack-sum" data-tn-sum="${n.id}">確認状況を読み込み中…</button>
-             <button type="button" class="abs-btn ghost" data-tn-del="${n.id}">削除</button>`,
-            `<div class="tn-ack-names" data-tn-names="${n.id}" style="display:none;"></div>`)).join('')
-        : '<div class="notice-empty">送ったチーム連絡は、<br>ここに並びます。</div>'}
-    `;
-    body.querySelector('#tn-new').onclick = () => openNoticeForm();
-    fillNoticePhotos(body);
-    body.querySelectorAll('[data-tn-del]').forEach(btn => { btn.onclick = () => deleteNotice(btn.dataset.tnDel, btn); });
-    body.querySelectorAll('[data-tn-sum]').forEach(btn => {
-      btn.onclick = () => {
-        const box = body.querySelector(`[data-tn-names="${btn.dataset.tnSum}"]`);
-        if (box && box.innerHTML) box.style.display = box.style.display === 'none' ? '' : 'none';
-      };
-    });
-    // 確認した人を、連絡ごとに読み込む
-    notices.forEach(async (n) => {
-      const sumBtn = body.querySelector(`[data-tn-sum="${n.id}"]`);
-      const box = body.querySelector(`[data-tn-names="${n.id}"]`);
-      try {
-        const snaps = await getDocs(collection(db, 'notices', n.id, 'acks'));
-        const ackSet = new Set(snaps.docs.map(d => d.id));
-        const targets = n.targetUids || [];
-        const done = targets.filter(u => ackSet.has(u));
-        const yet = targets.filter(u => !ackSet.has(u));
-        if (sumBtn) sumBtn.textContent = `確認済み ${done.length}人／未確認 ${yet.length}人 ▾`;
-        if (box) box.innerHTML = `
-          <div><b>確認済み：</b>${done.length ? done.map(u => escapeHtml(nameOf(u))).join('、') : 'まだいません'}</div>
-          <div><b>未確認：</b>${yet.length ? yet.map(u => escapeHtml(nameOf(u))).join('、') : 'いません'}</div>`;
-      } catch (e) {
-        console.warn('[notices] 確認状況を読み込めませんでした', e);
-        if (sumBtn) sumBtn.textContent = '確認状況を読み込めませんでした';
-      }
-    });
-  }
-
-  async function deleteNotice(id, btn) {
-    const n = (notices || []).find(x => x.id === id);
-    if (!n) return;
-    if (!confirm(`「${n.title}」を削除しますか？\n選手の画面からも消えます。`)) return;
-    btn.disabled = true;
-    try {
-      const acks = await getDocs(collection(db, 'notices', id, 'acks'));
-      const batch = writeBatch(db);
-      acks.docs.forEach(d => batch.delete(d.ref));
-      batch.delete(doc(db, 'notices', id));
-      await batch.commit();
-      notices = notices.filter(x => x.id !== id);
-      // 写真も消す（失敗しても連絡そのものは消えているので、そのまま進む）
-      await Promise.all((n.photos || []).map(path => deleteObject(storageRef(storage, path)).catch(e => console.warn('[notices] 写真を消せませんでした', path, e))));
-    } catch (e) {
-      console.error('[notices] 削除に失敗', e);
-      alert('削除できませんでした。\n電波の良い場所で、もう一度お試しください。');
-    }
-    renderNoticesBody(false);
-  }
-
-  // ── コーチ：チーム連絡を書いて送る ──
-  function openNoticeForm() {
-    const students = TEAM.filter(r => r.uid !== user.uid);
-    const f = { level: 'normal', mode: 'all', one: null, uids: [], categoryIds: [], photos: [] }; // photos: [{ blob, url }]
-    const MAX_PHOTOS = 4;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'notice-form-overlay';
-    overlay.innerHTML = `
-      <div class="modal-card">
-        <div class="modal-title">チームに連絡する</div>
-        <div class="modal-sub">送った選手の「お知らせ」に届きます。</div>
-        <div class="modal-field">
-          <div class="modal-label">大事さ</div>
-          <div class="abs-opts" id="tnf-level">${Object.keys(NOTICE_LEVELS).map(k => `<button type="button" class="abs-opt ${k === 'normal' ? 'active' : ''}" data-v="${k}">${NOTICE_LEVELS[k]}</button>`).join('')}</div>
-          <div class="tn-119" id="tnf-119" style="display:none;">${NOTICE_119}<br>（この文は、選手の画面にも出ます）</div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-label">タイトル</div>
-          <input type="text" class="modal-select" id="tnf-title" maxlength="60" placeholder="例）明日の練習は9時からです">
-        </div>
-        <div class="modal-field">
-          <div class="modal-label">本文（なくてもOK）</div>
-          <textarea class="modal-textarea" id="tnf-body" maxlength="2000" placeholder="くわしい内容を書いてください"></textarea>
-        </div>
-        <div class="modal-field">
-          <div class="modal-label">写真（4枚まで・なくてもOK）</div>
-          <div class="tnf-photos" id="tnf-photos"></div>
-          <input type="file" accept="image/*" multiple id="tnf-file" style="display:none;">
-        </div>
-        <div class="modal-field">
-          <div class="send-target" style="margin-top:0;">
-            <div class="send-target-label">送り先</div>
-            <div class="send-target-opts" id="tnf-modes">
-              <button type="button" class="send-target-opt" data-mode="one">個人</button>
-              <button type="button" class="send-target-opt" data-mode="pick">複数</button>
-              <button type="button" class="send-target-opt" data-mode="category">カテゴリー</button>
-              <button type="button" class="send-target-opt" data-mode="all">全員</button>
-            </div>
-            <div id="tnf-picker"></div>
-            <div class="tn-count" id="tnf-count"></div>
-          </div>
-        </div>
-        <div class="modal-status error" id="tnf-msg" style="display:none;"></div>
-        <div class="modal-actions">
-          <button class="modal-btn modal-btn-cancel" id="tnf-cancel">やめる</button>
-          <button class="modal-btn modal-btn-send" id="tnf-send">送る</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    const closeForm = () => { f.photos.forEach(p => URL.revokeObjectURL(p.url)); overlay.remove(); };
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeForm(); });
-    overlay.querySelector('#tnf-cancel').onclick = () => closeForm();
-    const msg = overlay.querySelector('#tnf-msg');
-    const showMsg = (text) => { msg.textContent = text; msg.style.display = text ? 'block' : 'none'; };
-
-    overlay.querySelectorAll('#tnf-level .abs-opt').forEach(b => {
-      b.onclick = () => {
-        f.level = b.dataset.v;
-        overlay.querySelectorAll('#tnf-level .abs-opt').forEach(x => x.classList.toggle('active', x === b));
-        overlay.querySelector('#tnf-119').style.display = f.level === 'urgent' ? '' : 'none';
-      };
-    });
-
-    // 写真：選んだら小さくして、送る前に一覧で見せる
-    const fileInput = overlay.querySelector('#tnf-file');
-    function drawPhotos() {
-      const box = overlay.querySelector('#tnf-photos');
-      box.innerHTML = f.photos.map((p, i) => `<div class="tnf-thumb"><img src="${p.url}" alt=""><button type="button" class="tnf-thumb-del" data-i="${i}" aria-label="この写真を外す">×</button></div>`).join('')
-        + (f.photos.length < MAX_PHOTOS ? '<button type="button" class="tnf-add" id="tnf-add">＋<br>写真</button>' : '');
-      box.querySelectorAll('.tnf-thumb-del').forEach(b => {
-        b.onclick = () => { const [p] = f.photos.splice(Number(b.dataset.i), 1); if (p) URL.revokeObjectURL(p.url); drawPhotos(); };
-      });
-      const add = box.querySelector('#tnf-add');
-      if (add) add.onclick = () => fileInput.click();
-    }
-    fileInput.onchange = async () => {
-      const files = [...fileInput.files].slice(0, MAX_PHOTOS - f.photos.length);
-      fileInput.value = '';
-      showMsg('');
-      for (const file of files) {
-        try {
-          const blob = await resizePhotoToBlob(file);
-          f.photos.push({ blob, url: URL.createObjectURL(blob) });
-        } catch (e) {
-          console.warn('[notices] 写真を読み込めませんでした', e);
-          showMsg('読み込めない写真がありました。ほかの写真を選んでください。');
-        }
-      }
-      drawPhotos();
-    };
-    drawPhotos();
-
-    function resolveUids() {
-      const ids = new Set(students.map(r => r.uid));
-      if (f.mode === 'all') return [...ids];
-      if (f.mode === 'one') return f.one ? [f.one] : [];
-      if (f.mode === 'pick') return f.uids.filter(u => ids.has(u));
-      const set = new Set();
-      f.categoryIds.forEach(cid => {
-        const g = CATEGORIES.groups.find(x => x.id === cid);
-        if (g) g.memberUids.forEach(u => { if (ids.has(u)) set.add(u); });
-      });
-      return [...set];
-    }
-    function updateCount() {
-      const n = resolveUids().length;
-      overlay.querySelector('#tnf-count').textContent = n ? `${n}人に送ります` : '';
-    }
-    function drawPicker() {
-      overlay.querySelectorAll('#tnf-modes .send-target-opt').forEach(x => x.classList.toggle('active', x.dataset.mode === f.mode));
-      const box = overlay.querySelector('#tnf-picker');
-      if (f.mode === 'all') { box.innerHTML = ''; updateCount(); return; }
-      if (f.mode === 'category') {
-        box.innerHTML = `<div class="send-target-picker"><div class="send-target-list">
-          ${CATEGORIES.groups.map(g => `<label class="send-target-item"><input type="checkbox" data-cat-id="${g.id}" ${f.categoryIds.includes(g.id) ? 'checked' : ''}> ${escapeHtml(g.name)}（${g.memberUids.length}人）</label>`).join('') || '<div class="thread-empty">まだカテゴリーがありません（設定画面で作れます）</div>'}
-        </div></div>`;
-        box.querySelectorAll('[data-cat-id]').forEach(cb => {
-          cb.onchange = () => {
-            if (cb.checked) { if (!f.categoryIds.includes(cb.dataset.catId)) f.categoryIds.push(cb.dataset.catId); }
-            else f.categoryIds = f.categoryIds.filter(id => id !== cb.dataset.catId);
-            updateCount();
-          };
-        });
-        updateCount();
-        return;
-      }
-      const inputType = f.mode === 'one' ? 'radio' : 'checkbox';
-      box.innerHTML = `<div class="send-target-picker">
-        <input class="send-target-search" id="tnf-search" placeholder="選手を検索">
-        <div class="send-target-list">
-          ${students.map(r => `<label class="send-target-item"><input type="${inputType}" name="tnf-one" data-uid="${r.uid}" ${(f.mode === 'one' ? f.one === r.uid : f.uids.includes(r.uid)) ? 'checked' : ''}> ${escapeHtml(r.name)}</label>`).join('') || '<div class="thread-empty">まだ選手がいません</div>'}
-        </div></div>`;
-      box.querySelectorAll('[data-uid]').forEach(cb => {
-        cb.onchange = () => {
-          if (f.mode === 'one') f.one = cb.dataset.uid;
-          else if (cb.checked) { if (!f.uids.includes(cb.dataset.uid)) f.uids.push(cb.dataset.uid); }
-          else f.uids = f.uids.filter(u => u !== cb.dataset.uid);
-          updateCount();
-        };
-      });
-      const search = box.querySelector('#tnf-search');
-      search.oninput = () => {
-        const q = search.value.trim();
-        box.querySelectorAll('.send-target-item').forEach(item => { item.style.display = item.textContent.includes(q) ? '' : 'none'; });
-      };
-      updateCount();
-    }
-    overlay.querySelectorAll('#tnf-modes .send-target-opt').forEach(b => {
-      b.onclick = () => { f.mode = b.dataset.mode; drawPicker(); showMsg(''); };
-    });
-    drawPicker();
-
-    overlay.querySelector('#tnf-send').onclick = async () => {
-      const sendBtn = overlay.querySelector('#tnf-send');
-      const title = overlay.querySelector('#tnf-title').value.trim().slice(0, 60);
-      const text = overlay.querySelector('#tnf-body').value.trim().slice(0, 2000);
-      const targetUids = resolveUids();
-      if (!title) { showMsg('タイトルを入れてください'); return; }
-      if (!targetUids.length) { showMsg('送り先の選手を選んでください'); return; }
-      sendBtn.disabled = true;
-      sendBtn.textContent = f.photos.length ? '写真を送っています…' : '送っています…';
-      // 先に連絡の番号を決めて、写真を notices/{チーム}/{連絡の番号}/ に上げてから、連絡を保存する
-      const noticeRef = doc(collection(db, 'notices'));
-      const uploaded = [];
-      try {
-        for (let i = 0; i < f.photos.length; i++) {
-          const path = `notices/${profile.teamCode}/${noticeRef.id}/${i + 1}.jpg`;
-          await uploadBytes(storageRef(storage, path), f.photos[i].blob, { contentType: 'image/jpeg' });
-          uploaded.push(path);
-        }
-        sendBtn.textContent = '送っています…';
-        await setDoc(noticeRef, {
-          teamCode: profile.teamCode,
-          title,
-          body: text,
-          photos: uploaded,
-          importance: f.level,
-          targetUids,
-          createdBy: user.uid,
-          createdAt: serverTimestamp()
-        });
-        closeForm();
-        noticeTab = 'team';
-        renderNoticesBody(true);
-      } catch (e) {
-        // 途中まで上げた写真は片付ける
-        uploaded.forEach(path => deleteObject(storageRef(storage, path)).catch(() => {}));
-        console.error('[notices] チーム連絡を送れませんでした', e);
-        showMsg('送れませんでした。電波の良い場所で、もう一度お試しください。');
-        sendBtn.disabled = false;
-        sendBtn.textContent = '送る';
-      }
-    };
-  }
-
-  // ── コーチ：チームの連絡を日付ごとに見て「確認」を押す ──
-  function renderCoachAbsences(body) {
-    const { upcoming, past } = splitAbsences(absences, 30);
-    const nameOf = (uid) => { const m = TEAM.find(r => r.uid === uid); return m ? m.name : 'チームを外れた選手'; };
-    const item = (a) => {
-      const by = COACH_NAME_BY_UID[a.confirmedBy] || '';
-      return `
-        <div class="abs-item">
-          <div class="abs-item-top"><span class="abs-type ${a.type}">${ABS_TYPES[a.type] || ''}</span><span class="abs-name">${escapeHtml(nameOf(a.uid))}</span></div>
-          ${absMetaHtml(a)}
-          <div class="abs-foot">
-            ${a.confirmedAt
-              ? `<span class="abs-status done">✓ 確認しました${by ? `（${escapeHtml(by)}）` : ''}</span>`
-              : `<span class="abs-status">まだ確認していません</span><button type="button" class="abs-btn" data-abs-confirm="${a.id}">確認</button>`}
-          </div>
-        </div>`;
-    };
-    const grouped = (list) => {
-      let html = '';
-      let last = '';
-      list.forEach(a => {
-        if (a.date !== last) { html += `<div class="abs-date-head">${formatAbsDate(a.date)}</div>`; last = a.date; }
-        html += item(a);
-      });
-      return html;
-    };
-    body.innerHTML = `
-      ${upcoming.length ? `<div class="abs-section">これからの連絡</div>${grouped(upcoming)}` : ''}
-      ${past.length ? `<div class="abs-section">過去30日の連絡</div>${grouped(past)}` : ''}
-      ${!upcoming.length && !past.length ? '<div class="notice-empty">選手からの欠席・遅刻・早退の連絡は、<br>ここに届きます。<br>今は、まだありません。</div>' : ''}
-    `;
-    body.querySelectorAll('[data-abs-confirm]').forEach(btn => { btn.onclick = () => confirmAbsence(btn.dataset.absConfirm, btn); });
-  }
-
-  async function confirmAbsence(id, btn) {
-    const a = (absences || []).find(x => x.id === id);
-    if (!a) return;
-    btn.disabled = true;
-    btn.textContent = '…';
-    try {
-      await setDoc(doc(db, 'absences', id), { confirmedBy: user.uid, confirmedAt: serverTimestamp() }, { merge: true });
-      a.confirmedBy = user.uid;
-      a.confirmedAt = true;
-    } catch (e) {
-      console.error('[notices] 確認に失敗', e);
-      alert('確認できませんでした。\nほかのコーチがもう確認したか、選手が取り消したかもしれません。');
-      await refreshBell(true);
-    }
-    updateBellBadges();
-    renderNoticesBody(false);
-  }
-
   renderLauncher();
 
   // ── トップ画面（Netflix風）：日替わり名言と、2つの入り口 ──
@@ -3825,7 +2960,7 @@ async function boot(user, profile) {
     const qd = todaysQuote();
     app.innerHTML = `
       <div class="launcher">
-        <div class="launcher-top"><span class="brand-badge">Self+</span><span class="launcher-hello">${escapeHtml(profile.displayName || '')}さん、今日も積み重ねよう</span>${bellHtml()}</div>
+        <div class="launcher-top"><span class="brand-badge">Self+</span><span class="launcher-hello">${escapeHtml(profile.displayName || '')}さん、今日も積み重ねよう</span></div>
         ${teamSwitchHtml() ? `<div class="launcher-team">${teamSwitchHtml()}</div>` : ''}
         <div class="launcher-main">
         ${qd ? `
@@ -3860,7 +2995,6 @@ async function boot(user, profile) {
     document.getElementById('launch-settings').onclick = () => { render().then(() => openSettingsModal()); };
     document.getElementById('launch-logout').onclick = () => appSignOut();
     wireLegalLinks(app);
-    wireBells();
     wireTeamSwitch();
   }
 
@@ -3875,10 +3009,7 @@ async function boot(user, profile) {
           <div class="head-title" id="head-title">${player ? avatarHtml(player.photo, player.name) + `<span class="head-name">${escapeHtml(player.name)}さん</span>` : ''}</div>
           ${teamSwitchHtml()}
         </div>
-        <div class="head-btns">
-          ${bellHtml()}
-          ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く"><img class="head-cal-img" src="${HEAD_CAL_ICON}" alt=""></button>` : ''}
-        </div>
+        ${showCalToggle ? `<button class="head-cal-btn" id="head-cal-btn" aria-label="カレンダーを開く"><img class="head-cal-img" src="${HEAD_CAL_ICON}" alt=""></button>` : ''}
       </div>
       <div class="wrap">
         ${isCoach ? `<input class="ptab-search" id="ptab-search" placeholder="選手を検索">` : ''}
@@ -3908,7 +3039,6 @@ async function boot(user, profile) {
     const brandToTop = document.getElementById('brand-to-top');
     if (brandToTop) brandToTop.onclick = () => renderLauncher();
     wireLegalLinks(app);
-    wireBells();
     wireTeamSwitch();
     const calBtn = document.getElementById('head-cal-btn');
     if (calBtn) calBtn.onclick = () => { state.calExpanded = !state.calExpanded; renderCalendar(); };
@@ -4158,7 +3288,6 @@ async function boot(user, profile) {
         homeMode ? openDate(c.dataset.date) : selectDate(c.dataset.date);
       };
     });
-    markAbsenceDays();
     const loadingEl = document.getElementById('cal-loading');
     const cacheKey = `${state.playerId}:${y}-${pad(m + 1)}`;
     const cached = state.calCache[cacheKey];
@@ -4644,11 +3773,6 @@ async function boot(user, profile) {
     };
   }
 
-  function mergedOldComment(data) {
-    const g = (data.goodComment || '').trim(), i = (data.issueComment || '').trim();
-    if (g && i) return `◎ よかった点：${g}\n\n△ 改善点：${i}`;
-    return g || i || '';
-  }
   function emptyEntry() {
     return { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [], condition: null, weather: null, mind: null, skill: null, body: null, goodComment: '', issueComment: '', coachComment: '', gameGoodComment: '', gameIssueComment: '', playerUpdatedAt: null, important: false };
   }
@@ -5997,14 +5121,24 @@ async function boot(user, profile) {
         if (!data.playerId || !TEAM.some(r => r.uid === data.playerId)) return;
         state.playerId = data.playerId;
       }
+      // ★10：ほかのチームから来た通知なら、そのチームに切り替えてから開く（切り替えると読み込み直すので、開く日を覚えておく）
+      if (!isCoach && data.teamCode && data.teamCode !== CUR_TEAM && MY_TEAMS.includes(data.teamCode)) {
+        try { sessionStorage.setItem('selfplus.pushAfterSwitch', JSON.stringify({ date: data.date, playerId: data.playerId })); } catch (e) {}
+        switchTeam(data.teamCode);
+        return;
+      }
       await openDate(data.date);
     } catch (e) { console.warn('[push] 日記を開けませんでした', e); }
   };
   registerPush(user.uid);
+  let afterSwitch = null;
+  try { afterSwitch = JSON.parse(sessionStorage.getItem('selfplus.pushAfterSwitch') || 'null'); sessionStorage.removeItem('selfplus.pushAfterSwitch'); } catch (e) {}
   if (pendingPushOpen) {
     const d = pendingPushOpen;
     pendingPushOpen = null;
     window.__selfplusPushOpen(d);
+  } else if (afterSwitch && afterSwitch.date) {
+    window.__selfplusPushOpen(afterSwitch);
   }
 }
 </script>
