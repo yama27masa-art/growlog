@@ -4362,11 +4362,14 @@ async function boot(user, profile) {
     panel.innerHTML = `<div class="empty-hint">読み込み中…</div>`;
     const key = `entry:${state.playerId}:${state.selected}`;
     const seenPrefix = `seen:${state.playerId}:${state.selected}:coach:`;
+    // 「見たよ」は、コーチ一人ずつ読む（まとめて探す読み方は、ルールで断られて、いつも空になっていた）
+    const seenUids = isCoach ? COACHES.map(c => c.uid) : Object.keys(COACH_NAME_BY_UID).filter(u => u !== user.uid);
     const [entryRes, lastReadEpoch, remindRes, seenListRes] = await Promise.all([
       kvGet(key).catch(() => null),
       getLastRead(state.playerId, state.selected, state.role),
       !isCoach ? kvGet(`remind:${state.playerId}:${state.selected}`).catch(() => null) : Promise.resolve(null),
-      kvList(seenPrefix, true).catch(() => ({ docs: [] })),
+      Promise.all(seenUids.map(uid => kvGet(seenPrefix + uid).then(r => (r && r.value) ? { key: seenPrefix + uid, value: r.value } : null).catch(() => null)))
+        .then(list => ({ docs: list.filter(Boolean) })),
     ]);
     let data = null;
     try { if (entryRes && entryRes.value) data = JSON.parse(entryRes.value); } catch (e) { data = null; }
