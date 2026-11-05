@@ -303,7 +303,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .thread-input textarea { min-height: 40px; flex: 1; min-width: 0; }
 .thread-input button { flex-shrink: 0; white-space: nowrap; align-self: flex-end; background: var(--stitch); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .new-badge { display: inline-block; background: var(--stitch); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
-.thread-scroll { position: relative; max-height: 460px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.thread-scroll { position: relative; max-height: min(460px, 55vh); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .thread-day { text-align: center; margin: 14px 0 10px; }
 .thread-day span { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 3px 10px; cursor: pointer; }
 .thread-day.current span { color: #fff; background: var(--navy); border-color: var(--navy); cursor: default; }
@@ -338,6 +338,14 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .seen-coach-item { font-size: 11.5px; color: var(--text3); font-weight: 700; white-space: nowrap; }
 .seen-coach-item.seen { color: var(--green); }
 .seen-toggle-btn { flex-shrink: 0; padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; }
+.seen-toggle-btn.done { background: var(--primary-grad); border-color: transparent; color: var(--on-primary); box-shadow: 0 0 0 3px var(--navy-light), 0 0 14px var(--navy-light); }
+.field-saved { font-size: 11px; font-weight: 500; color: var(--text3); margin-left: 6px; white-space: nowrap; opacity: 0; transition: opacity .4s ease; }
+.field-saved.show { opacity: 1; }
+.field-saved.err { color: var(--red); opacity: 1; }
+.record-card .submit-row { margin: 14px 0 0; }
+.record-card .menu-send-row { margin-top: 14px; flex-direction: column; align-items: stretch; }
+.ptab { position: relative; }
+.ptab-unread { position: absolute; top: 2px; right: 3px; width: 10px; height: 10px; border-radius: 50%; background: #E53935; border: 2px solid var(--surface); }
 .seen-picker { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border2); display: flex; flex-wrap: wrap; gap: 6px; }
 .seen-picker-label { width: 100%; font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 2px; }
 .seen-picker-opt { padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); font-size: 12.5px; font-weight: 700; color: var(--text2); cursor: pointer; }
@@ -1652,13 +1660,13 @@ function renderAuth() {
               <div class="role-opt ${authCoachMode==='join'?'active':''}" data-coachmode="join">既存チームに参加する</div>
             </div>
             ${authCoachMode === 'new' ? `
-              <label>招待コード</label>
+              <label>選手招待コード</label>
               <input id="a-newcode" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例）BASEBALL2026">
               <div class="auth-hint">選手がチームに参加するときに入力するコードです。<br>半角の英字と数字で、4〜16文字で決めてください。</div>
             ` : `
               <label>コーチ用コード</label>
               <input id="a-coachkey" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="例）ABCDE-FGHJK">
-              <div class="auth-hint">同じチームのコーチから教えてもらった<br>「コーチ用コード」（10文字）を入力してください。<br>選手用の招待コードでは参加できません。</div>
+              <div class="auth-hint">同じチームのコーチから教えてもらった<br>「コーチ用コード」（10文字）を入力してください。<br>選手招待コードでは参加できません。</div>
             `}
           ` : `
             ${!IAP_ENABLED ? '' : `
@@ -1669,9 +1677,9 @@ function renderAuth() {
             </div>
             `}
             ${(!IAP_ENABLED || authStudentMode === 'team') ? `
-            <label>招待コード</label>
+            <label>選手招待コード</label>
             <input id="a-team" type="text" autocapitalize="characters" autocomplete="off" placeholder="コーチから教えてもらったコード">
-            <div class="auth-hint">担当コーチから教えてもらった招待コードを入力してください。</div>
+            <div class="auth-hint">担当コーチから教えてもらった選手招待コードを入力してください。</div>
             ` : `
             <div class="auth-hint">${IAP_ENABLED
               ? '個人アカウントは、チームに入らずに自分の記録をつけられる有料プラン（月額・自動更新）です。登録してログインした後に、App Storeでのお申し込みがあります。'
@@ -1816,7 +1824,7 @@ async function handleSignup() {
   } else {
     teamCode = (document.getElementById('a-newcode').value || '').trim().toUpperCase();
     if (!name || !sport || !teamCode || !email || !password) { showAuthMsg('すべての項目を入力してください', 'err'); return; }
-    if (!/^[A-Z0-9]{4,16}$/.test(teamCode)) { showAuthMsg('招待コードは、半角の英字と数字で4〜16文字にしてください', 'err'); return; }
+    if (!/^[A-Z0-9]{4,16}$/.test(teamCode)) { showAuthMsg('選手招待コードは、半角の英字と数字で4〜16文字にしてください', 'err'); return; }
   }
 
   let birthdate = null;
@@ -1852,8 +1860,8 @@ async function handleSignup() {
         signupInProgress = false;
         showAuthMsg(
           rolledBack
-            ? 'その招待コードに一致するコーチが見つかりませんでした。コードを確認してください。'
-            : 'その招待コードに一致するコーチが見つかりませんでした。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
+            ? 'その選手招待コードに一致するコーチが見つかりませんでした。コードを確認してください。'
+            : 'その選手招待コードに一致するコーチが見つかりませんでした。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
           'err'
         );
         submitBtn.disabled = false;
@@ -1886,8 +1894,8 @@ async function handleSignup() {
         const rolledBack = await rollbackSignupAccount(cred);
         showAuthMsg(
           rolledBack
-            ? 'この招待コードは、すでに他のチームで使われています。別のコードにしてください。'
-            : 'この招待コードは、すでに他のチームで使われています。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
+            ? 'この選手招待コードは、すでに他のチームで使われています。別のコードにしてください。'
+            : 'この選手招待コードは、すでに他のチームで使われています。また、アカウントの後始末に失敗しました。お手数ですが、このメールアドレスでの再登録がうまくいかない場合はお問い合わせフォームからご連絡ください。',
           'err'
         );
         submitBtn.disabled = false;
@@ -1909,7 +1917,7 @@ async function handleSignup() {
     // ごくまれに他のコーチと同時に同じコードで登録された場合は、登録を取り消して選び直してもらう
     if (authRole === 'coach' && authCoachMode === 'new' && await isTeamCodeTaken(teamCode, cred.user.uid)) {
       await rollbackSignupAccount(cred);
-      showAuthMsg('この招待コードは、すでに他のチームで使われています。別のコードにしてもう一度登録してください。', 'err');
+      showAuthMsg('この選手招待コードは、すでに他のチームで使われています。別のコードにしてもう一度登録してください。', 'err');
       submitBtn.disabled = false;
       return;
     }
@@ -1922,7 +1930,7 @@ async function handleSignup() {
     }
     await sendEmailVerification(cred.user);
     if (authRole === 'coach' && authCoachMode === 'new') {
-      showAuthMsg(`仮登録できました。あなたの招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。`, 'ok');
+      showAuthMsg(`仮登録できました。あなたの選手招待コードは「${teamCode}」です。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。`, 'ok');
     } else if (authRole === 'coach') {
       showAuthMsg('仮登録できました。チームに参加しました。届いた確認メールのリンクを開いてから、ログインしてください。メールが届かない場合は迷惑メールフォルダもご確認ください。', 'ok');
     } else if (isIndividualSignup) {
@@ -2099,7 +2107,7 @@ async function routeStudent(user, profile) {
   const coachQ = query(collection(db, 'users'), where('teamCode', '==', profile.teamCode), where('role', '==', 'coach'));
   const coachSnaps = await getDocs(coachQ);
   if (coachSnaps.empty) {
-    app.innerHTML = `<div class="err-screen">担当コーチが見つかりませんでした。招待コードをコーチに確認してください。</div>`;
+    app.innerHTML = `<div class="err-screen">担当コーチが見つかりませんでした。選手招待コードをコーチに確認してください。</div>`;
     return;
   }
   let coachActive = false;
@@ -2124,10 +2132,10 @@ async function routeStudent(user, profile) {
 // 成功すると自分の teamCode を書き換える。呼び出し側で再判定（routeStudent等）すること。
 async function joinTeamByCode(uid, rawCode) {
   const code = (rawCode || '').trim().toUpperCase();
-  if (!code) return { ok: false, message: '招待コードを入力してください' };
+  if (!code) return { ok: false, message: '選手招待コードを入力してください' };
   const coachQ = query(collection(db, 'users'), where('teamCode', '==', code), where('role', '==', 'coach'));
   const coachSnaps = await getDocs(coachQ);
-  if (coachSnaps.empty) return { ok: false, message: 'その招待コードに一致するチームが見つかりませんでした。コードを確認してください。' };
+  if (coachSnaps.empty) return { ok: false, message: 'その選手招待コードに一致するチームが見つかりませんでした。コードを確認してください。' };
   try {
     await setDoc(doc(db, 'users', uid), { teamCode: code }, { merge: true });
     return { ok: true };
@@ -2247,12 +2255,12 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
       <div class="removed-banner">
         <div class="removed-banner-title">新しいチームに参加する</div>
         <div class="removed-banner-text">${IAP_ENABLED
-          ? `新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（App Storeで加入している場合は、${IAP_CANCEL_HOWTO}からご自身で解約してください）。`
+          ? `新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（App Storeで加入している場合は、${IAP_CANCEL_HOWTO}からご自身で解約してください）。`
           : isNativeApp
-          ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
-          : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
+          ? '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。'
+          : '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（すでに加入している場合は、下の「プラン・支払い管理」からいつでも解約できます）。'}</div>
         <div class="removed-join-row">
-          <input class="modal-select" id="removed-join-code" placeholder="招待コード">
+          <input class="modal-select" id="removed-join-code" placeholder="選手招待コード">
           <button class="menu-send-btn" id="removed-join-btn">参加する</button>
         </div>
         <div id="removed-join-msg"></div>
@@ -2526,8 +2534,9 @@ async function renderRemovedStudentScreen(user, profile, mode = 'removed') {
           </div>
         </div>
         ${data.menu ? `<div class="card"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span></div><div class="removed-readonly-text">${escapeHtml(data.menu)}</div></div>` : ''}
-        ${data.good ? `<div class="card good"><div class="card-label">◎ よかった点</div><div class="removed-readonly-text">${escapeHtml(data.good)}</div>${data.goodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.goodComment)}</div>` : ''}</div>` : ''}
-        ${data.issue ? `<div class="card issue"><div class="card-label">△ 改善点</div><div class="removed-readonly-text">${escapeHtml(data.issue)}</div>${data.issueComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.issueComment)}</div>` : ''}</div>` : ''}
+        ${data.good ? `<div class="card good"><div class="card-label">◎ よかった点</div><div class="removed-readonly-text">${escapeHtml(data.good)}</div></div>` : ''}
+        ${data.issue ? `<div class="card issue"><div class="card-label">△ 改善点</div><div class="removed-readonly-text">${escapeHtml(data.issue)}</div></div>` : ''}
+        ${(() => { const c = data.coachComment !== undefined ? data.coachComment : mergedOldComment(data); return c ? `<div class="card"><div class="card-label">💬 コーチコメント</div><div class="removed-readonly-text">${escapeHtml(c)}</div></div>` : ''; })()}
         ${data.gameGood ? `<div class="card good"><div class="card-label">◎ 試合でよかった点</div><div class="removed-readonly-text">${escapeHtml(data.gameGood)}</div>${data.gameGoodComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameGoodComment)}</div>` : ''}</div>` : ''}
         ${data.gameIssue ? `<div class="card issue"><div class="card-label">△ 試合の改善点</div><div class="removed-readonly-text">${escapeHtml(data.gameIssue)}</div>${data.gameIssueComment ? `<div class="removed-coach-comment">💬 ${escapeHtml(data.gameIssueComment)}</div>` : ''}</div>` : ''}
         ${data.thread && data.thread.length ? `<div class="card"><div class="card-label">メッセージ</div>${data.thread.map(m => `<div class="removed-readonly-text"><strong>${escapeHtml(m.authorName || (m.author === 'coach' ? 'コーチ' : '本人'))}：</strong>${escapeHtml(m.text)}</div>`).join('')}</div>` : ''}
@@ -3841,9 +3850,36 @@ async function boot(user, profile) {
     } catch (e) { if (status) status.textContent = '保存に失敗しました'; }
   }
 
+  // 選手タブの赤い丸：選んでいる日に選手が書いた（直した）のに、このコーチがまだ開いていない
+  // 開いたかどうかは、コーチごとに coachview:選手:日付:コーチ に残す
+  async function refreshTabUnread() {
+    if (!isCoach) return;
+    const date = state.selected;
+    state.tabUnreadDate = date;
+    if (!state.tabUnread) state.tabUnread = {};
+    const tabUnread = state.tabUnread;
+    await Promise.all(TEAM.map(async (r) => {
+      try {
+        const [entryRes, viewRes] = await Promise.all([
+          kvGet(`entry:${r.uid}:${date}`).catch(() => null),
+          kvGet(`coachview:${r.uid}:${date}:${user.uid}`).catch(() => null),
+        ]);
+        let wroteAt = 0;
+        if (entryRes && entryRes.value) {
+          const d = JSON.parse(entryRes.value);
+          wroteAt = Math.max(d.playerUpdatedAt || 0, d.submittedAt || 0);
+        }
+        const viewedAt = viewRes && viewRes.value ? (parseInt(viewRes.value, 10) || 0) : 0;
+        tabUnread[r.uid] = wroteAt > viewedAt;
+      } catch (e) { tabUnread[r.uid] = false; }
+    }));
+    if (state.tabUnreadDate === date && document.getElementById('ptabs')) renderTabs();
+  }
   function renderTabs() {
     const wrap = document.getElementById('ptabs');
-    wrap.innerHTML = TEAM.map(r => `<button class="ptab ${r.uid === state.playerId ? 'active' : ''}" data-id="${r.uid}">${r.name}</button>`).join('');
+    wrap.innerHTML = TEAM.map(r => `<button class="ptab ${r.uid === state.playerId ? 'active' : ''}" data-id="${r.uid}">${r.name}${state.tabUnread && state.tabUnread[r.uid] && r.uid !== state.playerId ? '<span class="ptab-unread" aria-label="未読"></span>' : ''}</button>`).join('');
+    const ptabQ = (document.getElementById('ptab-search') || {}).value;
+    if (ptabQ && ptabQ.trim()) wrap.querySelectorAll('.ptab').forEach(btn => { btn.style.display = btn.textContent.includes(ptabQ.trim()) ? '' : 'none'; });
     wrap.querySelectorAll('.ptab').forEach(btn => {
       btn.onclick = async () => {
         await flushGoalSave();
@@ -4348,6 +4384,9 @@ async function boot(user, profile) {
     if (data.gameIssueComment === undefined) data.gameIssueComment = '';
     if (data.playerUpdatedAt === undefined) data.playerUpdatedAt = null;
     if (data.important === undefined) data.important = false;
+    // コーチコメントは1つにまとめた。前の「よかった点」「改善点」のコメントは消さずに残し、
+    // まだ1つのコメント（coachComment）がない日は、2つをつなげて見せる
+    if (data.coachComment === undefined) data.coachComment = mergedOldComment(data);
     state.entry = data;
     state.lastReadEpoch = lastReadEpoch;
     state.videoTarget = { mode: 'self', uids: [], categoryIds: [] };
@@ -4373,6 +4412,11 @@ async function boot(user, profile) {
     renderPanel();
     renderSeenRow();
     setLastRead(state.playerId, state.selected, state.role);
+    if (isCoach) {
+      kvSet(`coachview:${state.playerId}:${state.selected}:${user.uid}`, String(Date.now())).catch(() => {});
+      if (state.tabUnread) state.tabUnread[state.playerId] = false;
+      if (state.tabUnreadDate !== state.selected) refreshTabUnread();
+    }
   }
 
   function renderSeenRow() {
@@ -4395,7 +4439,7 @@ async function boot(user, profile) {
           <div class="seen-label">この記録を見たよ</div>
           <div class="seen-coach-list">${seenListHtml}</div>
         </div>
-        <button type="button" class="seen-toggle-btn" id="seen-toggle-btn">${state.seenPickerOpen ? '閉じる' : '見たよを記録'}</button>
+        <button type="button" class="seen-toggle-btn ${state.seenByCoach[user.uid] ? 'done' : ''}" id="seen-toggle-btn">${state.seenPickerOpen ? '閉じる' : (state.seenByCoach[user.uid] ? '✓ 見たよ' : '見たよを記録')}</button>
       </div>
       ${state.seenPickerOpen ? `
         <div class="seen-picker">
@@ -4431,8 +4475,13 @@ async function boot(user, profile) {
     });
   }
 
+  function mergedOldComment(data) {
+    const g = (data.goodComment || '').trim(), i = (data.issueComment || '').trim();
+    if (g && i) return `◎ よかった点：${g}\n\n△ 改善点：${i}`;
+    return g || i || '';
+  }
   function emptyEntry() {
-    return { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [], condition: null, weather: null, mind: null, skill: null, body: null, goodComment: '', issueComment: '', gameGoodComment: '', gameIssueComment: '', playerUpdatedAt: null, important: false };
+    return { menu: '', good: '', issue: '', gameGood: '', gameIssue: '', videos: [], thread: [], condition: null, weather: null, mind: null, skill: null, body: null, goodComment: '', issueComment: '', coachComment: '', gameGoodComment: '', gameIssueComment: '', playerUpdatedAt: null, important: false };
   }
   async function mergeIntoOtherEntry(uid, mutateFn) {
     const key = `entry:${uid}:${state.selected}`;
@@ -4487,9 +4536,23 @@ async function boot(user, profile) {
   }
   function coachCommentHtml(id, value) {
     const isCoach = state.role === 'coach';
-    return `<div class="coach-comment"><div class="coach-comment-label">💬 コーチコメント</div>
+    return `<div class="coach-comment"><div class="coach-comment-label">💬 コーチコメント${isCoach ? savedMarkHtml(id) : ''}</div>
       <textarea id="${id}" placeholder="${isCoach ? 'コメントを書こう' : 'コーチからのコメントがここに表示されます'}" ${isCoach ? '' : 'readonly'}>${escapeHtml(value)}</textarea>
     </div>`;
+  }
+  // 書いている欄の近くに出す「保存しました」
+  function savedMarkHtml(fieldId) {
+    return `<span class="field-saved" data-saved-for="${fieldId}"></span>`;
+  }
+  const savedMarkTimers = {};
+  function showSavedMark(fieldId, ok) {
+    const el = document.querySelector(`[data-saved-for="${fieldId}"]`);
+    if (!el) return;
+    clearTimeout(savedMarkTimers[fieldId]);
+    el.textContent = ok ? '保存しました' : '保存に失敗しました';
+    el.classList.toggle('err', !ok);
+    el.classList.add('show');
+    if (ok) savedMarkTimers[fieldId] = setTimeout(() => el.classList.remove('show'), 2500);
   }
   function targetPickerHtml(prefix, target) {
     const others = TEAM.filter(r => r.uid !== state.playerId);
@@ -4623,10 +4686,10 @@ async function boot(user, profile) {
           <div class="modal-field">
             <div class="modal-label">チームに参加する</div>
             <div class="auth-hint" style="margin-bottom:8px;">${isNativeApp
-              ? '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。'
-              : '新しいチームの招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。'}</div>
+              ? '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。'
+              : '新しいチームの選手招待コードを入力すると、そのチームの選手として参加できます。参加すると個人プランは不要になります（不要になった契約は「プラン・支払い管理」から解約できます）。'}</div>
             <div class="removed-join-row">
-              <input class="modal-select" id="settings-join-code" placeholder="招待コード">
+              <input class="modal-select" id="settings-join-code" placeholder="選手招待コード">
               <button class="menu-send-btn" id="settings-join-btn">参加する</button>
             </div>
             <div id="settings-join-msg"></div>
@@ -4634,11 +4697,11 @@ async function boot(user, profile) {
         ` : ''}
         ${isCoach ? `
           <div class="modal-field">
-            <div class="modal-label">招待コード</div>
-            <div class="invite-bar" style="margin:0;">招待コード：<span class="invite-code">${profile.teamCode}</span><button id="set-invite-copy">コピー</button></div>
+            <div class="modal-label">選手招待コード</div>
+            <div class="invite-bar" style="margin:0;">選手招待コード：<span class="invite-code">${profile.teamCode}</span><button id="set-invite-copy">コピー</button></div>
             <div class="auth-hint">選手がチームに参加するときに入力するコードです。</div>
             <div class="custom-code-row">
-              <input class="modal-select" id="set-custom-code" placeholder="新しい招待コード（例：BASEBALL2026）" autocapitalize="characters" autocomplete="off" spellcheck="false">
+              <input class="modal-select" id="set-custom-code" placeholder="新しい選手招待コード（例：BASEBALL2026）" autocapitalize="characters" autocomplete="off" spellcheck="false">
               <button class="menu-send-btn" id="set-custom-code-btn">このコードにする</button>
             </div>
             <div class="auth-hint">半角の英大文字と数字で4〜16文字。選手や他のコーチがまだいないチームだけ変更できます。</div>
@@ -4791,11 +4854,11 @@ async function boot(user, profile) {
           const msgEl = document.getElementById('set-custom-code-msg');
           const showMsg = (text, isErr) => { msgEl.innerHTML = `<div class="custom-code-msg ${isErr ? 'err' : 'ok'}">${escapeHtml(text)}</div>`; };
           const code = (document.getElementById('set-custom-code').value || '').trim().toUpperCase();
-          if (!/^[A-Z0-9]{4,16}$/.test(code)) { showMsg('招待コードは、半角の英大文字と数字で4〜16文字にしてください。', true); return; }
-          if (code === profile.teamCode) { showMsg('今の招待コードと同じです。', true); return; }
+          if (!/^[A-Z0-9]{4,16}$/.test(code)) { showMsg('選手招待コードは、半角の英大文字と数字で4〜16文字にしてください。', true); return; }
+          if (code === profile.teamCode) { showMsg('今の選手招待コードと同じです。', true); return; }
           const hasStudents = TEAM.some(r => r.uid !== auth.currentUser.uid);
           if (hasStudents || coachMates.length > 1) {
-            showMsg('選手や他のコーチがいるチームでは、招待コードを変更できません（変更すると全員のつながりが切れるため）。必要な場合はお問い合わせください。', true);
+            showMsg('選手や他のコーチがいるチームでは、選手招待コードを変更できません（変更すると全員のつながりが切れるため）。必要な場合はお問い合わせください。', true);
             return;
           }
           customCodeBtn.disabled = true;
@@ -4818,7 +4881,7 @@ async function boot(user, profile) {
             profile.teamCode = code;
             const codeEl = document.querySelector('.invite-code');
             if (codeEl) codeEl.textContent = code;
-            showMsg(`招待コードを「${code}」に変更しました。`, false);
+            showMsg(`選手招待コードを「${code}」に変更しました。`, false);
           } catch (e) {
             showMsg('変更できませんでした。時間をおいてもう一度お試しください。', true);
           }
@@ -4959,7 +5022,7 @@ async function boot(user, profile) {
       ${isCoach ? `
         <div class="practice-end-block">
           ${targetPickerHtml('remind', state.remindTarget)}
-          <button class="practice-end-btn" id="practice-end-btn">📣 「書いてね」を送る</button>
+          <button class="practice-end-btn" id="practice-end-btn">📣 書いてねの通知を送る</button>
         </div>
       ` : ''}
       ${isCoach && (e.playerUpdatedAt || e.submittedAt) ? `<div class="record-time-badge">${e.playerUpdatedAt ? `🕐 選手の入力：${formatDateTime(e.playerUpdatedAt)}` : ''}${e.playerUpdatedAt && e.submittedAt ? '　' : ''}${e.submittedAt ? `✓ 登録：${formatDateTime(e.submittedAt)}` : ''}</div>` : ''}
@@ -4972,15 +5035,19 @@ async function boot(user, profile) {
         <div class="tri-group"><div class="tri-group-label">体<span class="tri-sub">（ボディ面）</span></div>${triSelectHtml('body', e.body, CONDITION_OPTS)}</div>
       </div>
       <div class="card record-card">
-        <div class="rec-block"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span></div>
+        <div class="rec-block"><div class="card-label">メニュー<span class="tri-sub">（練習内容や大会で意識したこと）</span>${savedMarkHtml('f-menu')}</div>
           <textarea id="f-menu" placeholder="今日やった練習内容を書こう">${escapeHtml(e.menu)}</textarea>
-          ${isCoach ? `${targetPickerHtml('menu', state.menuTarget)}<div class="menu-send-row"><button class="menu-send-btn" id="menu-send-btn">保存</button><span class="menu-send-status" id="menu-send-status"></span></div>` : ''}</div>
-        <div class="rec-block good"><div class="card-label">◎ よかった点 <span class="save-status" id="save-status"></span></div>
-          <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea>
-          ${coachCommentHtml('f-good-comment', e.goodComment)}</div>
-        <div class="rec-block issue"><div class="card-label">△ 改善点</div>
+          ${isCoach ? targetPickerHtml('menu', state.menuTarget) : ''}</div>
+        <div class="rec-block good"><div class="card-label">◎ よかった点${savedMarkHtml('f-good')}</div>
+          <textarea id="f-good" placeholder="意識したことや、うまくいったこと">${escapeHtml(e.good)}</textarea></div>
+        <div class="rec-block issue"><div class="card-label">△ 改善点${savedMarkHtml('f-issue')}</div>
           <textarea id="f-issue" placeholder="難しかったこと、次に直したいこと">${escapeHtml(e.issue)}</textarea>
-          ${coachCommentHtml('f-issue-comment', e.issueComment)}</div>
+          ${coachCommentHtml('f-coach-comment', e.coachComment)}</div>
+        ${isCoach ? `<div class="menu-send-row"><button class="submit-btn" id="menu-send-btn">登録</button><span class="menu-send-status" id="menu-send-status"></span></div>` : `
+        <div class="submit-row">
+          <button type="button" class="submit-btn ${e.submittedAt ? 'done' : ''}" id="submit-btn">${e.submittedAt ? '✓ 登録済み（もう一度登録する）' : '登録'}</button>
+          ${e.submittedAt ? `<div class="submit-note">最終登録：${formatDateTime(e.submittedAt)}</div>` : ''}
+        </div>`}
       </div>
       <div class="card"><div class="card-label">動画</div>
         <div class="video-list" id="video-list">
@@ -5005,11 +5072,6 @@ async function boot(user, profile) {
         <div class="video-err" id="v-err"></div>
         ${isCoach ? targetPickerHtml('video', state.videoTarget) : ''}
       </div>
-      ${!isCoach ? `
-      <div class="submit-row">
-        <button type="button" class="submit-btn ${e.submittedAt ? 'done' : ''}" id="submit-btn">${e.submittedAt ? '✓ 登録済み（もう一度登録する）' : '登録'}</button>
-        ${e.submittedAt ? `<div class="submit-note">最終登録：${formatDateTime(e.submittedAt)}</div>` : ''}
-      </div>` : ''}
       <div class="thread-card">
         <div class="thread-title">メッセージ</div>
         ${threadNoticeHtml(e)}
@@ -5109,6 +5171,8 @@ async function boot(user, profile) {
     const menuSendBtn = document.getElementById('menu-send-btn');
     if (menuSendBtn) {
       menuSendBtn.onclick = async () => {
+        clearTimeout(autoSaveTimer);
+        autoSaveFields = new Set();
         const text = document.getElementById('f-menu').value;
         state.entry.menu = text;
         const status = document.getElementById('menu-send-status');
@@ -5166,12 +5230,12 @@ async function boot(user, profile) {
         });
       };
     });
-    ['f-menu', 'f-good', 'f-good-comment', 'f-issue', 'f-issue-comment', 'f-game-good', 'f-game-good-comment', 'f-game-issue', 'f-game-issue-comment'].forEach(id => {
+    ['f-menu', 'f-good', 'f-issue', 'f-coach-comment'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       autosizeTextarea(el);
       if (el.readOnly) return;
-      el.addEventListener('input', () => { autosizeTextarea(el); scheduleAutoSave(); });
+      el.addEventListener('input', () => { autosizeTextarea(el); scheduleAutoSave(id); });
     });
     document.getElementById('t-send').onclick = () => sendThread();
     fillThreadHistory();
@@ -5185,11 +5249,16 @@ async function boot(user, profile) {
 
   function autosizeTextarea(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
   let autoSaveTimer = null;
-  function scheduleAutoSave() {
-    const status = document.getElementById('save-status');
-    if (status) status.textContent = '';
+  let autoSaveFields = new Set(); // 前の保存のあとに書きかえた欄（保存できたら、その近くに「保存しました」を出す）
+  function scheduleAutoSave(fieldId) {
+    if (fieldId) autoSaveFields.add(fieldId);
     clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(() => { saveEntry(); }, 700);
+    autoSaveTimer = setTimeout(async () => {
+      const fields = [...autoSaveFields];
+      autoSaveFields = new Set();
+      const ok = await saveEntry();
+      fields.forEach(f => showSavedMark(f, ok !== false));
+    }, 800);
   }
   // ── 動画アップロード（アップ中でも他の画面に移れるよう、進み具合は画面の外で管理する）──
   const videoUp = { active: false, pct: 0, ctx: null };
@@ -5599,7 +5668,7 @@ async function boot(user, profile) {
     return `<div class="msg ${mine ? 'mine' : ''}"><div class="msg-meta">${avatarHtml(photo, label)}${escapeHtml(label)} ・ ${m.ts} ${isNew ? '<span class="new-badge">NEW</span>' : ''}${canDelete ? `<button type="button" class="msg-del" data-msg-del="${idx}">取り消す</button>` : ''}</div><div class="msg-bubble">${escapeHtml(m.text)}</div></div>`;
   }
   async function saveEntry() {
-    if (!isCoach) state.entry.menu = document.getElementById('f-menu').value; // コーチのメニューは「保存」ボタンで保存
+    state.entry.menu = document.getElementById('f-menu').value; // コーチは、ほかの選手への共有だけ「登録」ボタンで行う
     state.entry.good = document.getElementById('f-good').value;
     state.entry.issue = document.getElementById('f-issue').value;
     const gameGoodEl = document.getElementById('f-game-good');
@@ -5607,8 +5676,8 @@ async function boot(user, profile) {
     if (gameGoodEl) state.entry.gameGood = gameGoodEl.value;
     if (gameIssueEl) state.entry.gameIssue = gameIssueEl.value;
     if (state.role === 'coach') {
-      state.entry.goodComment = document.getElementById('f-good-comment').value;
-      state.entry.issueComment = document.getElementById('f-issue-comment').value;
+      const commentEl = document.getElementById('f-coach-comment');
+      if (commentEl) state.entry.coachComment = commentEl.value;
       const gameGoodCommentEl = document.getElementById('f-game-good-comment');
       const gameIssueCommentEl = document.getElementById('f-game-issue-comment');
       if (gameGoodCommentEl) state.entry.gameGoodComment = gameGoodCommentEl.value;
@@ -5618,11 +5687,8 @@ async function boot(user, profile) {
       state.entry.playerUpdatedAt = Date.now();
     }
     const key = `entry:${state.playerId}:${state.selected}`;
-    const status = document.getElementById('save-status');
-    if (status) status.textContent = '';
     try {
       await kvSet(key, JSON.stringify(state.entry));
-      if (status) status.textContent = '';
       const dt = state.selected.split('-');
       const cacheKey = `${state.playerId}:${dt[0]}-${dt[1]}`;
       delete state.calCache[cacheKey]; // 保存内容が古いキャッシュに埋もれないようにする
@@ -5639,7 +5705,7 @@ async function boot(user, profile) {
         if (banner) banner.remove();
       }
       return true;
-    } catch (e) { if (status) status.textContent = '保存に失敗しました'; return false; }
+    } catch (e) { return false; }
   }
   // メッセージの取り消し：確認 → 最新のデータを読み直して該当メッセージだけを除いて保存
   // （相手が直前に書いたメッセージを消してしまわないよう、画面上の古いデータではなく最新データから削除する）
