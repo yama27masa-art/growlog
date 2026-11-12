@@ -743,8 +743,8 @@ const PRICE_IDS = {
 // ▼▼ Stripeで人数帯ごとのPrice(月額)を作成したら、下のIDをそれぞれ差し替える ▼▼
 // 金額はすべて「税込」でStripeに登録する（amount＝税込、amountExTax＝税抜の表示用）。
 // Stripeで新しいPrice（月額・JPY）を作成したら、'price_TODO_…' の部分を実際のIDに差し替える。
-const INDIVIDUAL_PLAN = { amount: 880, amountExTax: 800 };
-const INDIVIDUAL_PLAN_PRICE_ID = 'price_1UK78bBAZvKHyOEKqMkxmazw'; // 個人アカウント（選手個人）・月額880円（税込）
+const INDIVIDUAL_PLAN = { amount: 900, amountExTax: 818 };
+const INDIVIDUAL_PLAN_PRICE_ID = 'price_1Ualm6BAZvKHyOEKRRwG0qlD'; // 個人アカウント（選手個人）・月額900円（税込）。前の880円の料金（price_1UK78bBAZvKHyOEKqMkxmazw）で入っている人は、そのまま880円で続く
 const COACH_PLANS = [
   { id: 't10', max: 10,       label: '10人以下',            amount: 3300,  amountExTax: 3000,  priceId: 'price_1UK790BAZvKHyOEK3XVvGjLN' },
   { id: 't50', max: 50,       label: '11人〜50人',          amount: 5500,  amountExTax: 5000,  priceId: 'price_1UK79LBAZvKHyOEKyDYtEhN3' },
