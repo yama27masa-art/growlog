@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Self+（セルフプラス）| アスリートと指導者のための成長ノート</title>
+<meta name="description" content="選手が練習を自分の言葉で振り返り、指導者とつながる成長ノートアプリ。チームで使うと、選手は無料です。">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#121212">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Self+">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* アプリと同じ黒×オレンジ */
+:root {
+  --bg: #121212; --surface: #1E1E1E; --surface2: #252525; --border: #2D2D2D; --border2: #3A3A3A;
+  --text: #FFFFFF; --text2: #D7DCE3; --text3: #A0AEC0;
+  --orange: #E8804A; --orange-deep: #CF6B36; --orange-soft: rgba(232,128,74,0.12);
+  --plus: #FF7A2E;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; line-height: 1.75; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; height: auto; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 28px; }
+.nb { display: inline-block; } /* 意味のまとまりの途中で改行しないように */
+
+/* ロゴ：アプリのアイコンと同じ字体（Helvetica Neue Bold）と、外枠だけのオレンジの＋ */
+.logo { display: inline-flex; align-items: center; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700;
+  color: #F2F2F2; letter-spacing: -0.015em; line-height: 1; -webkit-text-stroke: 0.018em #F2F2F2; }
+.logo-plus { display: inline-flex; margin-left: -0.17em; transform: translateY(0.2em); }
+.logo-plus svg { width: 0.66em; height: 0.66em; overflow: visible; display: block; }
+.lp-gap { fill: var(--bg); stroke: var(--bg); stroke-width: 16; stroke-linejoin: round; }
+.lp-line { fill: none; stroke: var(--plus); stroke-width: 6.5; stroke-linejoin: round; }
+.lp-glow { fill: none; stroke: var(--plus); stroke-width: 12; stroke-linejoin: round; opacity: 0.8; }
+
+/* ヘッダー */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: calc(22px + env(safe-area-inset-top)) 0 18px; }
+.topbar .logo { font-size: 30px; }
+.topbar nav { display: flex; align-items: center; gap: 22px; font-size: 14px; color: var(--text2); }
+.topbar nav .nav-start { padding: 8px 16px; border: 1px solid var(--orange); border-radius: 999px; color: var(--orange); font-weight: 700; }
+
+/* ボタン */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 15px 26px; border-radius: 12px; font-size: 15px; font-weight: 700; }
+.btn-primary { background: var(--orange); color: #fff; }
+.btn-primary:hover { background: var(--orange-deep); }
+.btn-outline { border: 1px solid var(--border2); color: var(--text); background: var(--surface); }
+.btn-outline:hover { border-color: var(--text3); }
+.btn small { font-weight: 500; font-size: 12px; opacity: 0.85; }
+
+/* ファーストビュー */
+.hero { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center; padding-top: 48px; padding-bottom: 72px; }
+.eyebrow { font-size: 14px; font-weight: 700; color: var(--orange); margin-bottom: 18px; }
+.hero h1 { font-weight: 900; font-size: 52px; line-height: 1.35; letter-spacing: 0.01em; }
+.hero p { margin-top: 22px; font-size: 16px; color: var(--text2); }
+.hero-cta { margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; }
+.hero-note { margin-top: 14px; font-size: 13px; color: var(--text3); }
+.hero-shots { position: relative; height: 520px; }
+.hero-shots img { position: absolute; width: 62%; border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.55); }
+.hero-shots .s1 { right: 0; top: 0; }
+.hero-shots .s2 { left: 0; top: 90px; }
+
+/* 見出し */
+section { padding: 80px 0; border-top: 1px solid var(--border); }
+.label { font-size: 13px; font-weight: 700; color: var(--orange); margin-bottom: 12px; }
+h2 { font-weight: 900; font-size: 34px; line-height: 1.45; }
+.lead { margin-top: 18px; font-size: 16px; color: var(--text2); max-width: 36em; }
+
+/* 作った理由 */
+.story { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.story-body p { font-size: 16px; color: var(--text2); }
+.story-body p + p { margin-top: 18px; }
+.story-body strong { color: var(--text); }
+
+/* できること */
+.feature { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; margin-top: 64px; }
+.feature:first-of-type { margin-top: 48px; }
+.feature.rev .feature-text { order: 2; }
+.feature h3 { font-weight: 900; font-size: 26px; line-height: 1.5; }
+.feature p { margin-top: 14px; font-size: 15.5px; color: var(--text2); }
+.feature ul { margin-top: 16px; list-style: none; }
+.feature li { position: relative; padding-left: 18px; font-size: 15px; color: var(--text2); }
+.feature li + li { margin-top: 6px; }
+.feature li::before { content: ''; position: absolute; left: 0; top: 0.72em; width: 7px; height: 7px; border-radius: 50%; background: var(--orange); }
+.feature-img img { border-radius: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); margin: 0 auto; max-height: 560px; width: auto; }
+
+/* それぞれにとって */
+.who-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+.who-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px 24px; }
+.who-card .role { display: inline-block; font-size: 14px; font-weight: 700; color: var(--orange); margin-bottom: 12px; }
+.who-card h3 { font-weight: 700; font-size: 19px; line-height: 1.55; }
+.who-card p { margin-top: 10px; font-size: 14.5px; color: var(--text3); }
+
+/* 料金 */
+.free { margin-top: 36px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.free strong { font-weight: 900; font-size: 40px; color: var(--orange); }
+.free span { font-size: 16px; color: var(--text2); }
+.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
+.plan { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px 24px; }
+.plan .who { font-size: 15px; font-weight: 700; color: var(--text2); }
+.plan .price { margin-top: 10px; font-weight: 900; font-size: 36px; letter-spacing: 0.01em; }
+.plan .price small { font-size: 15px; font-weight: 500; color: var(--text3); margin-left: 4px; }
+.plan .ex { margin-top: 2px; font-size: 13px; color: var(--text3); }
+.solo { margin-top: 16px; background: var(--orange-soft); border: 1px solid rgba(232,128,74,0.35); border-radius: 16px; padding: 22px 24px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.solo h3 { font-size: 17px; font-weight: 700; }
+.solo p { font-size: 14px; color: var(--text2); margin-top: 4px; }
+.solo .price { font-weight: 900; font-size: 28px; white-space: nowrap; }
+.solo .price small { font-size: 14px; font-weight: 500; color: var(--text3); margin-left: 4px; }
+.fine { margin-top: 16px; font-size: 13px; color: var(--text3); line-height: 1.8; }
+
+/* はじめ方 */
+.steps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 40px; }
+.steps { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px 24px; }
+.steps h3 { font-size: 18px; font-weight: 700; color: var(--orange); margin-bottom: 14px; }
+.steps ol { list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; position: relative; padding-left: 40px; font-size: 15.5px; color: var(--text2); min-height: 30px; }
+.steps li + li { margin-top: 12px; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--orange); color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.device { margin-top: 16px; background: var(--surface2); border-radius: 16px; padding: 22px 24px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.device p { font-size: 15px; color: var(--text2); }
+.device p strong { color: var(--text); }
+.device .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* 提携 */
+.partner { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.partner-name { font-weight: 700; font-size: 20px; }
+.partner p { font-size: 15px; color: var(--text2); }
+
+/* 最後 */
+.closing { text-align: center; }
+.closing .logo { font-size: 56px; }
+.closing h2 { margin-top: 26px; }
+.closing .hero-cta { justify-content: center; }
+
+footer { border-top: 1px solid var(--border); padding: 32px 0 calc(48px + env(safe-area-inset-bottom)); }
+.footer-links { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: var(--text3); }
+.footer-links a:hover { color: var(--text); }
+.footer-name { margin-top: 14px; font-size: 12px; color: var(--text3); }
+
+@media (max-width: 820px) {
+  .wrap { padding: 0 20px; }
+  .topbar .logo { font-size: 26px; }
+  .topbar nav .nav-link { display: none; }
+  .hero { grid-template-columns: 1fr; padding-top: 28px; padding-bottom: 56px; gap: 36px; }
+  .hero h1 { font-size: 34px; }
+  .hero p { font-size: 15px; }
+  .hero-shots { height: 420px; max-width: 420px; margin: 0 auto; width: 100%; }
+  section { padding: 60px 0; }
+  h2 { font-size: 26px; }
+  .lead, .story-body p { font-size: 15px; }
+  .story, .feature { grid-template-columns: 1fr; gap: 28px; }
+  .feature.rev .feature-text { order: 0; }
+  .feature { margin-top: 56px; }
+  .feature h3 { font-size: 22px; }
+  .feature-img img { max-height: 460px; }
+  .who-grid, .plans, .steps-grid { grid-template-columns: 1fr; }
+  .free strong { font-size: 32px; }
+  .closing .logo { font-size: 44px; }
+  .btn { width: 100%; }
+  .device .btns { width: 100%; }
+}
+body.auth-checking { visibility: hidden; }
+</style>
+</head>
+<body class="auth-checking">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="plusGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+    <symbol id="plus" viewBox="-12 -12 124 124">
+      <path class="lp-gap" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/>
+      <path class="lp-glow" filter="url(#plusGlow)" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/>
+      <path class="lp-line" d="M34 4H66V34H96V66H66V96H34V66H4V34H34Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="wrap topbar">
+  <a class="logo" href="#" aria-label="Self+">Self<span class="logo-plus"><svg><use href="#plus"/></svg></span></a>
+  <nav>
+    <a class="nav-link" href="#features">できること</a>
+    <a class="nav-link" href="#pricing">料金</a>
+    <a class="nav-start" href="#start">はじめる</a>
+  </nav>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div>
+      <div class="eyebrow">アスリートと指導者のための成長ノート</div>
+      <h1><span class="nb">今日の一歩を</span><span class="nb">言葉にして、</span><br><span class="nb">夢まで</span><span class="nb">積み上げる。</span></h1>
+      <p><span class="nb">練習のあと、</span><span class="nb">選手が自分の言葉で振り返る。</span><br><span class="nb">指導者は、</span><span class="nb">その言葉にコメントを返す。</span><br><span class="nb">野球でも、</span><span class="nb">サッカーでも、</span><span class="nb">どの競技でも使えます。</span></p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://apps.apple.com/jp/app/self/id6812122347">App Store でダウンロード</a>
+        <a class="btn btn-outline" href="growlog-v2.html">Web版ではじめる</a>
+      </div>
+      <div class="hero-note">チームで使うと、選手は無料です。</div>
+    </div>
+    <div class="hero-shots" aria-hidden="true">
+      <img class="s1" src="lp/diary.png" alt="">
+      <img class="s2" src="lp/cond.png" alt="">
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap story">
+      <div>
+        <div class="label">作った理由</div>
+        <h2><span class="nb">同じ学年でも、</span><br><span class="nb">言葉の使い方は</span><br><span class="nb">一人ひとり違う。</span></h2>
+      </div>
+      <div class="story-body">
+        <p><span class="nb">野球を教えていて、</span><span class="nb">気づいたことです。</span><span class="nb">言葉の使い方を見ると、</span><span class="nb">その子がどこまで分かっているかが</span><span class="nb">見えてきます。</span></p>
+        <p><span class="nb">思ったことを、</span><span class="nb">言葉にする。</span><span class="nb">それだけで、</span><span class="nb">選手は伸びていきます。</span></p>
+        <p><strong><span class="nb">選手が自分の言葉で</span><span class="nb">振り返る場所をつくりたくて、</span><span class="nb">Self+ を作りました。</span></strong></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="label">できること</div>
+      <h2><span class="nb">書いて、</span><span class="nb">振り返って、</span><span class="nb">積み上げる。</span></h2>
+
+      <div class="feature">
+        <div class="feature-text">
+          <h3><span class="nb">夢から逆算して、</span><br><span class="nb">今月やることを決める</span></h3>
+          <p><span class="nb">「叶える目標」から</span><span class="nb">「月間目標」、</span><span class="nb">「そのためにやること」へ。</span><span class="nb">毎日チェックをつけると、</span><span class="nb">どこまでできたかが分かります。</span></p>
+          <ul>
+            <li>やることは、AI にも考えてもらえます</li>
+          </ul>
+        </div>
+        <div class="feature-img"><img src="lp/goal.png" alt="月間目標と、そのためにやることの画面" loading="lazy"></div>
+      </div>
+
+      <div class="feature rev">
+        <div class="feature-text">
+          <h3><span class="nb">練習のあと、</span><br><span class="nb">3分で振り返る</span></h3>
+          <p><span class="nb">調子は、</span><span class="nb">ボタンを押すだけ。</span><span class="nb">よかった点と改善点は、</span><span class="nb">自分の言葉で書きます。</span></p>
+          <ul>
+            <li>天気・総合評価・心・技・体を3段階で</li>
+            <li>メニュー・よかった点・改善点</li>
+            <li>書く手を止めると、自動で保存</li>
+          </ul>
+        </div>
+        <div class="feature-img"><img src="lp/diary.png" alt="日記の画面" loading="lazy"></div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-text">
+          <h3><span class="nb">「読んだよ」が、</span><br><span class="nb">ちゃんと届く</span></h3>
+          <p><span class="nb">指導者は、</span><span class="nb">一人ひとりの日記に</span><span class="nb">コメントを返せます。</span><span class="nb">練習のあとの短い時間でも、</span><span class="nb">声をかけられます。</span></p>
+          <ul>
+            <li>コーチコメントと、日記ごとのメッセージ</li>
+            <li>「見たよ」をワンタップで</li>
+            <li>「書いてね」の通知</li>
+            <li>動画やメニューを、選んだ選手にまとめて共有</li>
+          </ul>
+        </div>
+        <div class="feature-img"><img src="lp/msg.png" alt="選手とコーチのメッセージの画面" loading="lazy"></div>
+      </div>
+
+      <div class="feature rev">
+        <div class="feature-text">
+          <h3><span class="nb">続けられる工夫</span></h3>
+          <p><span class="nb">記録した日と試合の日が、</span><span class="nb">カレンダーでひと目で分かります。</span><span class="nb">アプリを開くたびに、</span><span class="nb">トップアスリートの言葉に出会えます。</span></p>
+          <ul>
+            <li>カレンダーと試合の予定</li>
+            <li>日替わりの名言</li>
+            <li>アスリートへの質問（アスリート交流チャンネルのアスリートが答えます）</li>
+          </ul>
+        </div>
+        <div class="feature-img"><img src="lp/cal.png" alt="カレンダーの画面" loading="lazy"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="label">それぞれにとって</div>
+      <h2><span class="nb">選手にも、</span><span class="nb">指導者にも、</span><span class="nb">保護者にも。</span></h2>
+      <div class="who-grid">
+        <div class="who-card">
+          <div class="role">選手には</div>
+          <h3><span class="nb">自分の言葉で</span><span class="nb">振り返る力を。</span></h3>
+          <p><span class="nb">目標までの道のりが見えて、</span><span class="nb">コーチの言葉も</span><span class="nb">いつでも読み返せます。</span></p>
+        </div>
+        <div class="who-card">
+          <div class="role">指導者には</div>
+          <h3><span class="nb">選手が何を考えているか、</span><span class="nb">ひと目で。</span></h3>
+          <p><span class="nb">まだ書いていない選手も</span><span class="nb">すぐに分かります。</span></p>
+        </div>
+        <div class="who-card">
+          <div class="role">保護者には</div>
+          <h3><span class="nb">成長の記録が、</span><span class="nb">ずっと残る安心を。</span></h3>
+          <p><span class="nb">指導者とのやりとりが</span><span class="nb">文字で残ります。</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="wrap">
+      <div class="label">料金</div>
+      <h2><span class="nb">契約するのは、</span><span class="nb">チーム（指導者）だけ。</span></h2>
+      <div class="free"><strong>選手は無料</strong><span><span class="nb">人数に合わせて、</span><span class="nb">プランを選ぶだけです。</span></span></div>
+      <div class="plans">
+        <div class="plan"><div class="who">10人以下</div><div class="price">¥3,300<small>／月</small></div><div class="ex">税抜 ¥3,000</div></div>
+        <div class="plan"><div class="who">11人〜50人</div><div class="price">¥5,500<small>／月</small></div><div class="ex">税抜 ¥5,000</div></div>
+        <div class="plan"><div class="who">51人以上（上限なし）</div><div class="price">¥11,000<small>／月</small></div><div class="ex">税抜 ¥10,000</div></div>
+      </div>
+      <div class="solo">
+        <div>
+          <h3>個人プラン</h3>
+          <p><span class="nb">チームに入らずに使うときや、</span><span class="nb">チームを離れたあとも続けたいときに。</span></p>
+        </div>
+        <div class="price">¥900<small>／月</small></div>
+      </div>
+      <p class="fine">表示はすべて税込・月額です（毎月自動更新・いつでも解約できます）。<br>コーチのプランは Web版からお申し込みください。個人プランは Web版（クレジットカード）か、iPhone・iPad アプリ（App Store）からお申し込みいただけます。</p>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <div class="label">はじめ方</div>
+      <h2><span class="nb">選手招待コードで、</span><span class="nb">チームにつながる。</span></h2>
+      <div class="steps-grid">
+        <div class="steps">
+          <h3>指導者</h3>
+          <ol>
+            <li>「コーチ」で新規登録して、チームを作る</li>
+            <li>選手招待コードを決める</li>
+            <li>Web版から、プランに申し込む</li>
+            <li>選手に、選手招待コードを伝える</li>
+          </ol>
+        </div>
+        <div class="steps">
+          <h3>選手</h3>
+          <ol>
+            <li>App Store からダウンロード</li>
+            <li>「選手・生徒」で新規登録</li>
+            <li>選手招待コードを入れたら、完了</li>
+          </ol>
+          <p class="fine">メールアドレスがなくても、ID とパスワードで登録できます。</p>
+        </div>
+      </div>
+      <div class="device">
+        <p><strong>iPhone・iPad で使えます。</strong><br><span class="nb">Android やパソコンの方は、</span><span class="nb">ブラウザで Web版を使えます。</span><br><span class="nb">ホーム画面に追加すると、</span><span class="nb">アプリのように使えます。</span></p>
+        <div class="btns">
+          <a class="btn btn-primary" href="https://apps.apple.com/jp/app/self/id6812122347">App Store</a>
+          <a class="btn btn-outline" href="growlog-v2.html">Web版</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap partner">
+      <div>
+        <div class="label">業務提携</div>
+        <div class="partner-name">合同会社STRIVE FORCE</div>
+        <p><span class="nb">Self+ は、</span><span class="nb">合同会社STRIVE FORCE（アスリート交流チャンネル）と</span><span class="nb">業務提携しています。</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="wrap">
+      <span class="logo">Self<span class="logo-plus"><svg><use href="#plus"/></svg></span></span>
+      <h2><span class="nb">今日の一歩を</span><span class="nb">言葉にして、</span><span class="nb">夢まで積み上げる。</span></h2>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://apps.apple.com/jp/app/self/id6812122347">App Store でダウンロード</a>
+        <a class="btn btn-outline" href="growlog-v2.html">Web版ではじめる</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="terms.html">利用規約</a>
+      <a href="privacy.html">プライバシーポリシー</a>
+      <a href="tokushoho.html">特定商取引法に基づく表記</a>
+      <a href="contact.html">お問い合わせ</a>
+    </div>
+    <div class="footer-name">パートナーシップ：合同会社STRIVE FORCE</div>
+  </footer>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, initializeAuth, inMemoryPersistence, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+  // ?preview を付けて開いたときは、ログイン中でもアプリに移らずにこのページを見せる（確認用）
+  const preview = new URLSearchParams(location.search).has('preview');
+  if (preview) document.body.classList.remove('auth-checking');
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDkhejPJk0Nu90dgbsbbhnUWgCHc0mTawM",
+    authDomain: "yakyu-nikki.firebaseapp.com",
+    projectId: "yakyu-nikki",
+    storageBucket: "yakyu-nikki.firebasestorage.app",
+    messagingSenderId: "522594099909",
+    appId: "1:522594099909:web:17fcfb6f96580d6c1486ac"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  // growlog-v2.html と同じ理由（CapacitorのWebViewでIndexedDB永続化がハングする問題）で、
+  // ネイティブアプリ内では inMemoryPersistence を使う。
+  const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const auth = isNativeApp
+    ? initializeAuth(fbApp, { persistence: inMemoryPersistence })
+    : getAuth(fbApp);
+
+  // 万一Firebaseの応答が遅い・失敗した場合でも、真っ白なまま止まらないようにする保険
+  const revealTimer = setTimeout(() => document.body.classList.remove('auth-checking'), 1800);
+
+  onAuthStateChanged(auth, (user) => {
+    clearTimeout(revealTimer);
+    const isIdAccount = !!(user && (user.email || '').toLowerCase().endsWith('@student.yakyu-nikki.firebaseapp.com'));
+    if (!preview && user && (user.emailVerified || isIdAccount)) {
+      location.replace('growlog-v2.html');
+    } else {
+      document.body.classList.remove('auth-checking');
+    }
+  });
+</script>
+</body>
+</html>
