@@ -258,7 +258,6 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .media-all-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--text); border-radius: 999px; padding: 6px 12px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .video-item .photo-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer; background: var(--surface); }
 .video-item .photo-title { flex: 1; font-size: 13px; color: var(--text); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.photo-drop { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); padding: 14px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); margin-top: 8px; }
 .photo-status { font-size: 12px; color: var(--text3); margin-top: 6px; min-height: 1em; }
 .photo-status.err { color: #E53935; }
 .media-sheet { max-height: 86vh; display: flex; flex-direction: column; }
@@ -4462,12 +4461,11 @@ async function boot(user, profile) {
         <div class="video-add"><input id="v-url" placeholder="外部URL"><button id="v-add">追加</button></div>
         <div class="video-divider">または</div>
         <div class="video-drop" id="v-drop">
-          <span class="v-drop-icon">🎥</span>
-          <div class="v-drop-main">自分の端末からタップして動画を選ぶ</div>
-          <div class="v-drop-sub">またはドラッグ＆ドロップ（長い動画・大きいファイルもOK）</div>
+          <span class="v-drop-icon">🎥 📷</span>
+          <div class="v-drop-main">タップして動画・写真を選ぶ</div>
+          <div class="v-drop-sub">写真は何枚でもOK（選ぶとすぐ追加）／動画は1本ずつ（長い動画・大きいファイルもOK）</div>
         </div>
-        <input type="file" id="v-file" accept="video/*" hidden style="display:none">
-        <label class="photo-drop" id="p-drop">📷 写真を選ぶ（何枚でもOK）<input type="file" id="p-file" accept="image/*" multiple hidden style="display:none"></label>
+        <input type="file" id="v-file" accept="video/*,image/*" multiple hidden style="display:none">
         <div class="photo-status" id="p-status"></div>
         <div class="video-filename" id="v-filename"></div>
         <div class="video-processing-hint">※アップロード後、変換処理のため動画が見られるようになるまで数十秒〜数分かかることがあります</div>
@@ -4500,7 +4498,6 @@ async function boot(user, profile) {
       renderPanel();
     };
     setupVideoUpload();
-    setupPhotoUpload();
     const mediaAllBtn = document.getElementById('media-all-btn');
     if (mediaAllBtn) mediaAllBtn.onclick = () => openMediaGallery();
     panel.querySelectorAll('[data-photo-i]').forEach(el => {
@@ -4765,13 +4762,9 @@ async function boot(user, profile) {
       img.src = url;
     });
   }
-  function setupPhotoUpload() {
-    const input = document.getElementById('p-file');
-    const status = document.getElementById('p-status');
-    if (!input) return;
-    input.onchange = async () => {
-      const files = [...(input.files || [])].filter(f => f.type.startsWith('image/') || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name));
-      input.value = '';
+  function isPhotoFile(f) { return !!f && (f.type.startsWith('image/') || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name || '')); }
+  async function uploadPhotoFiles(files) {
+    {
       if (!files.length) return;
       const ctx = {
         playerId: state.playerId,
@@ -4802,7 +4795,7 @@ async function boot(user, profile) {
       if (ctx.playerId === state.playerId && ctx.date === state.selected) renderPanel();
       setStatus(failed ? `${done}枚を追加しました（${failed}枚は追加できませんでした）` : `${done}枚の写真を追加しました`, failed > 0);
       setTimeout(() => setStatus(''), 4000);
-    };
+    }
   }
 
   // ===== ★12：これまでの動画・写真（月ごとに日記を読んで、新しい順に並べる）=====
@@ -4917,12 +4910,24 @@ async function boot(user, profile) {
     drop.addEventListener('click', () => fileInput.click());
     drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+    // ★12：写真はすぐ追加、動画は今まで通り「この動画を追加」で上げる
+    function pickFiles(list) {
+      const files = [...(list || [])];
+      if (!files.length) return;
+      const photos = files.filter(isPhotoFile);
+      const videos = files.filter(f => !isPhotoFile(f));
+      if (photos.length) uploadPhotoFiles(photos);
+      if (videos.length) {
+        selectFile(videos[0]);
+        if (videos.length > 1) showError('動画は1本ずつ追加できます。最初の1本を選びました。');
+      }
+    }
     drop.addEventListener('drop', (e) => {
       e.preventDefault();
       drop.classList.remove('drag');
-      if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+      pickFiles(e.dataTransfer.files);
     });
-    fileInput.addEventListener('change', () => { if (fileInput.files.length) selectFile(fileInput.files[0]); });
+    fileInput.addEventListener('change', () => { pickFiles(fileInput.files); fileInput.value = ''; });
 
     function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('show'); }
     function hideError() { errorBox.classList.remove('show'); }
