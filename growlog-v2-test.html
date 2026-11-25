@@ -254,6 +254,32 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .section-toggle-row .section-toggle { flex: 1; }
 .important-toggle-btn { flex-shrink: 0; padding: 5px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); font-size: 11.5px; font-weight: 700; color: var(--text2); cursor: pointer; }
 .important-toggle-btn.active { border-color: var(--rust); background: var(--rust-light); color: var(--rust); }
+.card-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.media-all-btn { border: 1px solid var(--border2); background: var(--surface2); color: var(--text); border-radius: 999px; padding: 6px 12px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.video-item .photo-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer; background: var(--surface); }
+.video-item .photo-title { flex: 1; font-size: 13px; color: var(--text); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-drop { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); padding: 14px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); margin-top: 8px; }
+.photo-status { font-size: 12px; color: var(--text3); margin-top: 6px; min-height: 1em; }
+.photo-status.err { color: #E53935; }
+.media-sheet { max-height: 86vh; display: flex; flex-direction: column; }
+.media-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+.media-day { font-size: 13px; font-weight: 700; color: var(--text2); margin: 12px 0 6px; }
+.media-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.media-tile { position: relative; aspect-ratio: 1 / 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border2); background: var(--surface2); cursor: pointer; padding: 0; font-family: inherit; color: var(--text); }
+.media-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-tile-video { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 100%; padding: 6px; box-sizing: border-box; }
+.media-tile-play { font-size: 26px; line-height: 1; }
+.media-tile-title { font-size: 11px; line-height: 1.3; max-height: 2.6em; overflow: hidden; text-align: center; overflow-wrap: anywhere; }
+.media-more { display: block; width: 100%; margin: 14px 0 4px; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.media-empty { font-size: 13px; color: var(--text3); text-align: center; padding: 22px 0; }
+.media-viewer { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; gap: 12px; }
+.media-viewer-close { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 20px; cursor: pointer; }
+.media-viewer-date { color: #fff; font-size: 14px; font-weight: 700; }
+.media-viewer-title { color: rgba(255,255,255,0.8); font-size: 13px; text-align: center; overflow-wrap: anywhere; }
+.media-viewer img { max-width: 100%; max-height: 68vh; object-fit: contain; border-radius: 6px; }
+.media-viewer-frame { width: 100%; max-width: 720px; aspect-ratio: 16 / 9; border: 0; border-radius: 6px; background: #000; }
+.media-viewer-link { color: #fff; font-size: 14px; font-weight: 700; }
+.media-viewer-open { border: none; background: var(--rust); color: #fff; border-radius: 999px; padding: 12px 22px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .video-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .video-item { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; }
 .video-item a { flex: 1; font-size: 13px; color: var(--navy); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -725,6 +751,9 @@ import {
   getFunctions, httpsCallable
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js";
 import {
+  getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+import {
   initializeAppCheck, ReCaptchaEnterpriseProvider
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js";
 
@@ -753,6 +782,7 @@ const auth = isNativeApp
   : getAuth(fbApp);
 const db = getFirestore(fbApp);
 const functions = getFunctions(fbApp, 'us-central1');
+const storage = getStorage(fbApp);
 const PRICE_IDS = {
   student: 'price_1UAKbrBAZvKHyOEKfPuJriMp',
   coach: 'price_1UAKcYBAZvKHyOEKu6JQAQMx'
@@ -4422,11 +4452,13 @@ async function boot(user, profile) {
           ${e.submittedAt ? `<div class="submit-note">最終登録：${formatDateTime(e.submittedAt)}</div>` : ''}
         </div>`}
       </div>
-      <div class="card"><div class="card-label">動画</div>
+      <div class="card"><div class="card-label-row"><div class="card-label">動画・写真</div><button type="button" class="media-all-btn" id="media-all-btn">これまでの動画・写真</button></div>
         <div class="video-list" id="video-list">
-          ${e.videos.map((v, i) => `<div class="video-item"><a href="${escapeAttr(v.url)}" target="_blank" rel="noopener">${escapeHtml(v.title || v.url)}</a><button data-i="${i}" class="video-del">✕</button></div>`).join('') || '<div class="thread-empty">まだ動画はありません</div>'}
+          ${e.videos.map((v, i) => v && v.type === 'photo'
+            ? `<div class="video-item"><img class="photo-thumb" src="${escapeAttr(v.url)}" alt="" data-photo-i="${i}" loading="lazy"><span class="photo-title" data-photo-i="${i}">${escapeHtml(v.title || '写真')}</span><button data-i="${i}" class="video-del">✕</button></div>`
+            : `<div class="video-item"><a href="${escapeAttr(v.url)}" target="_blank" rel="noopener">${escapeHtml(v.title || v.url)}</a><button data-i="${i}" class="video-del">✕</button></div>`).join('') || '<div class="thread-empty">まだ動画・写真はありません</div>'}
         </div>
-        <input id="v-title" class="video-title-shared" placeholder="動画タイトル">
+        <input id="v-title" class="video-title-shared" placeholder="タイトル（動画・写真）">
         <div class="video-add"><input id="v-url" placeholder="外部URL"><button id="v-add">追加</button></div>
         <div class="video-divider">または</div>
         <div class="video-drop" id="v-drop">
@@ -4435,6 +4467,8 @@ async function boot(user, profile) {
           <div class="v-drop-sub">またはドラッグ＆ドロップ（長い動画・大きいファイルもOK）</div>
         </div>
         <input type="file" id="v-file" accept="video/*" hidden style="display:none">
+        <label class="photo-drop" id="p-drop">📷 写真を選ぶ（何枚でもOK）<input type="file" id="p-file" accept="image/*" multiple hidden style="display:none"></label>
+        <div class="photo-status" id="p-status"></div>
         <div class="video-filename" id="v-filename"></div>
         <div class="video-processing-hint">※アップロード後、変換処理のため動画が見られるようになるまで数十秒〜数分かかることがあります</div>
         <button class="video-upload-btn" id="v-upload-btn" disabled>この動画を追加</button>
@@ -4466,6 +4500,12 @@ async function boot(user, profile) {
       renderPanel();
     };
     setupVideoUpload();
+    setupPhotoUpload();
+    const mediaAllBtn = document.getElementById('media-all-btn');
+    if (mediaAllBtn) mediaAllBtn.onclick = () => openMediaGallery();
+    panel.querySelectorAll('[data-photo-i]').forEach(el => {
+      el.onclick = () => { const v = state.entry.videos[parseInt(el.dataset.photoI, 10)]; if (v) openMediaViewer(v, state.selected, false); };
+    });
     const submitBtn = document.getElementById('submit-btn');
     if (submitBtn) {
       submitBtn.onclick = async () => {
@@ -4509,6 +4549,10 @@ async function boot(user, profile) {
         state.entry.videos.splice(i, 1);
         renderPanel();
         scheduleAutoSave();
+        // ★12：自分の日記に自分で上げた写真は、写真置き場からも消す（コーチが配った写真は、ほかの選手も見るので残す）
+        if (removed && removed.type === 'photo' && removed.path && removed.uploadedBy === user.uid && removed.uploadedBy === state.playerId) {
+          deleteObject(storageRef(storage, removed.path)).catch(err => console.warn('[photo-delete] 写真置き場から消せませんでした', err));
+        }
         // Bunny Stream側の実ファイルも削除（失敗しても記録上は既に消えているので、ベストエフォート）
         if (removed && removed.videoId) {
           bunnyProxyFetch({ action: 'deleteVideo', videoId: removed.videoId }).then(res => {
@@ -4701,6 +4745,151 @@ async function boot(user, profile) {
     return bunnyProxyFetch({ action: 'createUpload', title: file.name }).then(res => res.json());
   }
   let preparedUpload = null; // { file, promise }
+
+  // ===== ★12：写真（Firebase Storage の diary/{上げた人}/ に置き、日記には動画と同じ並びに type:'photo' で入れる）=====
+  const PHOTO_MAX_SIDE = 1600;
+  function resizePhoto(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+      img.src = url;
+    });
+  }
+  function setupPhotoUpload() {
+    const input = document.getElementById('p-file');
+    const status = document.getElementById('p-status');
+    if (!input) return;
+    input.onchange = async () => {
+      const files = [...(input.files || [])].filter(f => f.type.startsWith('image/') || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name));
+      input.value = '';
+      if (!files.length) return;
+      const ctx = {
+        playerId: state.playerId,
+        date: state.selected,
+        otherUids: isCoach ? resolveTargetUids(state.videoTarget).filter(uid => uid !== state.playerId) : []
+      };
+      const titleEl = document.getElementById('v-title');
+      const title = titleEl ? titleEl.value.trim() : '';
+      const setStatus = (t, err) => { const el = document.getElementById('p-status'); if (el) { el.textContent = t; el.classList.toggle('err', !!err); } };
+      let done = 0, failed = 0;
+      for (const file of files) {
+        setStatus(`写真を追加中… ${done + 1} / ${files.length}`);
+        try {
+          const blob = await resizePhoto(file);
+          if (blob.size > 5 * 1024 * 1024) throw new Error('too large');
+          const photoId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const path = `diary/${user.uid}/${photoId}.jpg`;
+          const r = storageRef(storage, path);
+          await uploadBytes(r, blob, { contentType: 'image/jpeg' });
+          const url = await getDownloadURL(r);
+          await distributeVideoTo(ctx, { type: 'photo', title, url, path, photoId, uploadedAt: Date.now(), uploadedBy: user.uid });
+          done++;
+        } catch (e) {
+          console.error('[photo] 写真を追加できませんでした', e);
+          failed++;
+        }
+      }
+      if (ctx.playerId === state.playerId && ctx.date === state.selected) renderPanel();
+      setStatus(failed ? `${done}枚を追加しました（${failed}枚は追加できませんでした）` : `${done}枚の写真を追加しました`, failed > 0);
+      setTimeout(() => setStatus(''), 4000);
+    };
+  }
+
+  // ===== ★12：これまでの動画・写真（月ごとに日記を読んで、新しい順に並べる）=====
+  function mediaTileHtml(v, idx) {
+    if (v.type === 'photo') return `<button type="button" class="media-tile" data-m="${idx}"><img src="${escapeAttr(v.url)}" alt="" loading="lazy"></button>`;
+    return `<button type="button" class="media-tile" data-m="${idx}"><span class="media-tile-video"><span class="media-tile-play">▶</span><span class="media-tile-title">${escapeHtml(v.title || '動画')}</span></span></button>`;
+  }
+  async function openMediaGallery() {
+    const playerId = state.playerId;
+    const player = TEAM.find(r => r.uid === playerId);
+    const overlay = document.createElement('div');
+    overlay.className = 'team-sheet-overlay';
+    overlay.innerHTML = `
+      <div class="team-sheet media-sheet" role="dialog" aria-label="これまでの動画・写真">
+        <div class="team-sheet-grip"></div>
+        <div class="team-sheet-title">これまでの動画・写真${isCoach && player ? `（${escapeHtml(player.name)}さん）` : ''}</div>
+        <div class="media-scroll" id="media-scroll"><div class="media-empty" id="media-loading">読み込み中…</div></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('show'));
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
+    const scroll = overlay.querySelector('#media-scroll');
+    const all = [];
+    const t = todayParts();
+    let y = t.y, m = t.m, monthsRead = 0;
+    const MAX_MONTHS = 36, STEP = 3;
+    async function loadMore() {
+      const moreBtn = scroll.querySelector('.media-more');
+      if (moreBtn) { moreBtn.disabled = true; moreBtn.textContent = '読み込み中…'; }
+      const before = all.length;
+      for (let k = 0; k < STEP && monthsRead < MAX_MONTHS; k++) {
+        const entries = await getMonthEntries(playerId, y, m).catch(() => ({}));
+        Object.keys(entries).sort().reverse().forEach(date => {
+          ((entries[date] && entries[date].videos) || []).forEach(v => { if (v && v.url) all.push({ date, v }); });
+        });
+        monthsRead++;
+        m--; if (m < 0) { m = 11; y--; }
+      }
+      all.sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+      draw(all.length === before);
+    }
+    function draw(nothingNew) {
+      const byDate = [];
+      all.forEach((it, idx) => {
+        const last = byDate[byDate.length - 1];
+        if (last && last.date === it.date) last.items.push(idx); else byDate.push({ date: it.date, items: [idx] });
+      });
+      const oldest = `${monthsRead} か月前まで見ました`;
+      scroll.innerHTML = (byDate.length ? byDate.map(g => `
+          <div class="media-day">${formatSelectedLabel(g.date)}</div>
+          <div class="media-grid">${g.items.map(i => mediaTileHtml(all[i].v, i)).join('')}</div>`).join('')
+        : `<div class="media-empty">${nothingNew && monthsRead >= MAX_MONTHS ? '動画・写真はまだありません' : 'この期間の動画・写真はありません'}</div>`)
+        + (monthsRead < MAX_MONTHS ? `<button type="button" class="media-more">もっと前を見る（${oldest}）</button>` : '');
+      scroll.querySelectorAll('.media-tile').forEach(btn => {
+        btn.onclick = () => { const it = all[parseInt(btn.dataset.m, 10)]; if (it) openMediaViewer(it.v, it.date, true, overlay); };
+      });
+      const more = scroll.querySelector('.media-more');
+      if (more) more.onclick = () => loadMore();
+    }
+    await loadMore();
+  }
+  // 1つを大きく見る。fromGallery のときは「この日の日記を開く」を出す
+  function openMediaViewer(v, date, fromGallery, galleryOverlay) {
+    const viewer = document.createElement('div');
+    viewer.className = 'media-viewer';
+    const isBunny = /^https:\/\/iframe\.mediadelivery\.net\/embed\//.test(v.url || '');
+    const body = v.type === 'photo'
+      ? `<img src="${escapeAttr(v.url)}" alt="">`
+      : isBunny
+        ? `<iframe class="media-viewer-frame" src="${escapeAttr(v.url)}" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`
+        : `<a class="media-viewer-link" href="${escapeAttr(v.url)}" target="_blank" rel="noopener">▶ 動画を開く</a>`;
+    viewer.innerHTML = `
+      <button type="button" class="media-viewer-close" aria-label="閉じる">✕</button>
+      <div class="media-viewer-date">${formatSelectedLabel(date)}</div>
+      ${body}
+      ${v.title ? `<div class="media-viewer-title">${escapeHtml(v.title)}</div>` : ''}
+      ${fromGallery ? '<button type="button" class="media-viewer-open">この日の日記を開く</button>' : ''}`;
+    document.body.appendChild(viewer);
+    viewer.querySelector('.media-viewer-close').onclick = () => viewer.remove();
+    viewer.addEventListener('click', (ev) => { if (ev.target === viewer) viewer.remove(); });
+    const openBtn = viewer.querySelector('.media-viewer-open');
+    if (openBtn) openBtn.onclick = async () => {
+      viewer.remove();
+      if (galleryOverlay) galleryOverlay.remove();
+      await openDate(date);
+    };
+  }
 
   function setupVideoUpload() {
     const drop = document.getElementById('v-drop');
